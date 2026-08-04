@@ -29,6 +29,8 @@
 | Работа с API | TanStack Query |
 | UI-компоненты | GravityUI |
 | Карта | JS API яндекс карт |
+| Доставка статики | nginx |
+| Контейнеризация | Docker / docker-compose |
 
 ### Тестирование
 
@@ -36,4 +38,11 @@
 - React Testing Library
 - Playwright
 
+### Инфраструктура и деплой
+
+- Docker / docker-compose
+- nginx — раздача HTML и статики
+
 ## Вопросы
+
+- Нужен ли отдельный RFC по CI/CD и составу docker-compose (сейчас `backend/` и `pipeline/` — пустые заглушки, стек для них ещё не зафиксирован)?
