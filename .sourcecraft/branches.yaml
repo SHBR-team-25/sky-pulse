@@ -1,0 +1,9 @@
+branch_protection:
+  policies:
+    - target: branch
+      matches: "main"
+      message: "Direct push into main branch is forbidden, create PR first"
+      rules:
+        - prevent_deletion
+        - prevent_force_push
+        - prevent_non_pr_changes

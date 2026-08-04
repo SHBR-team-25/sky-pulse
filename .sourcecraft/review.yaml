@@ -1,0 +1,25 @@
+codereview:
+  need_ships: 1
+  ignore_self_ship: true
+  ignore_non_reviewers_block: true
+  auto_assign: true
+  rules:
+    - patterns:
+        - "frontend/**"
+      reviewers:
+        usernames:
+          - "ar5eny-pavlov"
+          - "eanvie"
+        assign: 1
+        need_ships: 1
+        ignore_self_ship: true
+    - patterns:
+        - "backend/**"
+      reviewers:
+        usernames:
+          - "ibragimovaajgyul"
+          - "ksyusha-ge"
+          - "zuevs5115"
+        assign: 2
+        need_ships: 1
+        ignore_self_ship: true
