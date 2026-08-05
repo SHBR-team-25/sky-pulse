@@ -5,7 +5,7 @@
 
 ## Резюме
 
-Для проекта предлагается зафиксировать стек: SPA на TypeScript с архитектурой FSD и BFF-слоем, Zustand как state-менеджер, TanStack Query для работы с API, GravityUI для компонентов, карта — JS API Яндекс.Карт
+Для проекта предлагается зафиксировать стек: SPA на TypeScript с архитектурой FSD, Zustand как state-менеджер, TanStack Query для работы с API, GravityUI для компонентов, карта — JS API Яндекс.Карт
 
 ## Мотивация
 
@@ -29,8 +29,7 @@
 | Работа с API | TanStack Query |
 | UI-компоненты | GravityUI |
 | Карта | JS API яндекс карт |
-| Доставка статики | nginx |
-| Контейнеризация | Docker / docker-compose |
+| Доставка статики | Yandex Object Storage |
 
 ### Тестирование
 
@@ -40,9 +39,6 @@
 
 ### Инфраструктура и деплой
 
-- Docker / docker-compose
-- nginx — раздача HTML и статики
+Статика собирается в CI и заливается в Yandex Object Storage
 
 ## Вопросы
-
-- Нужен ли отдельный RFC по CI/CD и составу docker-compose (сейчас `backend/` и `pipeline/` — пустые заглушки, стек для них ещё не зафиксирован)?
