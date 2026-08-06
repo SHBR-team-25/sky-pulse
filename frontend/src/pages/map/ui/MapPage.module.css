@@ -1,0 +1,36 @@
+.map {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            var(--sky-color-map-grid-transparent) 1px,
+            var(--sky-color-transparent) 1px
+        ),
+        linear-gradient(
+            90deg,
+            var(--sky-color-map-grid-transparent) 1px,
+            var(--sky-color-transparent) 1px
+        ),
+        radial-gradient(
+            circle at 50% 45%,
+            var(--sky-color-bg-map-glow) 0,
+            var(--sky-color-bg-canvas) 70%
+        );
+    background-size:
+        178px 156px,
+        178px 156px,
+        auto;
+}
+
+.map::after {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at center,
+        var(--sky-color-transparent) 35%,
+        var(--sky-color-map-vignette) 100%
+    );
+    content: '';
+    pointer-events: none;
+}

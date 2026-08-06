@@ -1,0 +1,132 @@
+.header {
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    height: 60px;
+    padding: 0 22px;
+    background: var(--sky-color-surface-header);
+    border-bottom: 1px solid var(--sky-color-border-subtle);
+    backdrop-filter: blur(18px);
+}
+
+.brand {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: var(--sky-color-accent-primary);
+    border-radius: 7px;
+}
+
+.logoMark {
+    width: 11px;
+    height: 11px;
+    background: var(--sky-color-bg-canvas);
+    clip-path: polygon(50% 0%, 100% 100%, 50% 78%, 0% 100%);
+}
+
+.productName {
+    color: var(--sky-color-text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.search {
+    flex: 0 1 330px;
+    min-width: 250px;
+    max-width: 330px;
+}
+
+.search :global(.g-text-input__content) {
+    background: var(--sky-color-surface-control);
+    border-color: var(--sky-color-border-control);
+    border-radius: 9px;
+}
+
+.search :global(.g-text-input__control) {
+    color: var(--sky-color-text-secondary);
+    font-size: 13px;
+}
+
+.search :global(.g-text-input__control)::placeholder {
+    color: var(--sky-color-text-muted);
+    opacity: 1;
+}
+
+.search :global(.g-icon) {
+    color: var(--sky-color-text-subtle);
+}
+
+.shortcut {
+    padding: 6px;
+    color: var(--sky-color-text-faint);
+    font:
+        10px 'Roboto Mono',
+        monospace;
+    background: var(--sky-color-transparent);
+    border: 1px solid var(--sky-color-border-strong);
+    border-radius: 4px;
+    height: 24px;
+}
+
+.navigation {
+    display: flex;
+    flex: none;
+    gap: 4px;
+}
+
+.navigationButton {
+    --g-button-text-color: var(--sky-color-text-muted);
+    --g-button-background-color: var(--sky-color-transparent);
+    --g-button-background-color-hover: var(--sky-color-surface-control);
+
+    font-size: 13px;
+}
+
+.navigationButton[aria-current='page'] {
+    --g-button-text-color: var(--sky-color-text-primary);
+    --g-button-background-color: var(--sky-color-surface-selected);
+
+    font-weight: 500;
+}
+
+.status {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+    color: var(--sky-color-text-muted);
+    font:
+        12px 'Roboto Mono',
+        monospace;
+    white-space: nowrap;
+}
+
+.liveStatus {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.liveDot {
+    width: 7px;
+    height: 7px;
+    background: var(--sky-color-status-success);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--sky-color-status-success);
+}
+
+.utcTime {
+    color: inherit;
+}

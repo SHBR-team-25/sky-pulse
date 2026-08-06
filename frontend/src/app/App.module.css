@@ -1,0 +1,10 @@
+.app {
+    display: grid;
+    grid-template-rows: 60px minmax(0, 1fr) 44px;
+    min-width: 1180px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    color: var(--sky-color-text-primary);
+    background: var(--sky-color-bg-canvas);
+}
