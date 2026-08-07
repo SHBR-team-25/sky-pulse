@@ -1,0 +1,23 @@
+# Dependencies: each application owns its own install directory.
+/backend/node_modules/
+/frontend/node_modules/
+
+# A root install is not part of the backend or frontend source tree.
+/node_modules/
+
+# Generated application output.
+/backend/dist/
+/backend/build/
+/frontend/dist/
+
+# Local environment and package-manager logs.
+*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tooling and OS files.
+.DS_Store
+.idea/
