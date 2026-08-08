@@ -1,0 +1,842 @@
+openapi: 3.0.3
+info:
+  title: skyPulse API
+  description: >-
+    Контракты API skyPulse, сгенерированные на основе docs/contracts-tmp.md.
+    Real-time обновление списка бортов (экран карты) реализуется поллингом
+    GET /api/flights/live с клиента.
+  version: 0.1.0
+
+servers:
+  - url: /api
+
+tags:
+  - name: flights
+    description: Борты, позиции, треки
+  - name: airports
+    description: Аэропорты и загруженность
+  - name: stats
+    description: Агрегированная статистика трафика
+
+paths:
+  /flights/live:
+    get:
+      tags: [flights]
+      summary: Список бортов для отрисовки маркеров на карте
+      description: >-
+        Для получения обновлений "в реальном времени" клиент должен
+        периодически повторять (поллинг) этот же запрос раз в N секунд;
+        интервал ограничен квотой OpenSky (400–14400 кредитов/день).
+      parameters:
+        - $ref: "#/components/parameters/LonMin"
+        - $ref: "#/components/parameters/LatMin"
+        - $ref: "#/components/parameters/LonMax"
+        - $ref: "#/components/parameters/LatMax"
+        - name: zoom
+          in: query
+          required: false
+          description: >-
+            Текущий уровень зума карты
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 20
+        - name: limit
+          in: query
+          required: false
+          description: Максимум бортов в ответе
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveFlightsResponse"
+
+  /flights/{icao24}:
+    get:
+      tags: [flights]
+      summary: Детали самолёта по клику на карте
+      description: >-
+        Ответ включает трек (path/startTime/endTime), чтобы при клике по
+        борту не делать отдельный запрос к /flights/{icao24}/track; тот
+        эндпоинт остаётся для точечного обновления/повторной подгрузки трека.
+      parameters:
+        - name: icao24
+          in: path
+          required: true
+          description: ICAO24-адрес
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlightDetailsResponse"
+        "404":
+          description: Борта нет в текущем снапшоте state vectors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /airports:
+    get:
+      tags: [airports]
+      summary: Список аэропортов с индексом загруженности
+      description: >-
+        Индекс загруженности: во сколько раз текущий/сегодняшний трафик
+        аэропорта отличается от его собственной исторической нормы.
+        `search`/`country`/`sortBy`/`page`/`pageSize` — для табличного
+        режима; `lonMin`/`latMin`/`lonMax`/`latMax`/`zoom`/`limit` — для
+        отрисовки аэропортов на карте мира.
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Поиск по названию/городу/коду
+          schema:
+            type: string
+        - name: country
+          in: query
+          required: false
+          description: Фильтр по iso_country
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [trafficIndex, name, totalFlights]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - $ref: "#/components/parameters/LonMin"
+        - $ref: "#/components/parameters/LatMin"
+        - $ref: "#/components/parameters/LonMax"
+        - $ref: "#/components/parameters/LatMax"
+        - name: zoom
+          in: query
+          required: false
+          description: >-
+            Текущий уровень зума карты (0–20); используется бэкендом для
+            адаптивной плотности/агрегации отдаваемых аэропортов при мелком
+            zoom
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 20
+        - name: limit
+          in: query
+          required: false
+          description: >-
+            Максимум аэропортов в ответе для map-режима (независимо от
+            page/pageSize, которые применяются в табличном режиме)
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportsListResponse"
+
+  /airports/{icao}/flights:
+    get:
+      tags: [airports]
+      summary: Лог рейсов аэропорта за период (вылеты + прилёты)
+      description: >-
+        Уже наблюдённых OpenSky рейсов, не борд предстоящих.
+      parameters:
+        - name: icao
+          in: path
+          required: true
+          description: ICAO-код аэропорта
+          schema:
+            type: string
+        - name: direction
+          in: query
+          required: false
+          description: Фильтр направления
+          schema:
+            type: string
+            enum: [arrival, departure, all]
+            default: all
+        - name: from
+          in: query
+          required: false
+          description: Окно наблюдения, unix ts (проброс в /flights/departure)
+          schema:
+            type: integer
+            format: int64
+        - name: to
+          in: query
+          required: false
+          description: Окно наблюдения, unix ts (проброс в /flights/arrival)
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportFlightsResponse"
+
+  /stats/dashboard:
+    get:
+      tags: [stats]
+      summary: Дашборд статистики
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: unix ts, окно агрегации, по умолчанию последние 24ч доступного батча
+          schema:
+            type: integer
+            format: int64
+        - name: to
+          in: query
+          required: false
+          description: unix ts, окно агрегации, по умолчанию последние 24ч доступного батча
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+
+components:
+  parameters:
+    LonMin:
+      name: lonMin
+      in: query
+      required: false
+      description: >-
+        Западная граница видимой области карты.
+        Параметры lonMin/latMin/lonMax/latMax задаются только все вместе;
+        если задан не весь набор — фильтр по области игнорируется.
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+        example: -6.0
+    LatMin:
+      name: latMin
+      in: query
+      required: false
+      description: Южная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+        example: 41.0
+    LonMax:
+      name: lonMax
+      in: query
+      required: false
+      description: Восточная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+        example: 10.0
+    LatMax:
+      name: latMax
+      in: query
+      required: false
+      description: Северная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+        example: 52.0
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    AirportRef:
+      type: object
+      description: "[OurAirports]"
+      properties:
+        icao:
+          type: string
+          description: "[OurAirports] airports.icao_code / ident"
+        iata:
+          type: string
+          nullable: true
+          description: "[OurAirports] airports.iata_code"
+        name:
+          type: string
+          description: "[OurAirports] airports.name"
+      required: [icao, iata, name]
+
+    EstimatedAirportRef:
+      allOf:
+        - $ref: "#/components/schemas/AirportRef"
+        - type: object
+          properties:
+            asOf:
+              type: integer
+              format: int64
+              description: unix ts батча /flights/*, из которого взята оценка
+            candidatesCount:
+              type: integer
+              description: >-
+                [OpenSky] departureAirportCandidatesCount /
+                arrivalAirportCandidatesCount — чем больше, тем менее
+                уверенная оценка
+          required: [asOf, candidatesCount]
+
+    LatLon:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+          description: градусы WGS-84
+        lon:
+          type: number
+          format: double
+      required: [lat, lon]
+
+    FlightPhase:
+      type: string
+      enum: [on_ground, climbing, descending, cruising]
+      description: >-
+        on_ground: [OpenSky] on_ground = true;
+        climbing: [OpenSky] on_ground = false, vertical_rate > 0;
+        descending: [OpenSky] on_ground = false, vertical_rate < 0;
+        cruising: [OpenSky] on_ground = false, vertical_rate ≈ 0
+
+    AircraftPosition:
+      type: object
+      properties:
+        icao24:
+          type: string
+          description: "[OpenSky] states[i][0]"
+        lat:
+          type: number
+          format: double
+          description: "[OpenSky] states[i][6]"
+        lon:
+          type: number
+          format: double
+          description: "[OpenSky] states[i][5]"
+        altitudeM:
+          type: number
+          nullable: true
+          description: "[OpenSky] states[i][7] baro_altitude"
+        headingDeg:
+          type: number
+          nullable: true
+          description: "[OpenSky] states[i][10] true_track"
+        speedKmh:
+          type: number
+          nullable: true
+          description: "[OpenSky] states[i][9] velocity, м/с * 3.6"
+        verticalRateMs:
+          type: number
+          nullable: true
+          description: "[OpenSky] states[i][11]"
+        onGround:
+          type: boolean
+          description: "[OpenSky] states[i][8]"
+        timestamp:
+          type: integer
+          format: int64
+          description: "unix ts, [OpenSky] states[i][4] last_contact"
+      required:
+        - icao24
+        - lat
+        - lon
+        - altitudeM
+        - headingDeg
+        - speedKmh
+        - verticalRateMs
+        - onGround
+        - timestamp
+
+    LiveFlightsResponse:
+      type: object
+      properties:
+        generatedAt:
+          type: integer
+          format: int64
+          description: 'unix ts, [OpenSky] верхнеуровневое поле "time"'
+        flights:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [solo, multie]
+                description: "Обозначение один самолет (solo) или кластер самолетов (multie)"
+              count:
+                type: integer
+                description: "Количество самолетов в кластере иначе 1"
+              icao24:
+                type: string
+                description: "[OpenSky]"
+              callsign:
+                type: string
+                nullable: true
+                description: "[OpenSky] states[i][1], trim"
+              airlineName:
+                type: string
+                nullable: true
+                description: "[OpenSky Aircraft DB] operator по icao24, если найден, иначе null"
+              position:
+                $ref: "#/components/schemas/AircraftPosition"
+              phase:
+                $ref: "#/components/schemas/FlightPhase"
+              origin:
+                allOf:
+                  - $ref: "#/components/schemas/EstimatedAirportRef"
+                nullable: true
+                description: "[OpenSky] estDepartureAirport из последнего доступного батча /flights/*"
+              destination:
+                allOf:
+                  - $ref: "#/components/schemas/EstimatedAirportRef"
+                nullable: true
+                description: "[OpenSky] estArrivalAirport, там же"
+              squawk:
+                type: integer
+                nullable: true
+                description: "[OpenSky] squawk, если есть"
+            required:
+              - type
+              - count
+              - icao24
+              - callsign
+              - airlineName
+              - position
+              - phase
+              - origin
+              - destination
+      required: [generatedAt, flights]
+
+    FlightTrackResponse:
+      type: object
+      properties:
+        icao24:
+          type: string
+          description: "[OpenSky]"
+        startTime:
+          type: integer
+          format: int64
+          description: "[OpenSky] tracks.startTime"
+        endTime:
+          type: integer
+          format: int64
+          description: "[OpenSky] tracks.endTime"
+        path:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: integer
+                format: int64
+                description: "[OpenSky] path[i][0]"
+              lat:
+                type: number
+                format: double
+                description: "[OpenSky] path[i][1]"
+              lon:
+                type: number
+                format: double
+                description: "[OpenSky] path[i][2]"
+              altitudeM:
+                type: number
+                nullable: true
+                description: "[OpenSky] path[i][3]"
+              headingDeg:
+                type: number
+                nullable: true
+                description: "[OpenSky] path[i][4]"
+              onGround:
+                type: boolean
+                description: "[OpenSky] path[i][5]"
+            required: [timestamp, lat, lon, altitudeM, headingDeg, onGround]
+      required: [icao24, startTime, endTime, path]
+
+    AirportsListResponse:
+      type: object
+      properties:
+        asOf:
+          type: integer
+          format: int64
+          description: unix ts последнего батча, на котором посчитаны метрики
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              icao:
+                type: string
+                description: "[OurAirports] ident"
+              iata:
+                type: string
+                nullable: true
+                description: "[OurAirports]"
+              name:
+                type: string
+                description: "[OurAirports]"
+              city:
+                type: string
+                nullable: true
+                description: "[OurAirports] municipality"
+              country:
+                type: string
+                description: "[OurAirports] iso_country"
+              position:
+                $ref: "#/components/schemas/LatLon"
+              # totalFlights24h:
+              #   type: integer
+              #   description: >-
+              #     [OpenSky] count(/flights/departure + /flights/arrival) за
+              #     последние 24ч доступного батча
+              # trafficIndex:
+              #   type: number
+              #   format: double
+              #   description: >-
+              #     [Derived] totalFlights24h / историческая медиана для этого
+              #     аэропорта на тот же час/день недели; 1.0 = норма, >1 =
+              #     загруженнее обычного
+            required:
+              - icao
+              - iata
+              - name
+              - city
+              - country
+              - position
+              - totalFlights24h
+              - trafficIndex
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+      required: [asOf, items, page, pageSize, total]
+
+    AirportFlightsResponse:
+      type: object
+      properties:
+        airport:
+          $ref: "#/components/schemas/AirportRef"
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              icao24:
+                type: string
+                description: "[OpenSky]"
+              callsign:
+                type: string
+                nullable: true
+                description: "[OpenSky]"
+              airlineName:
+                type: string
+                nullable: true
+                description: "[OpenSky Aircraft DB] operator, если найден"
+              direction:
+                type: string
+                enum: [arrival, departure]
+              otherAirport:
+                allOf:
+                  - $ref: "#/components/schemas/EstimatedAirportRef"
+                nullable: true
+                description: "[OpenSky] противоположный конец маршрута, оценка"
+              observedAt:
+                type: integer
+                format: int64
+                description: "[OpenSky] firstSeen (для departure) / lastSeen (для arrival)"
+            required:
+              - icao24
+              - callsign
+              - airlineName
+              - direction
+              - otherAirport
+              - observedAt
+      required: [airport, items]
+
+    FlightDetailsResponse:
+      type: object
+      properties:
+        icao24:
+          type: string
+          description: "[OpenSky]"
+        callsign:
+          type: string
+          nullable: true
+          description: "[OpenSky]"
+        registration:
+          type: string
+          nullable: true
+          description: "[OpenSky Aircraft DB] registration"
+        manufacturer:
+          type: string
+          nullable: true
+          description: "[OpenSky Aircraft DB] manufacturername"
+        model:
+          type: string
+          nullable: true
+          description: "[OpenSky Aircraft DB] model"
+        airlineName:
+          type: string
+          nullable: true
+          description: "[OpenSky Aircraft DB] operator"
+        origin:
+          allOf:
+            - $ref: "#/components/schemas/EstimatedAirportRef"
+          nullable: true
+          description: "[OpenSky] estDepartureAirport, последний доступный батч"
+        destination:
+          allOf:
+            - $ref: "#/components/schemas/EstimatedAirportRef"
+          nullable: true
+          description: "[OpenSky] estArrivalAirport, там же"
+        position:
+          $ref: "#/components/schemas/AircraftPosition"
+        phase:
+          $ref: "#/components/schemas/FlightPhase"
+        etaMinutes:
+          type: number
+          nullable: true
+          description: >-
+            [Derived] great-circle(position, destination) / speedKmh; null,
+            если destination неизвестен или борт on_ground
+        startTime:
+          type: integer
+          format: int64
+          description: "[OpenSky] tracks.startTime"
+        endTime:
+          type: integer
+          format: int64
+          description: "[OpenSky] tracks.endTime"
+        path:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: integer
+                format: int64
+                description: "[OpenSky] path[i][0]"
+              lat:
+                type: number
+                format: double
+                description: "[OpenSky] path[i][1]"
+              lon:
+                type: number
+                format: double
+                description: "[OpenSky] path[i][2]"
+              altitudeM:
+                type: number
+                nullable: true
+                description: "[OpenSky] path[i][3]"
+              headingDeg:
+                type: number
+                nullable: true
+                description: "[OpenSky] path[i][4]"
+              onGround:
+                type: boolean
+                description: "[OpenSky] path[i][5]"
+            required: [timestamp, lat, lon, altitudeM, headingDeg, onGround]
+      required:
+        - icao24
+        - callsign
+        - registration
+        - manufacturer
+        - model
+        - airlineName
+        - origin
+        - destination
+        - position
+        - phase
+        - etaMinutes
+        - startTime
+        - endTime
+        - path
+
+    TrafficHeatmapResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+        resolution:
+          type: string
+          enum: [country, airport, cell]
+        cells:
+          type: array
+          items:
+            type: object
+            properties:
+              center:
+                allOf:
+                  - $ref: "#/components/schemas/LatLon"
+                description: >-
+                  [OpenSky] центр геоячейки по позициям states
+                  (resolution="cell"), либо [OurAirports] координаты
+                  аэропорта (resolution="airport"/"country")
+              label:
+                type: string
+                nullable: true
+                description: >-
+                  [OurAirports] название аэропорта/страны, null при
+                  resolution="cell"
+              flightCount:
+                type: integer
+                description: >-
+                  [OpenSky]/[Derived] количество бортов в ячейке (states)
+                  либо рейсов аэропорта (/flights/*) за окно
+            required: [center, label, flightCount]
+      required: [from, to, resolution, cells]
+
+    DashboardResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+        totals:
+          type: object
+          properties:
+            activeFlights:
+              type: integer
+              description: "[OpenSky] count(states) с on_ground=false"
+            trackedAirports:
+              type: integer
+              description: "[OurAirports] count(airports)"
+            averageAltitudeM:
+              type: number
+              description: "[Derived] среднее по states.baro_altitude"
+            averageSpeedKmh:
+              type: number
+              description: "[Derived] среднее по states.velocity"
+          required:
+            - activeFlights
+            - trackedAirports
+            - averageAltitudeM
+            - averageSpeedKmh
+        flightsByPhase:
+          type: object
+          description: "[Derived] распределение states по phase"
+          properties:
+            on_ground:
+              type: integer
+            climbing:
+              type: integer
+            descending:
+              type: integer
+            cruising:
+              type: integer
+          required: [on_ground, climbing, descending, cruising]
+        topBusiestAirports:
+          type: array
+          items:
+            type: object
+            properties:
+              airport:
+                $ref: "#/components/schemas/AirportRef"
+              totalFlights:
+                type: integer
+                description: "[OpenSky] count(/flights/departure + /flights/arrival)"
+            required: [airport, totalFlights]
+        trafficTrend:
+          type: array
+          description: >-
+            [Derived] тайм-серия по снапшотам, которые бэкенд обязан сам
+            сохранять
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: integer
+                format: int64
+              activeFlights:
+                type: integer
+            required: [timestamp, activeFlights]
+        emergencyCount:
+          type: integer
+          description: "количество случаев с squawk=7700 или squawk=7500"
+        # busiestRoutes:
+        #   type: array
+        #   items:
+        #     type: object
+        #     properties:
+        #       origin:
+        #         allOf:
+        #           - $ref: "#/components/schemas/AirportRef"
+        #         description: "[OpenSky] estDepartureAirport"
+        #       destination:
+        #         allOf:
+        #           - $ref: "#/components/schemas/AirportRef"
+        #         description: "[OpenSky] estArrivalAirport"
+        #       flightCount:
+        #         type: integer
+        #         description: >-
+        #           [Derived] подсчёт совпадений пар по /flights/all за период
+        #     required: [origin, destination, flightCount]
+        # aircraftByManufacturer:
+        #   type: array
+        #   items:
+        #     type: object
+        #     properties:
+        #       manufacturer:
+        #         type: string
+        #         description: "[OpenSky Aircraft DB] manufacturername"
+        #       count:
+        #         type: integer
+        #     required: [manufacturer, count]
+      required:
+        - from
+        - to
+        - totals
+        - flightsByPhase
+        - topBusiestAirports
+        - trafficTrend
+        - busiestRoutes
+        - aircraftByManufacturer
