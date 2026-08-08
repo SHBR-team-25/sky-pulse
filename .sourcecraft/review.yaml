@@ -23,3 +23,15 @@ codereview:
         assign: 2
         need_ships: 1
         ignore_self_ship: true
+    - patterns:
+        - "docs/**"
+      reviewers:
+        usernames:
+          - "ar5eny-pavlov"
+          - "eanvie"
+          - "ibragimovaajgyul"
+          - "ksyusha-ge"
+          - "zuevs5115"
+        assign: 4
+        need_ships: 1
+        ignore_self_ship: true
