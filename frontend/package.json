@@ -11,11 +11,16 @@
         "preview": "vite preview",
         "format": "prettier --write \"**/*.{ts,tsx}\"",
         "typecheck": "tsc --noEmit",
-        "prepare": "cd .. && husky frontend/.husky"
+        "prepare": "cd .. && husky frontend/.husky",
+        "generateApi": "openapi-typescript ../docs/openapi.yaml -o ./src/shared/api/generated-types.ts",
+        "generateApi:check": "openapi-typescript ../docs/openapi.yaml -o ./src/shared/api/generated-types.ts --check",
+        "docs:tree": "node scripts/generate-tree.mjs",
+        "docs:tree:check": "node scripts/generate-tree.mjs --check"
     },
     "dependencies": {
         "@gravity-ui/icons": "^2.21.0",
         "@gravity-ui/uikit": "^7.47.2",
+        "@tanstack/react-query": "^5.101.4",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
     },
@@ -36,6 +41,7 @@
         "globals": "^17.7.0",
         "husky": "^9.1.7",
         "lint-staged": "^17.3.0",
+        "openapi-typescript": "^7.13.0",
         "prettier": "^3.9.6",
         "typescript": "~6.0.2",
         "typescript-eslint": "^8.65.0",
