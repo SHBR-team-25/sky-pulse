@@ -1,0 +1,60 @@
+.flightMarker {
+    position: relative;
+    display: grid;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    color: var(--sky-color-text-primary);
+    background: var(--sky-color-surface-header);
+    border: 2px solid var(--sky-color-accent-primary);
+    border-radius: 50%;
+    outline: none;
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        0 0 16px rgba(68, 192, 255, 0.25);
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(8px);
+    place-items: center;
+}
+
+.flightMarker:focus-visible {
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        0 0 0 3px rgba(255, 255, 255, 0.8),
+        0 0 18px rgba(68, 192, 255, 0.45);
+}
+
+.flightMarkerIcon {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    color: var(--sky-color-accent-secondary);
+    transform-origin: center;
+    place-items: center;
+}
+
+.clusterMarker {
+    position: relative;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    color: var(--sky-color-bg-canvas-deep);
+    font-size: 13px;
+    font-weight: 800;
+    background: var(--sky-color-accent-primary);
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.4),
+        0 0 0 7px rgba(68, 192, 255, 0.18);
+    transform: translate(-50%, -50%);
+    place-items: center;
+}
+
+.clusterMarker::after {
+    position: absolute;
+    inset: -10px;
+    border: 1px solid rgba(141, 220, 255, 0.35);
+    border-radius: 50%;
+    content: '';
+}
