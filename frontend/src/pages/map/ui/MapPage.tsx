@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from 'react';
-import { PlaneFill } from '@gravity-ui/icons';
-import { Icon } from '@gravity-ui/uikit';
+import { MapPin, PlaneFill } from '@gravity-ui/icons';
+import { Icon, Tooltip } from '@gravity-ui/uikit';
 import type { Feature } from '@yandex/ymaps3-types/packages/clusterer';
 import type { LngLat, YMapLocationRequest } from '@yandex/ymaps3-types';
+import { airportsMock } from '@/entities/airport';
 import { flightsMock } from '@/entities/flight';
 import type { components } from '@/shared/types/api';
 import styles from './MapPage.module.css';
@@ -20,6 +21,7 @@ import {
 
 // TODO: вынести в enitities
 type Flight = components['schemas']['LiveFlightsResponse']['flights'][number];
+type Airport = components['schemas']['AirportsListResponse']['items'][number];
 
 const FLIGHTS_LOCATION: YMapLocationRequest = {
     center: [34, 57.8],
@@ -34,6 +36,47 @@ interface MapPageProps {
 
 interface FlightsLayerProps {
     flights: Flight[];
+}
+
+interface AirportsLayerProps {
+    airports: Airport[];
+}
+
+function AirportsLayer({ airports }: AirportsLayerProps) {
+    return airports.map((airport) => {
+        const code = airport.iata ?? airport.icao;
+
+        return (
+            <YMapMarker
+                key={airport.icao}
+                coordinates={[airport.position.lon, airport.position.lat]}
+                zIndex={100}
+            >
+                <Tooltip
+                    className={`${styles.markerTooltip} ${styles.airportMarkerTooltip}`}
+                    placement="top"
+                    openDelay={0}
+                    content={
+                        <span className={styles.airportTooltipContent}>
+                            <strong>{code}</strong>
+                            <span>{airport.name}</span>
+                        </span>
+                    }
+                >
+                    <div
+                        className={styles.airportMarker}
+                        role="img"
+                        tabIndex={0}
+                        aria-label={`Аэропорт ${airport.name}, ${code}`}
+                    >
+                        <span className={styles.airportMarkerIcon} aria-hidden="true">
+                            <Icon data={MapPin} size={18} />
+                        </span>
+                    </div>
+                </Tooltip>
+            </YMapMarker>
+        );
+    });
 }
 
 function FlightsLayer({ flights }: FlightsLayerProps) {
@@ -122,8 +165,9 @@ function FlightsLayer({ flights }: FlightsLayerProps) {
                 <div
                     className={styles.clusterMarker}
                     role="img"
-                    aria-label={`Кластер из ${count} самолётов`}
+                    tabIndex={0}
                     title={`Кластер: ${count} самолётов`}
+                    aria-label={`Кластер из ${count} самолётов`}
                 >
                     {count}
                 </div>
@@ -137,24 +181,31 @@ function FlightsLayer({ flights }: FlightsLayerProps) {
                 <YMapMarker
                     key={flight.icao24}
                     coordinates={[flight.position.lon, flight.position.lat]}
+                    zIndex={200}
                 >
-                    <div
-                        className={styles.flightMarker}
-                        role="img"
-                        tabIndex={0} // чтобы можно было перемещаться через Tab
-                        aria-label={`Рейс ${flight.callsign ?? flight.icao24}`}
+                    <Tooltip
+                        className={styles.markerTooltip}
+                        placement="top"
+                        content={flight.callsign ?? flight.icao24}
+                        openDelay={0}
                     >
-                        <span
-                            className={styles.flightMarkerIcon}
-                            style={{ transform: `rotate(${flight.position.headingDeg ?? 0}deg)` }}
-                            aria-hidden="true"
+                        <div
+                            className={styles.flightMarker}
+                            role="img"
+                            tabIndex={0} // чтобы можно было перемещаться через Tab
+                            aria-label={`Рейс ${flight.callsign ?? flight.icao24}`}
                         >
-                            <Icon data={PlaneFill} size={20} />
-                        </span>
-                        <span className={styles.flightMarkerCallsign} aria-hidden="true">
-                            {flight.callsign ?? flight.icao24}
-                        </span>
-                    </div>
+                            <span
+                                className={styles.flightMarkerIcon}
+                                style={{
+                                    transform: `rotate(${flight.position.headingDeg ?? 0}deg)`,
+                                }}
+                                aria-hidden="true"
+                            >
+                                <Icon data={PlaneFill} size={20} />
+                            </span>
+                        </div>
+                    </Tooltip>
                 </YMapMarker>
             ))}
 
@@ -176,10 +227,11 @@ function FlightsLayer({ flights }: FlightsLayerProps) {
 
 export function MapPage({ theme = 'light' }: MapPageProps) {
     return (
-        <main className={styles.map} aria-label="Карта полётов">
+        <main className={styles.map} aria-label="Карта полётов и аэропортов">
             <YMap theme={theme} location={reactify.useDefault(FLIGHTS_LOCATION)}>
                 <YMapDefaultSchemeLayer />
                 <YMapDefaultFeaturesLayer />
+                <AirportsLayer airports={airportsMock.items} />
                 <FlightsLayer flights={flightsMock.flights} />
             </YMap>
         </main>
