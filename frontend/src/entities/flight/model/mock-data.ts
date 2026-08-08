@@ -1,6 +1,7 @@
 import type { components } from '@/shared/types/api';
 
 type LiveFlightsResponse = components['schemas']['LiveFlightsResponse'];
+type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
 
 const MOCK_TIMESTAMP = 1_785_578_400;
 
@@ -145,3 +146,84 @@ export const flightsMock = {
         },
     ],
 } satisfies LiveFlightsResponse;
+
+// mock объекта ответа на запрос - детали полета AFL100
+export const flightDetailsMock = {
+    icao24: '4242b3',
+    callsign: 'SU2604',
+    registration: 'VP-BFF',
+    manufacturer: 'Airbus',
+    model: 'A321',
+    airlineName: 'Aeroflot',
+    origin: {
+        icao: 'UUEE',
+        iata: 'SVO',
+        name: 'Sheremetyevo International Airport',
+        asOf: MOCK_TIMESTAMP,
+        candidatesCount: 1,
+    },
+    destination: {
+        icao: 'LFPG',
+        iata: 'CDG',
+        name: 'Charles de Gaulle International Airport',
+        asOf: MOCK_TIMESTAMP,
+        candidatesCount: 1,
+    },
+    position: {
+        icao24: '4242b3',
+        lat: 55.7558,
+        lon: 37.6173,
+        altitudeM: 10_668,
+        headingDeg: 262,
+        speedKmh: 842,
+        verticalRateMs: 0,
+        onGround: false,
+        timestamp: MOCK_TIMESTAMP,
+    },
+    phase: 'cruising',
+    etaMinutes: 72,
+    startTime: 1_785_573_000,
+    endTime: MOCK_TIMESTAMP,
+    path: [
+        {
+            timestamp: 1_785_573_000,
+            lat: 55.9726,
+            lon: 37.4146,
+            altitudeM: 0,
+            headingDeg: null,
+            onGround: true,
+        },
+        {
+            timestamp: 1_785_573_900,
+            lat: 55.9,
+            lon: 37.38,
+            altitudeM: 1_800,
+            headingDeg: 165,
+            onGround: false,
+        },
+        {
+            timestamp: 1_785_574_800,
+            lat: 55.82,
+            lon: 37.5,
+            altitudeM: 5_200,
+            headingDeg: 150,
+            onGround: false,
+        },
+        {
+            timestamp: 1_785_575_700,
+            lat: 55.77,
+            lon: 37.61,
+            altitudeM: 8_500,
+            headingDeg: 200,
+            onGround: false,
+        },
+        {
+            timestamp: MOCK_TIMESTAMP,
+            lat: 55.7558,
+            lon: 37.6173,
+            altitudeM: 10_668,
+            headingDeg: 283,
+            onGround: false,
+        },
+    ],
+} satisfies FlightDetailsResponse;

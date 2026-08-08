@@ -1,1 +1,1 @@
-export { flightsMock } from './model/mock-data';
+export { flightDetailsMock, flightsMock } from './model/mock-data';

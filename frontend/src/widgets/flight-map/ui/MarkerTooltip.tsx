@@ -5,17 +5,18 @@ import styles from './MarkerTooltip.module.css';
 interface MarkerTooltipProps {
     children: ReactElement;
     content: ReactNode;
-    variant?: 'default' | 'airport';
+    disabled?: boolean;
 }
 
-export function MarkerTooltip({ children, content, variant = 'default' }: MarkerTooltipProps) {
-    const className =
-        variant === 'airport'
-            ? `${styles.markerTooltip} ${styles.airportTooltip}`
-            : styles.markerTooltip;
-
+export function MarkerTooltip({ children, content, disabled }: MarkerTooltipProps) {
     return (
-        <Tooltip className={className} placement="top" openDelay={50} content={content}>
+        <Tooltip
+            className={styles.markerTooltip}
+            content={content}
+            disabled={disabled}
+            openDelay={50}
+            placement="top"
+        >
             {children}
         </Tooltip>
     );

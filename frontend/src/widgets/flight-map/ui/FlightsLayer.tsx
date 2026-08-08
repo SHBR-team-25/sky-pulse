@@ -11,7 +11,7 @@ import {
     YMapMarker,
 } from '@/shared/lib/ymaps3';
 import type { Flight } from '../model/types';
-import { MarkerTooltip } from './MarkerTooltip';
+import { FlightDetailsPopover } from './FlightDetailsPopover';
 import styles from './FlightsLayer.module.css';
 
 const CLUSTER_SOURCE = 'clustered-flights';
@@ -118,32 +118,41 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
 
     return (
         <>
-            {soloFlights.map((flight) => (
-                <YMapMarker
-                    key={flight.icao24}
-                    coordinates={[flight.position.lon, flight.position.lat]}
-                    zIndex={200}
-                >
-                    <MarkerTooltip content={flight.callsign ?? flight.icao24}>
-                        <div
-                            className={styles.flightMarker}
-                            role="img"
-                            tabIndex={0} // чтобы можно было перемещаться через Tab
-                            aria-label={`Рейс ${flight.callsign ?? flight.icao24}`}
+            {soloFlights.map((flight) => {
+                const marker = (
+                    <div
+                        className={styles.flightMarker}
+                        role="img"
+                        tabIndex={0} // чтобы можно было перемещаться через Tab
+                        aria-label={`Рейс ${flight.callsign ?? flight.icao24}`}
+                    >
+                        <span
+                            className={styles.flightMarkerIcon}
+                            style={{
+                                transform: `rotate(${flight.position.headingDeg ?? 0}deg)`,
+                            }}
+                            aria-hidden="true"
                         >
-                            <span
-                                className={styles.flightMarkerIcon}
-                                style={{
-                                    transform: `rotate(${flight.position.headingDeg ?? 0}deg)`,
-                                }}
-                                aria-hidden="true"
-                            >
-                                <Icon data={PlaneFill} size={20} />
-                            </span>
-                        </div>
-                    </MarkerTooltip>
-                </YMapMarker>
-            ))}
+                            <Icon data={PlaneFill} size={20} />
+                        </span>
+                    </div>
+                );
+
+                return (
+                    <YMapMarker
+                        key={flight.icao24}
+                        coordinates={[flight.position.lon, flight.position.lat]}
+                        zIndex={200}
+                    >
+                        <FlightDetailsPopover
+                            flightId={flight.icao24}
+                            tooltipContent={flight.callsign ?? flight.icao24}
+                        >
+                            {marker}
+                        </FlightDetailsPopover>
+                    </YMapMarker>
+                );
+            })}
 
             {clusterFeatures.length > 0 && (
                 <>

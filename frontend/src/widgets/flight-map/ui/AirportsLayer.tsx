@@ -1,8 +1,8 @@
 import { MapPin } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
+import { AirportTooltip } from '@/entities/airport';
 import { YMapMarker } from '@/shared/lib/ymaps3';
 import type { Airport } from '../model/types';
-import { MarkerTooltip } from './MarkerTooltip';
 import styles from './AirportsLayer.module.css';
 
 interface AirportsLayerProps {
@@ -19,8 +19,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                 coordinates={[airport.position.lon, airport.position.lat]}
                 zIndex={100}
             >
-                <MarkerTooltip
-                    variant="airport"
+                <AirportTooltip
                     content={
                         <span className={styles.airportTooltipContent}>
                             <strong>{code}</strong>
@@ -38,7 +37,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                             <Icon data={MapPin} size={18} />
                         </span>
                     </div>
-                </MarkerTooltip>
+                </AirportTooltip>
             </YMapMarker>
         );
     });
