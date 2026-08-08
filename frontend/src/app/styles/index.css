@@ -1,0 +1,74 @@
+:root {
+    /* Core dark surfaces from the design */
+    --sky-color-bg-page: #0d1117;
+    --sky-color-bg-canvas: #080d16;
+    --sky-color-bg-canvas-deep: #070b13;
+    --sky-color-bg-map-glow: #12203a;
+    --sky-color-map-grid: #16202f;
+    --sky-color-map-land: #182437;
+    --sky-color-map-land-border: #28374f;
+    --sky-color-map-route-inactive: #3a4a63;
+    --sky-color-map-grid-transparent: rgba(22, 32, 47, 0.58);
+    --sky-color-map-vignette: rgba(4, 8, 14, 0.32);
+
+    /* Glass surfaces and borders */
+    --sky-color-surface-header: rgba(11, 17, 27, 0.82);
+    --sky-color-surface-footer: rgba(11, 17, 27, 0.86);
+    --sky-color-surface-control: rgba(255, 255, 255, 0.06);
+    --sky-color-surface-selected: rgba(255, 255, 255, 0.1);
+    --sky-color-border-subtle: rgba(255, 255, 255, 0.07);
+    --sky-color-border-control: rgba(255, 255, 255, 0.09);
+    --sky-color-border-strong: rgba(255, 255, 255, 0.12);
+
+    /* Neutral content */
+    --sky-color-text-primary: #f0f6fc;
+    --sky-color-text-default: #e6edf3;
+    --sky-color-text-secondary: #c9d1d9;
+    --sky-color-text-muted: #8b949e;
+    --sky-color-text-subtle: #7d8590;
+    --sky-color-text-faint: #6e7681;
+
+    /* Brand and operational states */
+    --sky-color-accent-primary: oklch(78% 0.12 220deg);
+    --sky-color-accent-secondary: oklch(85% 0.1 220deg);
+    --sky-color-accent-link: oklch(82% 0.1 220deg);
+    --sky-color-status-success: oklch(72% 0.17 150deg);
+    --sky-color-status-warning: oklch(82% 0.15 85deg);
+    --sky-color-status-danger: oklch(65% 0.19 25deg);
+
+    /* Avatar and utility colors */
+    --sky-color-avatar-gradient-start: #2d3b52;
+    --sky-color-avatar-gradient-end: #1a2230;
+    --sky-color-transparent: transparent;
+
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    min-width: 1180px;
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: auto;
+    background: var(--sky-color-bg-canvas);
+}
+
+button,
+input {
+    font: inherit;
+}

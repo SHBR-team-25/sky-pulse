@@ -1,0 +1,59 @@
+.footer {
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 44px;
+    padding: 0 20px;
+    color: var(--sky-color-text-muted);
+    font-size: 11px;
+    background: var(--sky-color-surface-footer);
+    border-top: 1px solid var(--sky-color-border-subtle);
+    backdrop-filter: blur(18px);
+}
+
+.statusList,
+.technicalInfo {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.statusList {
+    gap: 16px;
+}
+
+.statusItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.statusDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.success {
+    background: var(--sky-color-status-success);
+}
+
+.warning {
+    background: var(--sky-color-status-warning);
+}
+
+.danger {
+    background: var(--sky-color-status-danger);
+}
+
+.technicalInfo {
+    gap: 18px;
+    margin-left: auto;
+    color: var(--sky-color-text-faint);
+    font-family: 'Roboto Mono', monospace;
+    white-space: nowrap;
+}
