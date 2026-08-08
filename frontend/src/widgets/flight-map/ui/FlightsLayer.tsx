@@ -10,14 +10,15 @@ import {
     YMapLayer,
     YMapMarker,
 } from '@/shared/lib/ymaps3';
-import type { Flight } from '../model/types';
+
 import { FlightDetailsPopover } from './FlightDetailsPopover';
 import styles from './FlightsLayer.module.css';
+import type { LiveFlight } from '@/entities/flight';
 
 const CLUSTER_SOURCE = 'clustered-flights';
 
 interface FlightsLayerProps {
-    flights: Flight[];
+    flights: LiveFlight[];
 }
 
 export function FlightsLayer({ flights }: FlightsLayerProps) {

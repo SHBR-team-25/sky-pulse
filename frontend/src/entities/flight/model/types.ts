@@ -5,6 +5,8 @@ export type LiveFlight = components['schemas']['LiveFlightsResponse']['flights']
 /** 'solo' — один борт, 'multie' — кластер*/
 export type LiveFlightType = LiveFlight['type'];
 
+export type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
+
 export type FlightTrackPoint = components['schemas']['FlightDetailsResponse']['path'][number];
 
 export type AircraftPosition = components['schemas']['AircraftPosition'];

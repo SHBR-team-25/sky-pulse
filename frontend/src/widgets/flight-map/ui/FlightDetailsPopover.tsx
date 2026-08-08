@@ -9,16 +9,12 @@ import {
     type RefAttributes,
 } from 'react';
 import { Popover, Spin } from '@gravity-ui/uikit';
-import type { FlightDetails } from '../model/types';
+import { flightDetailsMock, type FlightDetailsResponse } from '@/entities/flight';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetailsPopover.module.css';
 import { MarkerTooltip } from './MarkerTooltip';
-import type { components } from '@/shared/api';
-import { flightDetailsMock } from '@/entities/flight';
 
 // для мок функции
-type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
-
 const MOCK_REQUEST_DELAY_MS = 500;
 
 // TODO: временная функция для моков
@@ -44,7 +40,7 @@ export function FlightDetailsPopover({
     flightId,
     tooltipContent,
 }: FlightDetailsPopoverProps) {
-    const [details, setDetails] = useState<FlightDetails | null>(null);
+    const [details, setDetails] = useState<FlightDetailsResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const requestIdRef = useRef(0);

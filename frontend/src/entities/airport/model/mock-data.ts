@@ -1,4 +1,4 @@
-import type { components } from '@/shared/types/api';
+import type { components } from '@/shared/api';
 
 type AirportsListResponse = components['schemas']['AirportsListResponse'];
 

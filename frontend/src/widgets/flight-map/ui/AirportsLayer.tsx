@@ -1,8 +1,7 @@
 import { MapPin } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
-import { AirportTooltip } from '@/entities/airport';
+import { AirportTooltip, type Airport } from '@/entities/airport';
 import { YMapMarker } from '@/shared/lib/ymaps3';
-import type { Airport } from '../model/types';
 import styles from './AirportsLayer.module.css';
 
 interface AirportsLayerProps {

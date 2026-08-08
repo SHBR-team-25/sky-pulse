@@ -1,9 +1,9 @@
 import { AirportTooltip } from '@/entities/airport';
-import type { FlightDetails } from '../model/types';
+import type { FlightDetailsResponse } from '@/entities/flight';
 import styles from './FlightDetailsPopover.module.css';
 
 interface FlightDetailsCardProps {
-    details: FlightDetails;
+    details: FlightDetailsResponse;
 }
 
 const numberFormatter = new Intl.NumberFormat('ru-RU');
@@ -12,7 +12,7 @@ const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
     minute: '2-digit',
 });
 
-const phaseLabels: Record<FlightDetails['phase'], string> = {
+const phaseLabels: Record<FlightDetailsResponse['phase'], string> = {
     on_ground: 'На земле',
     climbing: 'Набор',
     descending: 'Снижение',

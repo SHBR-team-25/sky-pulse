@@ -5,10 +5,11 @@ import {
     YMapDefaultSchemeLayer,
     reactify,
 } from '@/shared/lib/ymaps3';
-import type { Airport, Flight } from '../model/types';
 import { AirportsLayer } from './AirportsLayer';
 import { FlightsLayer } from './FlightsLayer';
 import styles from './FlightMap.module.css';
+import type { Airport } from '@/entities/airport';
+import type { LiveFlight } from '@/entities/flight';
 
 const FLIGHTS_LOCATION: YMapLocationRequest = {
     center: [34, 57.8],
@@ -17,7 +18,7 @@ const FLIGHTS_LOCATION: YMapLocationRequest = {
 
 interface FlightMapProps {
     airports: Airport[];
-    flights: Flight[];
+    flights: LiveFlight[];
     theme?: 'light' | 'dark';
 }
 
