@@ -9,10 +9,11 @@ import {
     type RefAttributes,
 } from 'react';
 import { Popover, Spin } from '@gravity-ui/uikit';
-import { flightDetailsMock, type FlightDetailsResponse } from '@/entities/flight';
+import { flightDetailsMock } from '@/entities/flight';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetailsPopover.module.css';
 import { MarkerTooltip } from './MarkerTooltip';
+import type { FlightDetailsResponse } from '@/features/getTargetFlight';
 
 // для мок функции
 const MOCK_REQUEST_DELAY_MS = 500;

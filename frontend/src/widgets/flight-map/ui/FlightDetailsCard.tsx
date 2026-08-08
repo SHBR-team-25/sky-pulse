@@ -1,6 +1,6 @@
 import { AirportTooltip } from '@/entities/airport';
-import type { FlightDetailsResponse } from '@/entities/flight';
 import styles from './FlightDetailsPopover.module.css';
+import type { FlightDetailsResponse } from '@/features/getTargetFlight';
 
 interface FlightDetailsCardProps {
     details: FlightDetailsResponse;
