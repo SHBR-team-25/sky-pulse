@@ -9,11 +9,27 @@ import {
     type RefAttributes,
 } from 'react';
 import { Popover, Spin } from '@gravity-ui/uikit';
-import { getFlightDetails } from '@/features/getFlightDetails';
 import type { FlightDetails } from '../model/types';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetailsPopover.module.css';
 import { MarkerTooltip } from './MarkerTooltip';
+import type { components } from '@/shared/api';
+import { flightDetailsMock } from '@/entities/flight';
+
+// для мок функции
+type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
+
+const MOCK_REQUEST_DELAY_MS = 500;
+
+// TODO: временная функция для моков
+async function getFlightDetails(icao24: string): Promise<FlightDetailsResponse | null> {
+    // TODO: тут применить функции запросов вместо мок
+    await new Promise<void>((resolve) => {
+        setTimeout(resolve, MOCK_REQUEST_DELAY_MS);
+    });
+
+    return flightDetailsMock.icao24 === icao24 ? flightDetailsMock : null;
+}
 
 type MarkerElementProps = HTMLAttributes<HTMLElement> & RefAttributes<HTMLElement>;
 
