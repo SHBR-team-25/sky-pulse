@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { AirportFlightsQuery, AirportFlightsResponse } from '@entities/airport';
+import type { AirportFlightsQuery, AirportFlightsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
 
 export const airportFlightsQueryKeys = {

@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { AirportsListResponse, AirportsQuery } from '@entities/airport';
+import type { AirportsListResponse, AirportsQuery } from '../model/types';
 import { fetchJson } from '@shared/api';
 import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
 

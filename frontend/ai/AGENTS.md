@@ -70,26 +70,38 @@
 │   ├───getAirports                    # получение списка аэропортов
 │   │   │   index.ts                   # публичный API фичи
 │   │   │
-│   │   └───api
-│   │           useAirports.ts         # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   ├───api
+│   │   │       useAirports.ts         # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   │
+│   │   └───model
+│   │           types.ts               # типы query-параметров и ответа GET /airports
 │   │
 │   ├───getAirportsFlights             # получение рейсов конкретного аэропорта
 │   │   │   index.ts                   # публичный API фичи
 │   │   │
-│   │   └───api
-│   │           useAirportsFlights.ts  # хук GET /airports/{icao}/flights, запрос только при заданном icao
+│   │   ├───api
+│   │   │       useAirportsFlights.ts  # хук GET /airports/{icao}/flights, запрос только при заданном icao
+│   │   │
+│   │   └───model
+│   │           types.ts               # типы query-параметров и ответа GET /airports/{icao}/flights
 │   │
 │   ├───getLiveFlights                 # получение бортов в воздухе в реальном времени
 │   │   │   index.ts                   # публичный API фичи
 │   │   │
-│   │   └───api
-│   │           useLiveFlights.ts      # хук GET /flights/live с поллингом раз в 3 с
+│   │   ├───api
+│   │   │       useLiveFlights.ts      # хук GET /flights/live с поллингом раз в 3 с
+│   │   │
+│   │   └───model
+│   │           types.ts               # типы query-параметров и ответа GET /flights/live
 │   │
 │   └───getTargetFlight                # получение деталей выбранного рейса
 │       │   index.ts                   # публичный API фичи
 │       │
-│       └───api
-│               useTargetFlight.ts     # хук GET /flights/{icao24}: детали и трек борта
+│       ├───api
+│       │       useTargetFlight.ts     # хук GET /flights/{icao24}: детали и трек борта
+│       │
+│       └───model
+│               types.ts               # тип ответа GET /flights/{icao24}
 │
 ├───pages                              # слой страниц
 │   └───map                            # страница карты полётов

@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { LiveFlightsQuery, LiveFlightsResponse } from '@entities/flights';
+import type { LiveFlightsQuery, LiveFlightsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
 import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
 
