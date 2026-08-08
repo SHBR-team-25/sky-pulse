@@ -5,7 +5,7 @@ import {
     YMapDefaultSchemeLayer,
     YMapDefaultFeaturesLayer,
     reactify,
-} from '@/shared/lib/ymaps3';
+} from '@shared/lib/ymaps3';
 
 const WORLD_LOCATION: YMapLocationRequest = {
     center: [0, 0],
