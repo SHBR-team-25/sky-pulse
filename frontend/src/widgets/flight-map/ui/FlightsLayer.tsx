@@ -160,7 +160,7 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                             }}
                             aria-hidden="true"
                         >
-                            <Icon data={PlaneFill} size={20} />
+                            <Icon data={PlaneFill} size={14} />
                         </span>
                     </div>
                 );

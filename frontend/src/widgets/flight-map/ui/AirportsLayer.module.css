@@ -1,16 +1,16 @@
 .airportMarker {
     position: relative;
     display: grid;
-    width: 32px;
-    height: 32px;
+    width: 20px;
+    height: 20px;
     color: var(--sky-color-status-warning);
     background: var(--sky-color-surface-header);
     border: 2px solid currentColor;
     border-radius: 50%;
     outline: none;
     box-shadow:
-        0 6px 18px rgba(0, 0, 0, 0.35),
-        0 0 12px rgba(255, 190, 70, 0.2);
+        0 5px 16px rgba(0, 0, 0, 0.35),
+        0 0 11px rgba(255, 190, 70, 0.2);
     transform: translate(-50%, -50%);
     backdrop-filter: blur(8px);
     place-items: center;
@@ -18,9 +18,9 @@
 
 .airportMarker:focus-visible {
     box-shadow:
-        0 6px 18px rgba(0, 0, 0, 0.35),
+        0 5px 16px rgba(0, 0, 0, 0.35),
         0 0 0 3px rgba(255, 255, 255, 0.8),
-        0 0 14px rgba(255, 190, 70, 0.4);
+        0 0 13px rgba(255, 190, 70, 0.4);
 }
 
 .airportMarkerIcon {
