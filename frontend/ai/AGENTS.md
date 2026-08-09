@@ -38,117 +38,139 @@
 
 ```text
 /src
-│   main.tsx                           # точка входа: монтирует App в DOM
-│   vite-env.d.ts                      # типы Vite и переменных окружения (import.meta.env)
+│   main.tsx                                     # точка входа: монтирует App в DOM
+│   vite-env.d.ts                                # типы Vite и переменных окружения (import.meta.env)
 │
-├───app                                # слой приложения: композиция провайдеров и layout
-│   │   App.module.css                 # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                        # корневой компонент: QueryProvider + ThemeProvider + виджеты
-│   │   index.ts                       # публичный API слоя app
+├───app                                          # слой приложения: композиция провайдеров и layout
+│   │   App.module.css                           # стили корневого layout (шапка / карта / подвал)
+│   │   App.tsx                                  # корневой компонент: QueryProvider + ThemeProvider + виджеты
+│   │   index.ts                                 # публичный API слоя app
 │   │
-│   ├───providers                      # глобальные провайдеры приложения
-│   │       index.ts                   # реэкспорт провайдеров
-│   │       QueryProvider.tsx          # QueryClient TanStack Query: staleTime, политика retry по ApiError
+│   ├───providers                                # глобальные провайдеры приложения
+│   │       index.ts                             # реэкспорт провайдеров
+│   │       QueryProvider.tsx                    # QueryClient TanStack Query: staleTime, политика retry по ApiError
 │   │
-│   └───styles                         # глобальные стили
-│           index.css                  # CSS-переменные, reset, базовая типографика
+│   └───styles                                   # глобальные стили
+│           index.css                            # CSS-переменные, reset, базовая типографика
 │
-├───entities                           # слой сущностей предметной области
-│   ├───airport                        # сущность «аэропорт»
-│   │   │   index.ts                   # публичный API сущности
+├───entities                                     # слой сущностей предметной области
+│   ├───airport                                  # сущность «аэропорт»
+│   │   │   index.ts                             # публичный API сущности
 │   │   │
-│   │   └───model
-│   │           types.ts               # типы аэропортов и рейсов аэропорта, выведенные из OpenAPI-схемы
+│   │   ├───model
+│   │   │       mock-data.ts                     # моковый ответ GET /airports с пятью аэропортами Московского региона
+│   │   │       types.ts                         # типы аэропортов и рейсов аэропорта, выведенные из OpenAPI-схемы
+│   │   │
+│   │   └───ui
+│   │           AirportTooltip.module.css        # стили всплывающей подсказки аэропорта
+│   │           AirportTooltip.tsx               # подсказка аэропорта сверху с задержкой открытия 50 мс
 │   │
-│   └───flights                        # сущность «рейс»
-│       │   index.ts                   # публичный API сущности
+│   └───flight                                   # сущность «рейс»
+│       │   index.ts                             # публичный API сущности
 │       │
 │       └───model
-│               types.ts               # типы live-бортов, трека, позиции и фазы полёта
+│               mock-data.ts                     # моки списка live-бортов и деталей рейса 4242b3
+│               types.ts                         # типы live-бортов, трека, позиции и фазы полёта
 │
-├───features                           # слой фич: пользовательские сценарии получения данных
-│   ├───getAirports                    # получение списка аэропортов
-│   │   │   index.ts                   # публичный API фичи
+├───features                                     # слой фич: пользовательские сценарии получения данных
+│   ├───getAirports                              # получение списка аэропортов
+│   │   │   index.ts                             # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirports.ts         # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   │       useAirports.ts                   # хук GET /airports с дебаунсом параметров и query-ключами
 │   │   │
 │   │   └───model
-│   │           types.ts               # типы query-параметров и ответа GET /airports
+│   │           types.ts                         # типы query-параметров и ответа GET /airports
 │   │
-│   ├───getAirportsFlights             # получение рейсов конкретного аэропорта
-│   │   │   index.ts                   # публичный API фичи
+│   ├───getAirportsFlights                       # получение рейсов конкретного аэропорта
+│   │   │   index.ts                             # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirportsFlights.ts  # хук GET /airports/{icao}/flights, запрос только при заданном icao
+│   │   │       useAirportsFlights.ts            # хук GET /airports/{icao}/flights, запрос только при заданном icao
 │   │   │
 │   │   └───model
-│   │           types.ts               # типы query-параметров и ответа GET /airports/{icao}/flights
+│   │           types.ts                         # типы query-параметров и ответа GET /airports/{icao}/flights
 │   │
-│   ├───getLiveFlights                 # получение бортов в воздухе в реальном времени
-│   │   │   index.ts                   # публичный API фичи
+│   ├───getLiveFlights                           # получение бортов в воздухе в реальном времени
+│   │   │   index.ts                             # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts      # хук GET /flights/live с поллингом раз в 3 с
+│   │   │       useLiveFlights.ts                # хук GET /flights/live с поллингом раз в 3 с
 │   │   │
 │   │   └───model
-│   │           types.ts               # типы query-параметров и ответа GET /flights/live
+│   │           types.ts                         # типы query-параметров и ответа GET /flights/live
 │   │
-│   └───getTargetFlight                # получение деталей выбранного рейса
-│       │   index.ts                   # публичный API фичи
+│   └───getTargetFlight                          # получение деталей выбранного рейса
+│       │   index.ts                             # публичный API фичи
 │       │
 │       ├───api
-│       │       useTargetFlight.ts     # хук GET /flights/{icao24}: детали и трек борта
+│       │       useTargetFlight.ts               # хук GET /flights/{icao24}: детали и трек борта
 │       │
 │       └───model
-│               types.ts               # тип ответа GET /flights/{icao24}
+│               types.ts                         # тип ответа GET /flights/{icao24}
 │
-├───pages                              # слой страниц
-│   └───map                            # страница карты полётов
-│       │   index.ts                   # публичный API страницы
+├───pages                                        # слой страниц
+│   └───map                                      # страница карты полётов
+│       │   index.ts                             # публичный API страницы
 │       │
 │       └───ui
-│               MapPage.module.css     # стили контейнера карты
-│               MapPage.tsx            # YMap со схемой и слоем фич, тема light/dark
+│               MapPage.module.css               # стили контейнера карты
+│               MapPage.tsx                      # YMap со схемой и слоем фич, тема light/dark
 │
-├───shared                             # переиспользуемый код без привязки к домену
-│   ├───api                            # транспортный слой
-│   │       constants.ts               # API_BASE_URL из переменных окружения
-│   │       fetchJson.ts               # обёртка fetch: buildUrl, парсинг JSON, класс ApiError
-│   │       generated-types.ts         # типы, сгенерированные из OpenAPI-спеки (правится только генератором)
-│   │       index.ts                   # публичный API shared/api
+├───shared                                       # переиспользуемый код без привязки к домену
+│   ├───api                                      # транспортный слой
+│   │       constants.ts                         # API_BASE_URL из переменных окружения
+│   │       fetchJson.ts                         # обёртка fetch: buildUrl, парсинг JSON, класс ApiError
+│   │       generated-types.ts                   # типы, сгенерированные из OpenAPI-спеки (правится только генератором)
+│   │       index.ts                             # публичный API shared/api
 │   │
-│   ├───assets                         # статические ресурсы
+│   ├───assets                                   # статические ресурсы
 │   │   └───images
-│   │           hero.png               # изображение для промо-блока
-│   │           react.svg              # логотип React
-│   │           vite.svg               # логотип Vite / favicon
+│   │           hero.png                         # изображение для промо-блока
+│   │           react.svg                        # логотип React
+│   │           vite.svg                         # логотип Vite / favicon
 │   │
-│   └───lib                            # общие хуки и утилиты
-│           useDebouncedParams.ts      # дебаунс объекта query-параметров со стабильной ссылкой
-│           useDebouncedValue.ts       # базовый дебаунс произвольного значения
-│           ymaps3.ts                  # инициализация JS API Яндекс.Карт и reactify-обёртки компонентов
+│   └───lib                                      # общие хуки и утилиты
+│           useDebouncedParams.ts                # дебаунс объекта query-параметров со стабильной ссылкой
+│           useDebouncedValue.ts                 # базовый дебаунс произвольного значения
+│           ymaps3.ts                            # инициализация JS API Яндекс.Карт и reactify-обёртки компонентов
 │
-└───widgets                            # слой самостоятельных блоков интерфейса
-    ├───app-footer                     # подвал приложения
-    │   │   index.ts                   # публичный API виджета
+└───widgets                                      # слой самостоятельных блоков интерфейса
+    ├───app-footer                               # подвал приложения
+    │   │   index.ts                             # публичный API виджета
     │   │
     │   ├───model
-    │   │       mock-data.ts           # моковое наполнение подвала (до подключения API)
+    │   │       mock-data.ts                     # моковое наполнение подвала (до подключения API)
     │   │
     │   └───ui
-    │           AppFooter.module.css   # стили подвала
-    │           AppFooter.tsx          # разметка подвала
+    │           AppFooter.module.css             # стили подвала
+    │           AppFooter.tsx                    # разметка подвала
     │
-    └───app-header                     # шапка приложения
-        │   index.ts                   # публичный API виджета
-        │
-        ├───model
-        │       mock-data.ts           # моковые навигация, поиск, LIVE-счётчик и UTC-время
+    ├───app-header                               # шапка приложения
+    │   │   index.ts                             # публичный API виджета
+    │   │
+    │   ├───model
+    │   │       mock-data.ts                     # моковые навигация, поиск, LIVE-счётчик и UTC-время
+    │   │
+    │   └───ui
+    │           AppHeader.module.css             # стили шапки
+    │           AppHeader.tsx                    # логотип, навигация, поиск и статус-блок
+    │
+    └───flight-map                               # карта аэропортов и рейсов с маркерами, кластерами и деталями
+        │   index.ts                             # публичный API виджета
         │
         └───ui
-                AppHeader.module.css   # стили шапки
-                AppHeader.tsx          # логотип, навигация, поиск и статус-блок
+                AirportsLayer.module.css         # стили маркеров и подсказок аэропортов
+                AirportsLayer.tsx                # слой маркеров аэропортов с кодами и подсказками
+                FlightDetailsCard.tsx            # карточка маршрута, статуса, параметров полёта и ETA
+                FlightDetailsPopover.module.css  # стили поповера и карточки деталей рейса
+                FlightDetailsPopover.tsx         # поповер деталей рейса с мок-запросом и задержкой 500 мс
+                FlightMap.module.css             # стили контейнера карты рейсов
+                FlightMap.tsx                    # карта с центром [34, 57.8], zoom 5 и слоями аэропортов и рейсов
+                FlightsLayer.module.css          # стили маркеров рейсов и кластеров
+                FlightsLayer.tsx                 # слой одиночных рейсов и серверных кластеров с поповерами деталей
+                MarkerTooltip.module.css         # стили всплывающей подсказки маркера
+                MarkerTooltip.tsx                # отключаемая подсказка маркера сверху с задержкой 50 мс
 ```
 
 <!-- TREE:END -->

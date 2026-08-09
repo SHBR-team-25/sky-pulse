@@ -21,6 +21,7 @@
         "@gravity-ui/icons": "^2.21.0",
         "@gravity-ui/uikit": "^7.47.2",
         "@tanstack/react-query": "^5.101.4",
+        "@yandex/ymaps3-clusterer": "^0.0.12",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
     },
@@ -43,7 +44,7 @@
         "lint-staged": "^17.3.0",
         "openapi-typescript": "^7.13.0",
         "prettier": "^3.9.6",
-        "typescript": "~6.0.2",
+        "typescript": "~5.9.3",
         "typescript-eslint": "^8.65.0",
         "vite": "^8.2.0"
     },
