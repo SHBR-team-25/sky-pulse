@@ -1,9 +1,12 @@
-import { Magnifier } from '@gravity-ui/icons';
-import { Button, Icon, TextInput } from '@gravity-ui/uikit';
+// import { Magnifier } from '@gravity-ui/icons';
+import { Button } from '@gravity-ui/uikit';
 import { headerMock } from '../model/mock-data';
+import { useUtcTime } from '@/shared/hooks';
 import styles from './AppHeader.module.css';
 
 export function AppHeader() {
+    const { utcTime, utcDateTime } = useUtcTime();
+
     return (
         <header className={styles.header}>
             <div className={styles.brand} aria-label={headerMock.productName}>
@@ -13,14 +16,15 @@ export function AppHeader() {
                 <span className={styles.productName}>{headerMock.productName}</span>
             </div>
 
-            <TextInput
+            {/* TODO: сделать, если будем делать поиск по самолетам, аэропортам  */}
+            {/* <TextInput
                 className={styles.search}
                 aria-label="Поиск"
                 placeholder={headerMock.searchPlaceholder}
                 size="l"
                 startContent={<Icon data={Magnifier} size={16} />}
                 endContent={<kbd className={styles.shortcut}>{headerMock.searchShortcut}</kbd>}
-            />
+            /> */}
 
             <nav className={styles.navigation} aria-label="Основная навигация">
                 {headerMock.navigation.map((item) => (
@@ -38,11 +42,13 @@ export function AppHeader() {
             </nav>
 
             <div className={styles.status}>
-                <div className={styles.liveStatus}>
+                {/* <div className={styles.liveStatus}>
                     <span className={styles.liveDot} aria-hidden="true" />
                     <span>{headerMock.liveLabel}</span>
-                </div>
-                <time className={styles.utcTime}>{headerMock.utcTime}</time>
+                </div> */}
+                <time className={styles.utcTime} dateTime={utcDateTime}>
+                    {utcTime}
+                </time>
             </div>
         </header>
     );

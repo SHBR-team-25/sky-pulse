@@ -2,9 +2,11 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: 22px;
+    gap: clamp(8px, 2vw, 22px);
+    width: 100%;
+    min-width: 0;
     height: 60px;
-    padding: 0 22px;
+    padding: 0 clamp(8px, 2vw, 22px);
     background: var(--sky-color-surface-header);
     border-bottom: 1px solid var(--sky-color-border-subtle);
     backdrop-filter: blur(18px);
@@ -36,9 +38,10 @@
 
 .productName {
     color: var(--sky-color-text-primary);
-    font-size: 16px;
+    font-size: clamp(12px, 1.5vw, 16px);
     font-weight: 700;
     letter-spacing: 0.02em;
+    white-space: nowrap;
 }
 
 .search {
@@ -90,7 +93,9 @@
     --g-button-background-color: var(--sky-color-transparent);
     --g-button-background-color-hover: var(--sky-color-surface-control);
 
-    font-size: 13px;
+    min-width: 0;
+    padding-inline: clamp(4px, 1vw, 12px);
+    font-size: clamp(11px, 1.2vw, 13px);
 }
 
 .navigationButton[aria-current='page'] {
@@ -103,12 +108,13 @@
 .status {
     display: flex;
     flex: none;
+    min-width: 0;
     align-items: center;
     gap: 16px;
     margin-left: auto;
     color: var(--sky-color-text-muted);
     font:
-        12px 'Roboto Mono',
+        clamp(10px, 1.1vw, 12px) 'Roboto Mono',
         monospace;
     white-space: nowrap;
 }

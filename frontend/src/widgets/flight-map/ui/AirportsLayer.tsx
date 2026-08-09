@@ -33,7 +33,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                         aria-label={`Аэропорт ${airport.name}, ${code}`}
                     >
                         <span className={styles.airportMarkerIcon} aria-hidden="true">
-                            <Icon data={MapPin} size={18} />
+                            <Icon data={MapPin} size={12} />
                         </span>
                     </div>
                 </AirportTooltip>

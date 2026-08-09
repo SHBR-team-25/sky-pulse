@@ -2,10 +2,11 @@ import { useCallback, useMemo } from 'react';
 import { PlaneFill } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
 import type { Feature } from '@yandex/ymaps3-types/packages/clusterer';
-import type { LngLat } from '@yandex/ymaps3-types';
+import type { DrawingStyle, LngLat } from '@yandex/ymaps3-types';
 import {
     clusterByGrid,
     YMapClusterer,
+    YMapFeature,
     YMapFeatureDataSource,
     YMapLayer,
     YMapMarker,
@@ -13,15 +14,32 @@ import {
 
 import { FlightDetailsPopover } from './FlightDetailsPopover';
 import styles from './FlightsLayer.module.css';
+import { useMockFlightDetails } from '../model/useMockFlightDetails';
 import type { LiveFlight } from '@/entities/flight';
 
 const CLUSTER_SOURCE = 'clustered-flights';
+const FLIGHT_PATH_STYLE: DrawingStyle = {
+    zIndex: 100,
+    stroke: [{ color: 'var(--sky-color-status-warning)', width: 4 }],
+};
 
 interface FlightsLayerProps {
     flights: LiveFlight[];
 }
 
 export function FlightsLayer({ flights }: FlightsLayerProps) {
+    const { selectedFlight, handleDetailsOpenChange } = useMockFlightDetails();
+
+    const selectedPathCoordinates = useMemo<LngLat[] | null>(() => {
+        const path = selectedFlight?.details?.path;
+
+        if (!path || path.length < 2) {
+            return null;
+        }
+
+        return path.map(({ lon, lat }) => [lon, lat]);
+    }, [selectedFlight?.details]);
+
     const soloFlights = useMemo(
         () => flights.filter((flight) => flight.type === 'solo'),
         [flights]
@@ -119,7 +137,15 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
 
     return (
         <>
+            {selectedPathCoordinates && (
+                <YMapFeature
+                    geometry={{ type: 'LineString', coordinates: selectedPathCoordinates }}
+                    style={FLIGHT_PATH_STYLE}
+                />
+            )}
+
             {soloFlights.map((flight) => {
+                const isSelected = selectedFlight?.flightId === flight.icao24;
                 const marker = (
                     <div
                         className={styles.flightMarker}
@@ -130,11 +156,11 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                         <span
                             className={styles.flightMarkerIcon}
                             style={{
-                                transform: `rotate(${flight.position.headingDeg ?? 0}deg)`,
+                                transform: `rotate(${(flight.position.headingDeg ?? 0) + 180}deg)`,
                             }}
                             aria-hidden="true"
                         >
-                            <Icon data={PlaneFill} size={20} />
+                            <Icon data={PlaneFill} size={14} />
                         </span>
                     </div>
                 );
@@ -146,8 +172,12 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                         zIndex={200}
                     >
                         <FlightDetailsPopover
+                            details={isSelected ? selectedFlight.details : null}
                             flightId={flight.icao24}
+                            isLoading={isSelected && selectedFlight.isLoading}
+                            open={isSelected}
                             tooltipContent={flight.callsign ?? flight.icao24}
+                            onOpenChange={handleDetailsOpenChange}
                         >
                             {marker}
                         </FlightDetailsPopover>
