@@ -1,8 +1,10 @@
 import type { YMapLocationRequest } from '@yandex/ymaps3-types';
 import {
     YMap,
+    YMapControls,
     YMapDefaultFeaturesLayer,
     YMapDefaultSchemeLayer,
+    YMapZoomControl,
     reactify,
 } from '@/shared/lib/ymaps3';
 import { AirportsLayer } from './AirportsLayer';
@@ -16,6 +18,8 @@ const FLIGHTS_LOCATION: YMapLocationRequest = {
     zoom: 5,
 };
 
+const ZOOM_RANGE = { min: 3, max: 15 };
+
 interface FlightMapProps {
     airports: Airport[];
     flights: LiveFlight[];
@@ -25,11 +29,19 @@ interface FlightMapProps {
 export function FlightMap({ airports, flights, theme = 'light' }: FlightMapProps) {
     return (
         <div className={styles.map}>
-            <YMap theme={theme} location={reactify.useDefault(FLIGHTS_LOCATION)}>
+            <YMap
+                theme={theme}
+                location={reactify.useDefault(FLIGHTS_LOCATION)}
+                zoomRange={ZOOM_RANGE}
+            >
                 <YMapDefaultSchemeLayer />
                 <YMapDefaultFeaturesLayer />
                 <AirportsLayer airports={airports} />
                 <FlightsLayer flights={flights} />
+
+                <YMapControls position="right">
+                    <YMapZoomControl />
+                </YMapControls>
             </YMap>
         </div>
     );

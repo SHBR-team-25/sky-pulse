@@ -22,6 +22,7 @@
         "@gravity-ui/uikit": "^7.47.2",
         "@tanstack/react-query": "^5.101.4",
         "@yandex/ymaps3-clusterer": "^0.0.12",
+        "@yandex/ymaps3-default-ui-theme": "^0.0.25",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
     },
