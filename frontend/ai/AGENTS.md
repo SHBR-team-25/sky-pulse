@@ -65,6 +65,28 @@
 │   │           AirportTooltip.module.css        # стили всплывающей подсказки аэропорта
 │   │           AirportTooltip.tsx               # подсказка аэропорта сверху с задержкой открытия 50 мс
 │   │
+│   ├───dashboardData                            # сущность «данные дашборда»
+│   │   │   index.ts                             # публичный API сущности
+│   │   │
+│   │   ├───model
+│   │   │       mock-data.ts                     # моки дашборда: полный, пустой и генератор по диапазону дат
+│   │   │       types.ts                         # типы сводки, разбивки по фазам, топа аэропортов и тренда трафика
+│   │   │
+│   │   └───ui
+│   │       ├───AverageDataBadge
+│   │       │       AverageDataBadge.module.css  # стили плиток со средними значениями
+│   │       │       AverageDataBadge.tsx         # плитки: число аэропортов, средние высота и скорость
+│   │       │
+│   │       ├───EmergencyBadge
+│   │       │       EmergencyBadge.tsx           # счётчик происшествий с русской плюрализацией через Intl.PluralRules
+│   │       │
+│   │       ├───FlightsBadge
+│   │       │       FlightsBadge.module.css      # стили блока рейсов по фазам полёта
+│   │       │       FlightsBadge.tsx             # активные рейсы и их разбивка по фазам полёта
+│   │       │
+│   │       └───TrafficTrendGraph
+│   │               TrafficTrendGraph.tsx        # график тренда трафика (заготовка, пока пустой)
+│   │
 │   └───flight                                   # сущность «рейс»
 │       │   index.ts                             # публичный API сущности
 │       │
@@ -91,6 +113,15 @@
 │   │   └───model
 │   │           types.ts                         # типы query-параметров и ответа GET /airports/{icao}/flights
 │   │
+│   ├───getDashboardData                         # получение сводной статистики для дашборда
+│   │   │   index.ts                             # публичный API фичи
+│   │   │
+│   │   ├───api
+│   │   │       useDashboardData.ts              # хук GET /stats/dashboard с keepPreviousData и query-ключами
+│   │   │
+│   │   └───model
+│   │           types.ts                         # типы query-параметров GET /stats/dashboard
+│   │
 │   ├───getLiveFlights                           # получение бортов в воздухе в реальном времени
 │   │   │   index.ts                             # публичный API фичи
 │   │   │
@@ -110,6 +141,19 @@
 │               types.ts                         # тип ответа GET /flights/{icao24}
 │
 ├───pages                                        # слой страниц
+│   ├───dashboard                                # страница дашборда со статистикой полётов
+│   │   │   index.ts                             # публичный API страницы
+│   │   │
+│   │   └───ui
+│   │           DashboardPage.module.css         # стили контейнера дашборда
+│   │           DashboardPage.tsx                # обёртка main вокруг виджета Dashboard
+│   │
+│   ├───layout                                   # общий каркас страниц роутера
+│   │   │   index.ts                             # публичный API страницы
+│   │   │
+│   │   └───ui
+│   │           Layout.tsx                       # шапка, Outlet вложенных маршрутов и подвал
+│   │
 │   └───map                                      # страница карты полётов
 │       │   index.ts                             # публичный API страницы
 │       │
@@ -155,6 +199,13 @@
     │   └───ui
     │           AppHeader.module.css             # стили шапки
     │           AppHeader.tsx                    # логотип, навигация, поиск и статус-блок
+    │
+    ├───dashboard                                # дашборд статистики полётов
+    │   │   index.ts                             # публичный API виджета
+    │   │
+    │   └───ui
+    │           Dashboard.module.css             # стили сетки дашборда, бейджей и графика
+    │           Dashboard.tsx                    # выбор диапазона дат и бейджи статистики (пока на моках)
     │
     └───flight-map                               # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                             # публичный API виджета
