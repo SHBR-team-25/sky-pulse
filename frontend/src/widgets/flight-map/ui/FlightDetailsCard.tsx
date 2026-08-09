@@ -1,4 +1,10 @@
 import { AirportTooltip } from '@/entities/airport';
+import {
+    formatEta,
+    formatFlightNumber,
+    formatTime,
+    numberFormatter,
+} from '@/shared/lib/formatters';
 import styles from './FlightDetailsPopover.module.css';
 import type { FlightDetailsResponse } from '@/features/getTargetFlight';
 
@@ -6,40 +12,12 @@ interface FlightDetailsCardProps {
     details: FlightDetailsResponse;
 }
 
-const numberFormatter = new Intl.NumberFormat('ru-RU');
-const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit',
-});
-
 const phaseLabels: Record<FlightDetailsResponse['phase'], string> = {
     on_ground: 'На земле',
     climbing: 'Набор',
     descending: 'Снижение',
     cruising: 'В пути',
 };
-
-/**
- * добавляет пробел  между буквами (код авиакомпании) и цифрами (номер рейса)
- */
-function formatFlightNumber(callsign: string | null) {
-    return callsign?.replace(/^([A-Z]+)(\d+)$/, '$1 $2') ?? '—';
-}
-
-function formatEta(minutes: number | null) {
-    if (minutes === null) {
-        return 'неизвестно';
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-
-    return hours > 0 ? `${hours} ч ${remainingMinutes} мин` : `${remainingMinutes} мин`;
-}
-
-function formatTime(timestamp: number) {
-    return timeFormatter.format(timestamp * 1000);
-}
 
 interface AirportCodeTooltipProps {
     code: string;

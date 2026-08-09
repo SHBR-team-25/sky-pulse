@@ -2,11 +2,13 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: clamp(8px, 2vw, 20px);
+    width: 100%;
+    min-width: 0;
     height: 44px;
-    padding: 0 20px;
+    padding: 0 clamp(8px, 2vw, 20px);
     color: var(--sky-color-text-muted);
-    font-size: 11px;
+    font-size: clamp(9px, 1.1vw, 11px);
     background: var(--sky-color-surface-footer);
     border-top: 1px solid var(--sky-color-border-subtle);
     backdrop-filter: blur(18px);
@@ -51,7 +53,8 @@
 }
 
 .technicalInfo {
-    gap: 18px;
+    min-width: 0;
+    gap: clamp(8px, 2vw, 18px);
     margin-left: auto;
     color: var(--sky-color-text-faint);
     font-family: 'Roboto Mono', monospace;

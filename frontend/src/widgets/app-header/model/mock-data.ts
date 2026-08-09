@@ -9,6 +9,5 @@ export const headerMock = {
         // { label: 'Оповещения', isActive: false },
     ],
     liveLabel: 'LIVE · 14 782 борта',
-    utcTime: '12:48 UTC',
     userInitials: 'ST',
 } as const;

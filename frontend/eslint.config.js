@@ -83,6 +83,10 @@ export default defineConfig([
                             from: { element: { type: 'entities' } },
                             allow: { to: { element: { type: 'shared' } } },
                         },
+                        {
+                            from: { element: { type: 'shared' } },
+                            allow: { to: { element: { type: 'shared' } } },
+                        },
                     ],
                 },
             ],

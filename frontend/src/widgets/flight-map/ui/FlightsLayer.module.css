@@ -1,8 +1,8 @@
 .flightMarker {
     position: relative;
     display: grid;
-    width: 40px;
-    height: 40px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     color: var(--sky-color-text-primary);
     background: var(--sky-color-surface-header);
@@ -10,8 +10,8 @@
     border-radius: 50%;
     outline: none;
     box-shadow:
-        0 8px 24px rgba(0, 0, 0, 0.35),
-        0 0 16px rgba(68, 192, 255, 0.25);
+        0 7px 22px rgba(0, 0, 0, 0.35),
+        0 0 14px rgba(68, 192, 255, 0.25);
     transform: translate(-50%, -50%);
     backdrop-filter: blur(8px);
     place-items: center;
@@ -19,24 +19,24 @@
 
 .flightMarker:focus-visible {
     box-shadow:
-        0 8px 24px rgba(0, 0, 0, 0.35),
+        0 7px 22px rgba(0, 0, 0, 0.35),
         0 0 0 3px rgba(255, 255, 255, 0.8),
-        0 0 18px rgba(68, 192, 255, 0.45);
+        0 0 16px rgba(68, 192, 255, 0.45);
 }
 
 .flightMarker[aria-expanded='true'] {
     color: #fff;
     border-color: #fff;
     box-shadow:
-        0 8px 24px rgba(0, 0, 0, 0.4),
-        0 0 0 8px rgba(255, 255, 255, 0.14),
-        0 0 20px rgba(68, 192, 255, 0.4);
+        0 7px 22px rgba(0, 0, 0, 0.4),
+        0 0 0 7px rgba(255, 255, 255, 0.14),
+        0 0 18px rgba(68, 192, 255, 0.4);
 }
 
 .flightMarkerIcon {
     display: grid;
-    width: 24px;
-    height: 24px;
+    width: 14px;
+    height: 14px;
     color: var(--sky-color-accent-secondary);
     transform-origin: center;
     place-items: center;
@@ -45,24 +45,24 @@
 .clusterMarker {
     position: relative;
     display: grid;
-    width: 42px;
-    height: 42px;
+    width: 29px;
+    height: 29px;
     color: var(--sky-color-bg-canvas-deep);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     background: var(--sky-color-accent-primary);
-    border: 3px solid rgba(255, 255, 255, 0.9);
+    border: 2.5px solid rgba(255, 255, 255, 0.9);
     border-radius: 50%;
     box-shadow:
-        0 8px 24px rgba(0, 0, 0, 0.4),
-        0 0 0 7px rgba(68, 192, 255, 0.18);
+        0 7px 22px rgba(0, 0, 0, 0.4),
+        0 0 0 6px rgba(68, 192, 255, 0.18);
     transform: translate(-50%, -50%);
     place-items: center;
 }
 
 .clusterMarker::after {
     position: absolute;
-    inset: -10px;
+    inset: -9px;
     border: 1px solid rgba(141, 220, 255, 0.35);
     border-radius: 50%;
     content: '';
