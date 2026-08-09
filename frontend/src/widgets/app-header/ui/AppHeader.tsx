@@ -1,5 +1,5 @@
-import { Magnifier } from '@gravity-ui/icons';
-import { Button, Icon, TextInput } from '@gravity-ui/uikit';
+// import { Magnifier } from '@gravity-ui/icons';
+import { Button } from '@gravity-ui/uikit';
 import { headerMock } from '../model/mock-data';
 import { useUtcTime } from '@/shared/hooks';
 import styles from './AppHeader.module.css';
@@ -16,14 +16,15 @@ export function AppHeader() {
                 <span className={styles.productName}>{headerMock.productName}</span>
             </div>
 
-            <TextInput
+            {/* TODO: сделать, если будем делать поиск по самолетам, аэропортам  */}
+            {/* <TextInput
                 className={styles.search}
                 aria-label="Поиск"
                 placeholder={headerMock.searchPlaceholder}
                 size="l"
                 startContent={<Icon data={Magnifier} size={16} />}
                 endContent={<kbd className={styles.shortcut}>{headerMock.searchShortcut}</kbd>}
-            />
+            /> */}
 
             <nav className={styles.navigation} aria-label="Основная навигация">
                 {headerMock.navigation.map((item) => (

@@ -177,12 +177,15 @@
     └───flight-map                               # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                             # публичный API виджета
         │
+        ├───model
+        │       useMockFlightDetails.ts          # временный хук мок-запроса деталей выбранного рейса
+        │
         └───ui
                 AirportsLayer.module.css         # стили маркеров и подсказок аэропортов
                 AirportsLayer.tsx                # слой маркеров аэропортов с кодами и подсказками
                 FlightDetailsCard.tsx            # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
                 FlightDetailsPopover.module.css  # стили поповера и карточки деталей рейса
-                FlightDetailsPopover.tsx         # поповер деталей рейса с мок-запросом и задержкой 500 мс
+                FlightDetailsPopover.tsx         # управляемый поповер деталей выбранного рейса
                 FlightMap.module.css             # стили контейнера карты рейсов
                 FlightMap.tsx                    # карта с zoom 3–15, слоями и синхронизацией вида в контексте
                 FlightsLayer.module.css          # стили маркеров рейсов и кластеров

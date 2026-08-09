@@ -11,6 +11,7 @@ export const {
     YMap,
     YMapDefaultSchemeLayer,
     YMapDefaultFeaturesLayer,
+    YMapFeature,
     YMapFeatureDataSource,
     YMapLayer,
     YMapListener,

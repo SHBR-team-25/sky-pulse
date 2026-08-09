@@ -4,5 +4,5 @@ export const footerMock = {
         { label: 'Задержка', value: '1 604', tone: 'warning' },
         { label: 'Отменён', value: '238', tone: 'danger' },
     ],
-    technicalInfo: ['Проекция: Mercator', 'Задержка данных 4 с'],
+    technicalInfo: ['Задержка данных 2 с'],
 } as const;
