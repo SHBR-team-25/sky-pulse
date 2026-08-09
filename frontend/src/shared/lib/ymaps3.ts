@@ -13,6 +13,7 @@ export const {
     YMapDefaultFeaturesLayer,
     YMapFeatureDataSource,
     YMapLayer,
+    YMapListener,
     YMapMarker,
     YMapControls,
 } = reactify.module(ymaps3);
