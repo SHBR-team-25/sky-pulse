@@ -45,18 +45,6 @@ export const dashboardMock = {
             airport: { icao: 'USSS', iata: 'SVX', name: 'Koltsovo International Airport' },
             totalFlights: 336,
         },
-        {
-            airport: { icao: 'UNNT', iata: 'OVB', name: 'Tolmachevo Airport' },
-            totalFlights: 294,
-        },
-        {
-            airport: { icao: 'UUBW', iata: 'ZIA', name: 'Zhukovsky International Airport' },
-            totalFlights: 128,
-        },
-        {
-            airport: { icao: 'UWGG', iata: null, name: 'Strigino International Airport' },
-            totalFlights: 87,
-        },
     ],
     trafficTrend: buildTrafficTrend(MOCK_FROM, MOCK_TO),
     emergencyCount: 3,

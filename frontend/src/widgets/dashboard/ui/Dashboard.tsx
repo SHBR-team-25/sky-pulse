@@ -1,5 +1,6 @@
 import {
     AverageDataBadge,
+    BusiestAirportsBadge,
     EmergencyBadge,
     FlightsBadge,
     makeDashboardMock,
@@ -67,6 +68,9 @@ export function Dashboard() {
                                     />
 
                                     <AverageDataBadge totals={dashboardData.totals} />
+                                    <BusiestAirportsBadge
+                                        airports={dashboardData.topBusiestAirports}
+                                    />
                                 </>
                             )}
                         </>

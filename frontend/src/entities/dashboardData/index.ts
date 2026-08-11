@@ -1,4 +1,5 @@
 export { AverageDataBadge } from './ui/AverageDataBadge/AverageDataBadge';
+export { BusiestAirportsBadge } from './ui/BusiestAirportsBadge/BusiestAirportsBadge';
 export { EmergencyBadge } from './ui/EmergencyBadge/EmergencyBadge';
 export { FlightsBadge } from './ui/FlightsBadge/FlightsBadge';
 export { TrafficTrendGraph } from './ui/TrafficTrendGraph/TrafficTrendGraph';
