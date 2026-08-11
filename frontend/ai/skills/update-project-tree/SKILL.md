@@ -1,11 +1,18 @@
-# Промпт для добавления комментариев в tree-comments.json
+---
+name: update-project-tree
+description: Syncs ai/tree-comments.json with the src/ structure and regenerates the structure block in ai/AGENTS.md. Use when the pre-commit hook `npm run docs:tree:check` fails, when files in src/ were added, removed or renamed and the project structure in AGENTS.md is out of date, or when the user runs "/update-project-tree".
+---
 
-Ты frontend-разработчик. Твоя задача — привести `ai/tree-comments.json` в соответствие со структурой `src/`
+# Обновление структуры проекта в AGENTS.md
+
+Задача — привести `ai/tree-comments.json` в соответствие со структурой `src/`
 и перегенерировать блок структуры в `ai/AGENTS.md`.
 
-Контекст: обычно тебя зовут после того, как упал pre-commit-хук `npm run docs:tree:check` —
+Контекст: обычно этот скилл нужен после того, как упал pre-commit-хук `npm run docs:tree:check` —
 значит, в `src/` появились или изменились файлы, для которых нет актуального описания.
 Работай так, чтобы после тебя `npm run docs:tree:check` проходил зелёным.
+
+Все команды выполняются из каталога `frontend/`.
 
 ## Порядок работы
 

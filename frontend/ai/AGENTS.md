@@ -43,12 +43,15 @@
 │
 ├───app                                          # слой приложения: композиция провайдеров и layout
 │   │   App.module.css                           # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                                  # корневой компонент: QueryProvider, ThemeProvider, MapViewProvider и виджеты
+│   │   App.tsx                                  # корневой компонент: QueryProvider, ThemeProvider, MapViewProvider и RouterProvider
 │   │   index.ts                                 # публичный API слоя app
 │   │
 │   ├───providers                                # глобальные провайдеры приложения
 │   │       index.ts                             # реэкспорт провайдеров
-│   │       QueryProvider.tsx                    # QueryClient TanStack Query: staleTime, политика retry по ApiError
+│   │       QueryProvider.tsx                    # оборачивает дерево в QueryClientProvider с общим queryClient
+│   │
+│   ├───router                                   # конфигурация маршрутов приложения
+│   │       routes.tsx                           # createBrowserRouter: редирект на /map, /dashboard с prefetch статистики в loader
 │   │
 │   └───styles                                   # глобальные стили
 │           index.css                            # CSS-переменные, reset, базовая типографика
@@ -117,7 +120,10 @@
 │   │   │   index.ts                             # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useDashboardData.ts              # хук GET /stats/dashboard с keepPreviousData и query-ключами
+│   │   │       useDashboardData.ts              # хук и queryOptions GET /stats/dashboard с keepPreviousData и query-ключами
+│   │   │
+│   │   ├───lib
+│   │   │       dashboardRange.ts                # диапазон дат дашборда из query-параметров from/to в unix-секундах
 │   │   │
 │   │   └───model
 │   │           types.ts                         # типы query-параметров GET /stats/dashboard
@@ -167,6 +173,7 @@
 │   │       fetchJson.ts                         # обёртка fetch: buildUrl, парсинг JSON, класс ApiError
 │   │       generated-types.ts                   # типы, сгенерированные из OpenAPI-спеки (правится только генератором)
 │   │       index.ts                             # публичный API shared/api
+│   │       queryClient.ts                       # общий QueryClient: staleTime 60 с, без ретраев на ApiError 4xx
 │   │
 │   ├───assets                                   # статические ресурсы
 │   │   └───images
@@ -211,19 +218,16 @@
     ├───app-header                               # шапка приложения
     │   │   index.ts                             # публичный API виджета
     │   │
-    │   ├───model
-    │   │       mock-data.ts                     # моковые навигация, поиск, LIVE-счётчик и профиль
-    │   │
     │   └───ui
     │           AppHeader.module.css             # стили шапки
-    │           AppHeader.tsx                    # логотип, навигация, поиск и текущее UTC-время
+    │           AppHeader.tsx                    # логотип, навигация NavLink на /map и /dashboard, текущее UTC-время
     │
     ├───dashboard                                # дашборд статистики полётов
     │   │   index.ts                             # публичный API виджета
     │   │
     │   └───ui
     │           Dashboard.module.css             # стили сетки дашборда, бейджей и графика
-    │           Dashboard.tsx                    # выбор диапазона дат и бейджи статистики (пока на моках)
+    │           Dashboard.tsx                    # диапазон дат в query-параметрах и бейджи статистики (пока на моках)
     │
     └───flight-map                               # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                             # публичный API виджета
