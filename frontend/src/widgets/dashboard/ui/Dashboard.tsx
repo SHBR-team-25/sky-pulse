@@ -5,31 +5,27 @@ import {
     makeDashboardMock,
 } from '@/entities/dashboardData';
 import styles from './Dashboard.module.css';
-// import { useDashboardData } from '@/features/getDashboardData';
+import {
+    DASHBOARD_RANGE_FROM_PARAM,
+    DASHBOARD_RANGE_TO_PARAM,
+    getDefaultDashboardRange,
+    parseDashboardRange,
+    toDashboardQuery,
+    type DashboardRange,
+    // useDashboardData,
+} from '@/features/getDashboardData';
 import { RangeDatePicker } from '@gravity-ui/date-components';
-import { dateTime, type DateTime } from '@gravity-ui/date-utils';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import { Loader, Alert } from '@gravity-ui/uikit';
-
-type Range = { start: DateTime; end: DateTime };
-
-function getInitialRange(): Range {
-    const today = dateTime();
-
-    return { start: today, end: today };
-}
+import { dateTime } from '@gravity-ui/date-utils';
 
 export function Dashboard() {
-    const [range, setRange] = useState<Range>(getInitialRange);
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    const date = useMemo(
-        () => ({
-            from: range.start.startOf('day').unix(),
-            to: range.end.endOf('day').unix(),
-        }),
-        [range]
-    );
-
+    const range = useMemo(() => parseDashboardRange(searchParams), [searchParams]);
+    const date = useMemo(() => toDashboardQuery(range), [range]);
+    const maxDate = useMemo(() => dateTime().endOf('day'), []);
     // const { data: dashboardData, isLoading, isError, error } = useDashboardData(date);
 
     //TODO: изменить на реальные данные
@@ -38,8 +34,17 @@ export function Dashboard() {
     const isError = false;
     const error = { message: '' };
 
-    const handleRangeUpdate = (value: Range | null) => {
-        setRange(value ?? getInitialRange());
+    const handleRangeUpdate = (value: DashboardRange | null) => {
+        const nextRange = value ?? getDefaultDashboardRange();
+        const nextQuery = toDashboardQuery(nextRange);
+
+        setSearchParams(
+            {
+                [DASHBOARD_RANGE_FROM_PARAM]: String(nextQuery.from),
+                [DASHBOARD_RANGE_TO_PARAM]: String(nextQuery.to),
+            },
+            { replace: true }
+        );
     };
 
     if (isError) return <Alert theme="danger" title="Возникла ошибка" message={error.message} />;
@@ -53,6 +58,7 @@ export function Dashboard() {
                         onUpdate={handleRangeUpdate}
                         format="DD.MM.YYYY"
                         className={styles.datePicker}
+                        maxValue={maxDate}
                     />
                 </div>
 

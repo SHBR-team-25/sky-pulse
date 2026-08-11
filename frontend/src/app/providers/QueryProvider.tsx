@@ -1,24 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { ApiError } from '@shared/api';
-
-const MAX_RETRIES = 2;
-
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 60_000,
-            refetchOnWindowFocus: false,
-            retry: (failureCount, error) => {
-                if (error instanceof ApiError && error.status < 500) {
-                    return false;
-                }
-
-                return failureCount < MAX_RETRIES;
-            },
-        },
-    },
-});
+import { queryClient } from '@shared/api';
 
 interface QueryProviderProps {
     children: ReactNode;
