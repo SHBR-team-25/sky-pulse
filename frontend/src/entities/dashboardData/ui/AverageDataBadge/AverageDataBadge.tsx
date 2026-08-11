@@ -1,12 +1,11 @@
 import { Alert } from '@gravity-ui/uikit';
 import type { DashboardTotals } from '../../model/types';
 import styles from './AverageDataBadge.module.css';
+import { numberFormatter } from '@/shared/lib/formatters';
 
 interface AverageDataBadgeProps {
     totals: DashboardTotals;
 }
-
-const numberFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
 
 export function AverageDataBadge({ totals }: AverageDataBadgeProps) {
     const tiles = [

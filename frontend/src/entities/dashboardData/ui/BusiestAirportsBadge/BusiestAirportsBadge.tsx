@@ -1,12 +1,11 @@
 import { Alert, DefinitionList } from '@gravity-ui/uikit';
 import type { DashboardBusiestAirport } from '../../model/types';
 import styles from './BusiestAirportsBadge.module.css';
+import { numberFormatter } from '@/shared/lib/formatters';
 
 interface BusiestAirportsBadgeProps {
     airports: DashboardBusiestAirport[];
 }
-
-const numberFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
 
 export function BusiestAirportsBadge({ airports }: BusiestAirportsBadgeProps) {
     return (
