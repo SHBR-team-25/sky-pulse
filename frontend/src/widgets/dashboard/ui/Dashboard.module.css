@@ -1,6 +1,6 @@
 .dashboard {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
     align-items: start;
     gap: 16px;
     min-height: 0;
@@ -13,6 +13,11 @@
     align-content: start;
     gap: 12px;
     min-width: 0;
+}
+
+.title {
+    margin: 0;
+    padding: 16px 0;
 }
 
 .controls {
@@ -41,9 +46,4 @@
     margin-block-start: 16px;
     border: 1px dashed var(--sky-color-border-subtle);
     border-radius: 8px;
-}
-
-.chartPlaceholder {
-    font-size: 13px;
-    color: var(--sky-color-text-secondary);
 }

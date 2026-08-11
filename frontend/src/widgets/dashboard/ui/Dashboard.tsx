@@ -3,6 +3,7 @@ import {
     EmergencyBadge,
     FlightsBadge,
     makeDashboardMock,
+    TrafficTrendGraph,
 } from '@/entities/dashboardData';
 import styles from './Dashboard.module.css';
 import {
@@ -52,23 +53,12 @@ export function Dashboard() {
     return (
         <div className={styles.dashboard}>
             <div className={styles.column}>
-                <div className={styles.controls}>
-                    <RangeDatePicker
-                        value={range}
-                        onUpdate={handleRangeUpdate}
-                        format="DD.MM.YYYY"
-                        className={styles.datePicker}
-                        maxValue={maxDate}
-                    />
-                </div>
-
+                <h2 className={styles.title}>На данный момент</h2>
                 <div className={styles.badges}>
                     {isLoading ? (
                         <Loader />
                     ) : (
                         <>
-                            <EmergencyBadge count={dashboardData?.emergencyCount} />
-
                             {dashboardData && (
                                 <>
                                     <FlightsBadge
@@ -84,8 +74,20 @@ export function Dashboard() {
                 </div>
             </div>
 
-            <div className={styles.chart} aria-label="График">
-                <span className={styles.chartPlaceholder}>График появится позже</span>
+            <div className={styles.column}>
+                <div className={styles.controls}>
+                    <RangeDatePicker
+                        value={range}
+                        onUpdate={handleRangeUpdate}
+                        format="DD.MM.YYYY"
+                        className={styles.datePicker}
+                        maxValue={maxDate}
+                    />
+                </div>
+                <EmergencyBadge count={dashboardData?.emergencyCount} />
+                <div className={styles.chart} aria-label="График">
+                    <TrafficTrendGraph data={dashboardData.trafficTrend} />
+                </div>
             </div>
         </div>
     );

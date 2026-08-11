@@ -23,7 +23,7 @@ export function FlightsBadge({ flightsByPhase, activeFlights }: FlightsBadgeProp
         <div className={styles.flightsBadge}>
             <Alert
                 theme="normal"
-                title="Самолётов за период"
+                title="Всего самолётов"
                 message={
                     <div className={styles.count}>
                         <span className={styles.countValue}>{countFlights}</span>

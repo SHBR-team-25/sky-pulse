@@ -10,9 +10,9 @@ const numberFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 
 
 export function AverageDataBadge({ totals }: AverageDataBadgeProps) {
     const tiles = [
-        { key: 'airports', label: 'Аэропорты', value: totals.trackedAirports },
-        { key: 'altitude', label: 'Ср. высота', value: totals.averageAltitudeM, unit: 'м' },
-        { key: 'speed', label: 'Ср. скорость', value: totals.averageSpeedKmh, unit: 'км/ч' },
+        { key: 'airports', label: 'Отслеживаемых аэропортов', value: totals.trackedAirports },
+        { key: 'altitude', label: 'Средняя высота', value: totals.averageAltitudeM, unit: 'м' },
+        { key: 'speed', label: 'Средняя скорость', value: totals.averageSpeedKmh, unit: 'км/ч' },
     ];
 
     return (
