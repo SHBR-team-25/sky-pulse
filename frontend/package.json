@@ -18,13 +18,17 @@
         "docs:tree:check": "node scripts/generate-tree.mjs --check"
     },
     "dependencies": {
+        "@gravity-ui/charts": "^1.57.2",
+        "@gravity-ui/date-components": "^4.0.0",
+        "@gravity-ui/date-utils": "^2.7.1",
         "@gravity-ui/icons": "^2.21.0",
         "@gravity-ui/uikit": "^7.47.2",
         "@tanstack/react-query": "^5.101.4",
         "@yandex/ymaps3-clusterer": "^0.0.12",
         "@yandex/ymaps3-default-ui-theme": "^0.0.25",
         "react": "^19.2.8",
-        "react-dom": "^19.2.8"
+        "react-dom": "^19.2.8",
+        "react-router": "^8.3.0"
     },
     "devDependencies": {
         "@commitlint/cli": "^21.2.1",

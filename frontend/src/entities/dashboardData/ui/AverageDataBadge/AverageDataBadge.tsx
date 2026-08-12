@@ -1,0 +1,38 @@
+import { Alert } from '@gravity-ui/uikit';
+import type { DashboardTotals } from '../../model/types';
+import styles from './AverageDataBadge.module.css';
+import { numberFormatter } from '@/shared/lib/formatters';
+
+interface AverageDataBadgeProps {
+    totals: DashboardTotals;
+}
+
+export function AverageDataBadge({ totals }: AverageDataBadgeProps) {
+    const tiles = [
+        { key: 'airports', label: 'Отслеживаемых аэропортов', value: totals.trackedAirports },
+        { key: 'altitude', label: 'Средняя высота', value: totals.averageAltitudeM, unit: 'м' },
+        { key: 'speed', label: 'Средняя скорость', value: totals.averageSpeedKmh, unit: 'км/ч' },
+    ];
+
+    return (
+        <div className={styles.averageDataBadge}>
+            {tiles.map(({ key, label, value, unit }) => (
+                <Alert
+                    key={key}
+                    theme="normal"
+                    title={label}
+                    message={
+                        <span className={styles.tile}>
+                            <span className={styles.tileValue}>
+                                {numberFormatter.format(value)}
+                            </span>
+
+                            {unit && <span className={styles.tileUnit}>{unit}</span>}
+                        </span>
+                    }
+                    layout="vertical"
+                />
+            ))}
+        </div>
+    );
+}

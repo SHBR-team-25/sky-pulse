@@ -1,0 +1,29 @@
+.averageDataBadge {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
+}
+
+.averageDataBadge > * {
+    height: 100%;
+}
+
+.tile {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.tileValue {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    color: var(--sky-color-text-primary);
+}
+
+.tileUnit {
+    font-size: 13px;
+    color: var(--sky-color-text-secondary);
+}
