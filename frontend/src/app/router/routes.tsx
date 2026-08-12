@@ -8,17 +8,21 @@ import {
     toDashboardQuery,
 } from '@/features/getDashboardData';
 import { queryClient } from '@shared/api';
+import { RouterErrorFallback } from '@shared/ui';
+import { NotFoundPage } from '@/pages/notFound';
 
 export const router = createBrowserRouter([
     {
         path: '/',
         Component: Layout,
+        ErrorBoundary: RouterErrorFallback,
         children: [
             { index: true, element: <Navigate to="/map" replace /> },
-            { path: 'map', element: <MapPage theme="dark" /> },
+            { path: 'map', element: <MapPage theme="dark" />, ErrorBoundary: RouterErrorFallback },
             {
                 path: 'dashboard',
                 Component: DashboardPage,
+                ErrorBoundary: RouterErrorFallback,
                 loader: ({ request }) => {
                     const { searchParams } = new URL(request.url);
                     const params = toDashboardQuery(parseDashboardRange(searchParams));
@@ -27,7 +31,7 @@ export const router = createBrowserRouter([
                     return null;
                 },
             },
-            { path: '*', element: <Navigate to="/map" replace /> },
+            { path: '*', element: <NotFoundPage />, ErrorBoundary: RouterErrorFallback },
         ],
     },
 ]);
