@@ -51,7 +51,7 @@
 │   │       QueryProvider.tsx                        # оборачивает дерево в QueryClientProvider с общим queryClient
 │   │
 │   ├───router                                       # конфигурация маршрутов приложения
-│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /dashboard с prefetch в loader, catch-all 404, ErrorBoundary на маршрутах
+│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
 │   │
 │   └───styles                                       # глобальные стили
 │           index.css                                # CSS-переменные, reset, базовая типографика
@@ -166,7 +166,7 @@
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader (сброс по pathname) и подвал
+│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader и подвал
 │   │
 │   ├───map                                          # страница карты полётов
 │   │   │   index.ts                                 # публичный API страницы

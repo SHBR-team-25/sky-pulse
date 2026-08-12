@@ -1,6 +1,4 @@
 import { createBrowserRouter, Navigate } from 'react-router';
-import { MapPage } from '@pages/map';
-import { DashboardPage } from '@/pages/dashboard';
 import { Layout } from '@/pages/layout';
 import {
     dashboardDataQueryOptions,
@@ -8,7 +6,7 @@ import {
     toDashboardQuery,
 } from '@/features/getDashboardData';
 import { queryClient } from '@shared/api';
-import { RouterErrorFallback } from '@shared/ui';
+import { PageLoader, RouterErrorFallback } from '@shared/ui';
 import { NotFoundPage } from '@/pages/notFound';
 
 export const router = createBrowserRouter([
@@ -16,12 +14,25 @@ export const router = createBrowserRouter([
         path: '/',
         Component: Layout,
         ErrorBoundary: RouterErrorFallback,
+        HydrateFallback: PageLoader,
         children: [
             { index: true, element: <Navigate to="/map" replace /> },
-            { path: 'map', element: <MapPage theme="dark" />, ErrorBoundary: RouterErrorFallback },
+            {
+                path: 'map',
+                lazy: {
+                    Component: async () => {
+                        const { MapPage } = await import('@pages/map');
+
+                        return () => <MapPage theme="dark" />;
+                    },
+                },
+                ErrorBoundary: RouterErrorFallback,
+            },
             {
                 path: 'dashboard',
-                Component: DashboardPage,
+                lazy: {
+                    Component: async () => (await import('@/pages/dashboard')).DashboardPage,
+                },
                 ErrorBoundary: RouterErrorFallback,
                 loader: ({ request }) => {
                     const { searchParams } = new URL(request.url);

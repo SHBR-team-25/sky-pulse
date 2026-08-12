@@ -10,7 +10,7 @@
     "app/providers/index.ts": "реэкспорт провайдеров",
     "app/providers/QueryProvider.tsx": "оборачивает дерево в QueryClientProvider с общим queryClient",
     "app/router": "конфигурация маршрутов приложения",
-    "app/router/routes.tsx": "createBrowserRouter: редирект на /map, /dashboard с prefetch в loader, catch-all 404, ErrorBoundary на маршрутах",
+    "app/router/routes.tsx": "createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах",
     "app/styles": "глобальные стили",
     "app/styles/index.css": "CSS-переменные, reset, базовая типографика",
 
@@ -94,7 +94,7 @@
     "pages/layout": "общий каркас страниц роутера",
     "pages/layout/index.ts": "публичный API страницы",
     "pages/layout/ui": "",
-    "pages/layout/ui/Layout.tsx": "шапка, Outlet под Suspense с PageLoader (сброс по pathname) и подвал",
+    "pages/layout/ui/Layout.tsx": "шапка, Outlet под Suspense с PageLoader и подвал",
     "pages/notFound": "страница 404",
     "pages/notFound/index.ts": "публичный API страницы",
     "pages/notFound/assets": "",
