@@ -140,7 +140,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 3 с
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 2 с
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live

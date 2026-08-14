@@ -75,7 +75,7 @@
     "features/getLiveFlights": "получение бортов в воздухе в реальном времени",
     "features/getLiveFlights/index.ts": "публичный API фичи",
     "features/getLiveFlights/api": "",
-    "features/getLiveFlights/api/useLiveFlights.ts": "хук GET /flights/live с поллингом раз в 3 с",
+    "features/getLiveFlights/api/useLiveFlights.ts": "хук GET /flights/live с поллингом раз в 2 с",
     "features/getLiveFlights/model": "",
     "features/getLiveFlights/model/types.ts": "типы query-параметров и ответа GET /flights/live",
     "features/getTargetFlight": "получение деталей выбранного рейса",
