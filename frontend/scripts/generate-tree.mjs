@@ -140,9 +140,20 @@ if (start === -1 || end === -1) {
 const next =
     doc.slice(0, start + START_MARKER.length) + `\n\n${block}\n\n` + doc.slice(end);
 
+/** Печатает причину провала и общую подсказку, что делать дальше. */
+function fail(reason) {
+    console.error(
+        `[docs:tree] ${reason}\n` +
+            '            Запустите `npm run docs:tree`, допишите описания в ai/tree-comments.json\n' +
+            '            и закоммитьте результат, либо позовите агента со скиллом update-project-tree —\n' +
+            '            он допишет описания сам.'
+    );
+    process.exit(1);
+}
+
 if (next === doc) {
     if (missing.length > 0) {
-        process.exit(1);
+        fail('не для всех путей из src/ есть описания в ai/tree-comments.json.');
     }
 
     console.log('[docs:tree] структура в AGENTS.md актуальна');
@@ -150,14 +161,14 @@ if (next === doc) {
 }
 
 if (isCheck) {
-    console.error(
-        '[docs:tree] структура в ai/AGENTS.md устарела.\n' +
-            '            Запустите `npm run docs:tree` и закоммитьте результат,\n' +
-            '            либо отдайте агенту промпт ai/prompts/updateProjectTree.md — он допишет описания сам.'
-    );
-    process.exit(1);
+    fail('структура в ai/AGENTS.md устарела.');
 }
 
 writeFileSync(DOC_FILE, next);
 console.log('[docs:tree] структура в ai/AGENTS.md обновлена');
-process.exit(missing.length > 0 ? 1 : 0);
+
+if (missing.length > 0) {
+    fail('не для всех путей из src/ есть описания в ai/tree-comments.json.');
+}
+
+process.exit(0);

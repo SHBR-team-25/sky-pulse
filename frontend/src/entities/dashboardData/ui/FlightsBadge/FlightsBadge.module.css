@@ -1,0 +1,48 @@
+.flightsBadge {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 12px;
+}
+
+.flightsBadge > * {
+    height: 100%;
+}
+
+.count {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.countValue {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--sky-color-text-primary);
+}
+
+.countHint {
+    font-size: 13px;
+    color: var(--sky-color-text-secondary);
+}
+
+.phases {
+    display: grid;
+    gap: 4px;
+}
+
+.phaseRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.phaseName {
+    color: var(--sky-color-text-secondary);
+}
+
+.phaseValue {
+    font-variant-numeric: tabular-nums;
+    color: var(--sky-color-text-primary);
+}

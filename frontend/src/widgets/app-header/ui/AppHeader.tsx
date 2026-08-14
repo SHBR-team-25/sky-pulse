@@ -1,6 +1,6 @@
 // import { Magnifier } from '@gravity-ui/icons';
 import { Button } from '@gravity-ui/uikit';
-import { headerMock } from '../model/mock-data';
+import { NavLink } from 'react-router';
 import { useUtcTime } from '@/shared/hooks';
 import styles from './AppHeader.module.css';
 
@@ -9,11 +9,11 @@ export function AppHeader() {
 
     return (
         <header className={styles.header}>
-            <div className={styles.brand} aria-label={headerMock.productName}>
+            <div className={styles.brand} aria-label="SkyPulse">
                 {/* <span className={styles.logo} aria-hidden="true">
                     <span className={styles.logoMark} />
                 </span> */}
-                <span className={styles.productName}>{headerMock.productName}</span>
+                <span className={styles.productName}>SkyPulse</span>
             </div>
 
             {/* TODO: сделать, если будем делать поиск по самолетам, аэропортам  */}
@@ -27,18 +27,26 @@ export function AppHeader() {
             /> */}
 
             <nav className={styles.navigation} aria-label="Основная навигация">
-                {headerMock.navigation.map((item) => (
-                    <Button
-                        key={item.label}
-                        className={styles.navigationButton}
-                        view="flat"
-                        size="m"
-                        selected={item.isActive}
-                        aria-current={item.isActive ? 'page' : undefined}
-                    >
-                        {item.label}
-                    </Button>
-                ))}
+                <Button
+                    key="Карта"
+                    component={NavLink}
+                    to="/map"
+                    className={styles.navigationButton}
+                    view="flat"
+                    size="m"
+                >
+                    Карта
+                </Button>
+                <Button
+                    key="Статистика"
+                    component={NavLink}
+                    to="/dashboard"
+                    className={styles.navigationButton}
+                    view="flat"
+                    size="m"
+                >
+                    Статистика
+                </Button>
             </nav>
 
             <div className={styles.status}>
