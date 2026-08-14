@@ -40,6 +40,7 @@
     --sky-color-avatar-gradient-start: #2d3b52;
     --sky-color-avatar-gradient-end: #1a2230;
     --sky-color-transparent: transparent;
+    --sky-scrollbar-size: 8px;
 
     font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     font-synthesis: none;
@@ -72,4 +73,27 @@ body {
 button,
 input {
     font: inherit;
+}
+
+/* Global scrollbar styles (WebKit, Firefox, IE/Edge) */
+* {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--sky-color-bg-map-glow) transparent; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+    width: var(--sky-scrollbar-size);
+    height: var(--sky-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: var(--sky-color-bg-map-glow);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }

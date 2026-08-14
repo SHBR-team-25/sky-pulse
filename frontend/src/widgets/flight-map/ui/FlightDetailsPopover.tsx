@@ -63,9 +63,7 @@ export function FlightDetailsPopover({
             onOpenChange={handleOpenChange}
             trigger="click"
             placement="right"
-            offset={14}
             hasArrow={false}
-            zIndex={2147483647}
         >
             {(popoverProps, popoverRef) => (
                 <MarkerTooltip content={tooltipContent} disabled={open}>
