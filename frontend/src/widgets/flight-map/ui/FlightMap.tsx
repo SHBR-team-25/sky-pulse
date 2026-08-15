@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MapEventUpdateHandler, YMapLocationRequest } from '@yandex/ymaps3-types';
 import {
     YMap,
@@ -9,43 +9,63 @@ import {
     YMapZoomControl,
     reactify,
 } from '@/shared/lib/ymaps3';
-import { INITIAL_MAP_VIEW, useSetMapView } from '@/shared/contexts/map-view';
+import {
+    isSameMapView,
+    MAP_ZOOM_RANGE,
+    useSetMapView,
+    type MapView,
+} from '@/shared/contexts/map-view';
 import { AirportsLayer } from './AirportsLayer';
 import { FlightsLayer } from './FlightsLayer';
 import styles from './FlightMap.module.css';
+import { toBboxParams } from '../lib/toBboxParams';
 import type { Airport } from '@/entities/airport';
 import type { LiveFlight } from '@/entities/flight';
-
-const FLIGHTS_LOCATION: YMapLocationRequest = {
-    center: INITIAL_MAP_VIEW.center,
-    zoom: INITIAL_MAP_VIEW.zoom,
-};
-
-const ZOOM_RANGE = { min: 3, max: 15 };
+import type { LiveFlightsQuery } from '@/features/getLiveFlights';
 
 interface FlightMapProps {
+    view: MapView;
     airports: Airport[];
     flights: LiveFlight[];
     theme?: 'light' | 'dark';
+    onBoundsChange?: (params: LiveFlightsQuery) => void;
 }
 
-export function FlightMap({ airports, flights, theme = 'light' }: FlightMapProps) {
+export function FlightMap({
+    view,
+    airports,
+    flights,
+    theme = 'light',
+    onBoundsChange,
+}: FlightMapProps) {
     const setMapView = useSetMapView();
+    const [appliedView, setAppliedView] = useState(view);
+    const syncedViewRef = useRef(view);
+
     const handleMapUpdate = useCallback<MapEventUpdateHandler>(
         ({ location }) => {
-            // обновляем в контексте для отображения в футере
-            setMapView({ center: location.center, zoom: location.zoom });
+            syncedViewRef.current = { center: location.center, zoom: location.zoom };
+            setMapView(syncedViewRef.current);
+            onBoundsChange?.(toBboxParams(location));
         },
-        [setMapView]
+        [setMapView, onBoundsChange]
+    );
+
+    useEffect(() => {
+        if (isSameMapView(view, syncedViewRef.current)) return;
+
+        syncedViewRef.current = view;
+        setAppliedView(view);
+    }, [view]);
+
+    const location = reactify.useDefault<YMapLocationRequest>(
+        { center: appliedView.center, zoom: appliedView.zoom, duration: 0 },
+        [appliedView]
     );
 
     return (
         <div className={styles.map}>
-            <YMap
-                theme={theme}
-                location={reactify.useDefault(FLIGHTS_LOCATION)}
-                zoomRange={ZOOM_RANGE}
-            >
+            <YMap theme={theme} location={location} zoomRange={MAP_ZOOM_RANGE}>
                 <YMapDefaultSchemeLayer />
                 <YMapDefaultFeaturesLayer />
                 <YMapListener onUpdate={handleMapUpdate} />

@@ -43,7 +43,7 @@
 │
 ├───app                                              # слой приложения: композиция провайдеров и layout
 │   │   App.module.css                               # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary, MapViewProvider и RouterProvider
+│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary и RouterProvider
 │   │   index.ts                                     # публичный API слоя app
 │   │
 │   ├───providers                                    # глобальные провайдеры приложения
@@ -166,14 +166,14 @@
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader и подвал
+│   │           Layout.tsx                           # MapViewProvider, шапка, Outlet под Suspense с PageLoader и подвал
 │   │
 │   ├───map                                          # страница карты полётов
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           MapPage.module.css                   # стили контейнера карты
-│   │           MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
+│   │           MapPage.module.css                   # стили контейнера карты и оверлея ошибки загрузки
+│   │           MapPage.tsx                          # вид карты из query-параметров с дебаунсом 300 мс, борта и аэропорты из моков
 │   │
 │   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
@@ -201,11 +201,14 @@
 │   │
 │   ├───contexts                                     # React-контексты общего состояния
 │   │   └───map-view                                 # состояние центра и масштаба карты
-│   │           context.ts                           # контексты текущего представления карты и его обновления
-│   │           index.ts                             # публичный API контекста представления карты
-│   │           MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
-│   │           types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
-│   │           useMapView.ts                        # хуки для чтения и обновления представления карты
+│   │       │   context.ts                           # контексты текущего представления карты и его обновления
+│   │       │   index.ts                             # публичный API контекста представления карты
+│   │       │   MapViewProvider.tsx                  # провайдер вида карты: начальное состояние из query-параметров, защита от дублей
+│   │       │   types.ts                             # тип MapView, начальные центр [34, 57.8] и zoom 5, диапазон зума 3–15
+│   │       │   useMapView.ts                        # хуки для чтения и обновления представления карты
+│   │       │
+│   │       └───lib                                  # чтение и запись представления карты в query-параметры
+│   │               mapViewParams.ts                 # разбор и сериализация lng/lat/zoom с валидацией, задержка синхронизации 300 мс
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
@@ -264,6 +267,9 @@
     └───flight-map                                   # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                                 # публичный API виджета
         │
+        ├───lib                                      # перевод видимой области карты в параметры запроса бортов
+        │       toBboxParams.ts                      # bbox из bounds с квантованием до 0.1° и отбрасыванием границ за 180°
+        │
         ├───model
         │       useMockFlightDetails.ts              # временный хук мок-запроса деталей выбранного рейса
         │
@@ -274,7 +280,7 @@
                 FlightDetailsPopover.module.css      # стили поповера и карточки деталей рейса
                 FlightDetailsPopover.tsx             # управляемый поповер деталей выбранного рейса
                 FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта с zoom 3–15, слоями и синхронизацией вида в контексте
+                FlightMap.tsx                        # карта с zoom 3–15: применяет внешний view, синхронизирует вид в контекст, отдаёт bbox
                 FlightsLayer.module.css              # стили маркеров рейсов и кластеров
                 FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера

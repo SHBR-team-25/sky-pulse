@@ -1,15 +1,17 @@
 import { useCallback, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router';
 import { MapViewContext, SetMapViewContext } from './context';
-import { INITIAL_MAP_VIEW, type MapView } from './types';
+import { parseMapView } from './lib/mapViewParams';
+import { type MapView } from './types';
 
 interface MapViewProviderProps {
     children: ReactNode;
 }
 
 export function MapViewProvider({ children }: MapViewProviderProps) {
-    const [mapView, setMapView] = useState(INITIAL_MAP_VIEW);
+    const [searchParams] = useSearchParams();
+    const [mapView, setMapView] = useState(() => parseMapView(searchParams));
 
-    // обновляет значение только если зум или координаты действительно изменились
     const updateMapView = useCallback((nextMapView: MapView) => {
         setMapView((currentMapView) => {
             const hasNotChanged =
