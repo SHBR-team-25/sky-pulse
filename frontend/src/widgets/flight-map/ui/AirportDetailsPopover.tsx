@@ -7,8 +7,9 @@ import {
     type ReactNode,
     type RefAttributes,
 } from 'react';
-import { Popover, Spin } from '@gravity-ui/uikit';
-import type { Airport, AirportFlightsDirection } from '@/entities/airport';
+import { Xmark } from '@gravity-ui/icons';
+import { Button, Icon, Popover, Spin } from '@gravity-ui/uikit';
+import type { Airport } from '@/entities/airport';
 import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
 import { AirportDetailsCard } from './AirportDetailsCard';
 import { MarkerTooltip } from './MarkerTooltip';
@@ -20,11 +21,9 @@ interface AirportDetailsPopoverProps {
     airport: Airport;
     children: ReactElement<MarkerElementProps>;
     details: AirportFlightsResponse | null;
-    direction: AirportFlightsDirection;
     isLoading: boolean;
     open: boolean;
     tooltipContent: ReactNode;
-    onDirectionChange: (airportId: string, direction: AirportFlightsDirection) => void;
     onOpenChange: (airportId: string, open: boolean) => void;
 }
 
@@ -32,22 +31,15 @@ export function AirportDetailsPopover({
     airport,
     children,
     details,
-    direction,
     isLoading,
     open,
     tooltipContent,
-    onDirectionChange,
     onOpenChange,
 }: AirportDetailsPopoverProps) {
     const handleOpenChange = useCallback(
         (nextOpen: boolean) => onOpenChange(airport.icao, nextOpen),
         [airport.icao, onOpenChange]
     );
-    const handleDirectionChange = useCallback(
-        (nextDirection: AirportFlightsDirection) => onDirectionChange(airport.icao, nextDirection),
-        [airport.icao, onDirectionChange]
-    );
-
     useEffect(
         () => () => {
             onOpenChange(airport.icao, false);
@@ -65,20 +57,26 @@ export function AirportDetailsPopover({
             </div>
         );
     } else if (details) {
-        content = (
-            <AirportDetailsCard
-                airport={airport}
-                details={details}
-                direction={direction}
-                onDirectionChange={handleDirectionChange}
-            />
-        );
+        content = <AirportDetailsCard airport={airport} details={details} />;
     }
 
     return (
         <Popover
             className={styles.popover}
-            content={content}
+            content={
+                <div className={styles.content}>
+                    <Button
+                        className={styles.closeButton}
+                        view="flat"
+                        size="s"
+                        aria-label="Закрыть"
+                        onClick={() => handleOpenChange(false)}
+                    >
+                        <Icon data={Xmark} size={16} />
+                    </Button>
+                    {content}
+                </div>
+            }
             open={open}
             onOpenChange={handleOpenChange}
             trigger="click"

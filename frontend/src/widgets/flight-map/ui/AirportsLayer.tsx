@@ -11,10 +11,8 @@ interface AirportsLayerProps {
 }
 
 export function AirportsLayer({ airports }: AirportsLayerProps) {
-    const { selectedAirport, handleDetailsOpenChange, handleDirectionChange } =
-        useMockAirportFlights();
+    const { selectedAirport, handleDetailsOpenChange } = useMockAirportFlights();
     const selectedAirportIcao = selectedAirport?.airportId;
-    const selectedDirection = selectedAirport?.direction ?? 'all';
 
     return airports.map((airport) => {
         const code = airport.iata ?? airport.icao;
@@ -41,7 +39,6 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                 <AirportDetailsPopover
                     airport={airport}
                     details={isSelected ? (selectedAirport?.details ?? null) : null}
-                    direction={selectedDirection}
                     isLoading={isSelected && !!selectedAirport?.isLoading}
                     open={isSelected}
                     tooltipContent={
@@ -50,7 +47,6 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                             <span>{airport.name}</span>
                         </span>
                     }
-                    onDirectionChange={handleDirectionChange}
                     onOpenChange={handleDetailsOpenChange}
                 >
                     {marker}

@@ -22,11 +22,24 @@
     border-radius: inherit;
 }
 
+.content {
+    position: relative;
+    width: 100%;
+}
+
+.closeButton {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    right: 8px;
+    color: var(--sky-color-text-muted);
+}
+
 .header {
     display: flex;
     align-items: center;
     gap: 11px;
-    padding: 13px 15px;
+    padding: 13px 44px 13px 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -57,18 +70,6 @@
     font-size: 10px;
 }
 
-.flightCount {
-    min-width: 26px;
-    padding: 3px 6px;
-    color: var(--sky-color-text-muted);
-    font:
-        400 10px/1 'Roboto Mono',
-        monospace;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 5px;
-}
-
 .tabs {
     display: flex;
     gap: 17px;
@@ -87,14 +88,45 @@
     cursor: pointer;
 }
 
+.tabCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    margin-left: 4px;
+    padding: 2px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    line-height: 1;
+    background: transparent;
+    /* border: 1px solid transparent; */
+    border-radius: 3px;
+    opacity: 0.22;
+    transition:
+        opacity 0.15s ease,
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+
 .tab:hover {
     color: var(--sky-color-text-default);
+}
+
+.tab:hover .tabCount {
+    opacity: 0.55;
 }
 
 .tab[data-active] {
     color: var(--sky-color-text-primary);
     font-weight: 500;
     border-bottom-color: var(--sky-color-accent-primary);
+}
+
+.tab[data-active] .tabCount {
+    color: var(--sky-color-accent-link);
+    background: oklch(72% 0.14 220deg / 0.14);
+    border-color: oklch(72% 0.14 220deg / 0.2);
+    opacity: 0.9;
 }
 
 .tab:focus-visible {
@@ -161,7 +193,7 @@
     overflow: hidden;
     color: var(--sky-color-accent-link);
     font:
-        400 11px/1.1 'Roboto Mono',
+        400 12px/1.1 'Roboto Mono',
         monospace;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -183,7 +215,7 @@
     justify-content: flex-end;
     gap: 4px;
     color: var(--sky-color-status-success);
-    font-size: 9px;
+    font-size: 11px;
     white-space: nowrap;
 }
 
@@ -196,22 +228,6 @@
 
 .direction[data-direction='arrival'] {
     color: var(--sky-color-accent-secondary);
-}
-
-.footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 34px;
-    padding: 0 15px;
-    color: var(--sky-color-text-faint);
-    font-size: 10px;
-    background: rgba(255, 255, 255, 0.025);
-    border-radius: 0 0 13px 13px;
-}
-
-.footer span:last-child {
-    font-family: 'Roboto Mono', monospace;
 }
 
 .empty,

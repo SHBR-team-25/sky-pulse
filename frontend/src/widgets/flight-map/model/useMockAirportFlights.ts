@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { airportFlightsMock, type AirportFlightsDirection } from '@/entities/airport';
-import type { AirportFlightsQuery, AirportFlightsResponse } from '@/features/getAirportsFlights';
+import { airportFlightsMock } from '@/entities/airport';
+import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
 
 // Тут вообще все мок
 
 // для имитации запроса
 const MOCK_REQUEST_DELAY_MS = 500;
 
-async function getMockAirportFlights(
-    icao: string,
-    params: AirportFlightsQuery = {}
-): Promise<AirportFlightsResponse | null> {
+async function getMockAirportFlights(icao: string): Promise<AirportFlightsResponse | null> {
     await new Promise<void>((resolve) => {
         setTimeout(resolve, MOCK_REQUEST_DELAY_MS);
     });
@@ -19,30 +16,18 @@ async function getMockAirportFlights(
         return null;
     }
 
-    const direction = params.direction ?? 'all';
-
-    return {
-        ...airportFlightsMock,
-        items: airportFlightsMock.items.filter(
-            (flight) =>
-                (direction === 'all' || flight.direction === direction) &&
-                (params.from === undefined || flight.observedAt >= params.from) &&
-                (params.to === undefined || flight.observedAt <= params.to)
-        ),
-    };
+    return airportFlightsMock;
 }
 
 interface SelectedAirport {
     airportId: string;
     details: AirportFlightsResponse | null;
-    direction: AirportFlightsDirection;
     isLoading: boolean;
 }
 
 export function useMockAirportFlights() {
     const [selectedAirport, setSelectedAirport] = useState<SelectedAirport | null>(null);
     const selectedAirportId = selectedAirport?.airportId ?? null;
-    const selectedDirection = selectedAirport?.direction ?? 'all';
 
     const handleDetailsOpenChange = useCallback((airportId: string, open: boolean) => {
         setSelectedAirport((currentAirport) => {
@@ -50,7 +35,6 @@ export function useMockAirportFlights() {
                 return {
                     airportId,
                     details: null,
-                    direction: 'all',
                     isLoading: true,
                 };
             }
@@ -58,22 +42,6 @@ export function useMockAirportFlights() {
             return currentAirport?.airportId === airportId ? null : currentAirport;
         });
     }, []);
-
-    const handleDirectionChange = useCallback(
-        (airportId: string, direction: AirportFlightsDirection) => {
-            setSelectedAirport((currentAirport) => {
-                if (
-                    currentAirport?.airportId !== airportId ||
-                    currentAirport.direction === direction
-                ) {
-                    return currentAirport;
-                }
-
-                return { ...currentAirport, details: null, direction, isLoading: true };
-            });
-        },
-        []
-    );
 
     useEffect(() => {
         let ignore = false;
@@ -84,20 +52,21 @@ export function useMockAirportFlights() {
             }
 
             try {
-                const details = await getMockAirportFlights(selectedAirportId, {
-                    direction: selectedDirection,
-                });
+                const details = await getMockAirportFlights(selectedAirportId);
 
                 if (!ignore) {
                     setSelectedAirport((currentAirport) => {
-                        if (
-                            currentAirport?.airportId !== selectedAirportId ||
-                            currentAirport.direction !== selectedDirection
-                        ) {
+                        if (currentAirport?.airportId !== selectedAirportId) {
                             return currentAirport;
                         }
 
-                        return details ? { ...currentAirport, details, isLoading: false } : null;
+                        return details
+                            ? {
+                                  ...currentAirport,
+                                  details,
+                                  isLoading: false,
+                              }
+                            : null;
                     });
                 }
             } catch {
@@ -114,7 +83,7 @@ export function useMockAirportFlights() {
         return () => {
             ignore = true;
         };
-    }, [selectedAirportId, selectedDirection]);
+    }, [selectedAirportId]);
 
-    return { selectedAirport, handleDetailsOpenChange, handleDirectionChange };
+    return { selectedAirport, handleDetailsOpenChange };
 }

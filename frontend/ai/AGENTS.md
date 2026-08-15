@@ -241,13 +241,15 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
-        │       useMockAirportFlights.ts             # mock-запрос рейсов аэропорта с фильтром по направлению и задержкой 500 мс
+        │       useMockAirportFlights.ts             # mock-запрос рейсов аэропорта с задержкой 500 мс
         │       useMockFlightDetails.ts              # временный хук мок-запроса деталей выбранного рейса
         │
         └───ui
-                AirportDetailsCard.tsx               # карточка аэропорта с виртуализированным списком рейсов и дозагрузкой
+                AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов
                 AirportDetailsPopover.module.css     # стили поповера, карточки и виртуального списка рейсов аэропорта
-                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой и переключением направления
+                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой и кнопкой закрытия
+                AirportFlightsList.tsx               # виртуальный список рейсов с загрузкой по 10 строк
+                AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
                 AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
                 AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
                 FlightDetailsCard.tsx                # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
