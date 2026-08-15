@@ -28,14 +28,18 @@ def upload_job_file(proxy, token, job_path, local_path=LOCAL_JOB_PATH):
 
 
 def run_streaming_job(proxy=None, token=None, job_path=None,
-                      input_path=None, output_path=None, checkpoint_path=None,
-                      num_executors=1, py_files=DEFAULT_PY_FILES,
+                      positions_raw=None, ref_aircraft=None,
+                      positions_current=None, positions_history=None,
+                      checkpoint_path=None, num_executors=1,
+                      py_files=DEFAULT_PY_FILES,
                       pyspark_python=DEFAULT_PYSPARK_PYTHON, skip_upload=False):
     proxy = (proxy or os.getenv('YT_PROXY', CLUSTER_CONFIG['proxy'])).rstrip('/')
     token = token or os.getenv('YT_TOKEN', CLUSTER_CONFIG['token'])
     job_path = job_path or f"{PATHS['code']}/streaming_job.py"
-    input_path = input_path or PATHS['input']
-    output_path = output_path or PATHS['output']
+    positions_raw = positions_raw or PATHS['positions_raw']
+    ref_aircraft = ref_aircraft or PATHS['ref_aircraft']
+    positions_current = positions_current or PATHS['positions_current']
+    positions_history = positions_history or PATHS['positions_history']
     checkpoint_path = checkpoint_path or PATHS['checkpoints']
 
     if not os.getenv('SPARK_CONF_DIR'):
@@ -47,12 +51,14 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         print(f"Uploading job file to yt://{job_path}")
         upload_job_file(proxy, token, job_path)
 
-    print(f"Running streaming job:")
+    print("Running job_enrich:")
     print(f"  Master: ytsaurus://{proxy}")
     print(f"  Job path: yt://{job_path}")
-    print(f"  Input: {input_path}")
-    print(f"  Output: {output_path}")
-    print(f"  Checkpoint: {checkpoint_path}")
+    print(f"  positions_raw: {positions_raw}")
+    print(f"  ref_aircraft: {ref_aircraft}")
+    print(f"  positions_current: {positions_current}")
+    print(f"  positions_history: {positions_history}")
+    print(f"  checkpoint: {checkpoint_path}")
 
     cmd = [
         "spark-submit",
@@ -62,8 +68,10 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         "--conf", f"spark.pyspark.python={pyspark_python}",
         "--py-files", py_files,
         f"yt://{job_path}",
-        "--input", input_path,
-        "--output", output_path,
+        "--positions-raw", positions_raw,
+        "--ref-aircraft", ref_aircraft,
+        "--positions-current", positions_current,
+        "--positions-history", positions_history,
         "--checkpoint", checkpoint_path,
     ]
 
@@ -76,12 +84,14 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         return False
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run streaming job (direct submit)')
+    parser = argparse.ArgumentParser(description='Run job_enrich streaming job (direct submit)')
     parser.add_argument('--proxy', help='YT cluster proxy (https://...)')
     parser.add_argument('--token', help='YT auth token')
     parser.add_argument('--job-path', help='Cypress path where the job script will be uploaded')
-    parser.add_argument('--input', help='Input path')
-    parser.add_argument('--output', help='Output path')
+    parser.add_argument('--positions-raw', help='positions_raw table path')
+    parser.add_argument('--ref-aircraft', help='ref_aircraft table path')
+    parser.add_argument('--positions-current', help='positions_current table path')
+    parser.add_argument('--positions-history', help='positions_history table path')
     parser.add_argument('--checkpoint', help='Checkpoint path')
     parser.add_argument('--num-executors', type=int, default=1, help='Number of Spark executors')
     parser.add_argument('--py-files', default=DEFAULT_PY_FILES,
@@ -96,8 +106,10 @@ if __name__ == "__main__":
         proxy=args.proxy,
         token=args.token,
         job_path=args.job_path,
-        input_path=args.input,
-        output_path=args.output,
+        positions_raw=args.positions_raw,
+        ref_aircraft=args.ref_aircraft,
+        positions_current=args.positions_current,
+        positions_history=args.positions_history,
         checkpoint_path=args.checkpoint,
         num_executors=args.num_executors,
         py_files=args.py_files,

@@ -1,3 +1,4 @@
+import os
 import yt.wrapper as yt
 import sys
 import argparse
@@ -11,9 +12,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--table", required=True)
     parser.add_argument("--proxy", default=YT_PROXY)
+    parser.add_argument("--token", default=os.getenv("YT_TOKEN"))
     args = parser.parse_args()
-    
-    client = YtClient(proxy=args.proxy, config={"backend": "http"})
+
+    client = YtClient(proxy=args.proxy, token=args.token or None, config={"backend": "http"})
     table_path = args.table
     
     if not client.exists(table_path):

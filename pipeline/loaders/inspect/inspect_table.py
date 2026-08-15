@@ -7,6 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from config import BASE_PATH, YT_PROXY
 
+BASE_PATH = os.getenv("YT_BASE_PATH", BASE_PATH)
+
 TABLE_PATHS = {
     "ref_aircraft": f"{BASE_PATH}/ref_aircraft",
     "ref_airports": f"{BASE_PATH}/ref_airports",

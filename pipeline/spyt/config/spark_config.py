@@ -6,8 +6,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from pipeline.config import YT_PROXY, BASE_PATH
 
-# На кластере хакатона команды пишут только в свою директорию
-# //home/hackathon/<team> (см. setup/spyt-env.md), а не в общий //home.
 TEAM_BASE_PATH = os.getenv('YT_BASE_PATH', BASE_PATH)
 
 CLUSTER_CONFIG = {
@@ -23,6 +21,8 @@ PATHS = {
     'discovery': os.getenv('YT_DISCOVERY_PATH', f"{TEAM_BASE_PATH}/spark/discovery"),
     'code': os.getenv('YT_CODE_PATH', f"{TEAM_BASE_PATH}/spark/code"),
     'checkpoints': os.getenv('YT_CHECKPOINT_PATH', f"{TEAM_BASE_PATH}/spark/checkpoints"),
-    'input': os.getenv('YT_INPUT_PATH', f"{TEAM_BASE_PATH}/input_stream"),
-    'output': os.getenv('YT_OUTPUT_PATH', f"{TEAM_BASE_PATH}/output_stream"),
+    'positions_raw': os.getenv('YT_POSITIONS_RAW_PATH', f"{TEAM_BASE_PATH}/positions_raw"),
+    'ref_aircraft': os.getenv('YT_REF_AIRCRAFT_PATH', f"{TEAM_BASE_PATH}/ref_aircraft"),
+    'positions_current': os.getenv('YT_POSITIONS_CURRENT_PATH', f"{TEAM_BASE_PATH}/positions_current"),
+    'positions_history': os.getenv('YT_POSITIONS_HISTORY_PATH', f"{TEAM_BASE_PATH}/positions_history"),
 }

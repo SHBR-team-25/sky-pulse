@@ -1,3 +1,4 @@
+import os
 import yt.wrapper as yt
 import sys
 import time
@@ -8,12 +9,15 @@ from yt.wrapper import YtClient
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from config import BASE_PATH, YT_PROXY
 
+BASE_PATH = os.getenv("YT_BASE_PATH", BASE_PATH)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--proxy", default=YT_PROXY)
+    parser.add_argument("--token", default=os.getenv("YT_TOKEN"))
     args = parser.parse_args()
     
-    client = YtClient(proxy=args.proxy, config={"backend": "http"})
+    client = YtClient(proxy=args.proxy, token=args.token or None, config={"backend": "http"})
     
     table_path = f"{BASE_PATH}/positions_raw"
     schema = [
