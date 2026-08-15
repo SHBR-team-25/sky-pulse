@@ -15,6 +15,7 @@ export const queryClient = new QueryClient({
 
                 return failureCount < MAX_RETRIES;
             },
+            throwOnError: (_error, query) => query.state.data === undefined,
         },
     },
 });

@@ -1,0 +1,16 @@
+.fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    padding: 16px;
+    overflow: auto;
+}
+
+.fallback > * {
+    width: 100%;
+    max-width: 640px;
+}
