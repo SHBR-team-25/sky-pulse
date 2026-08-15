@@ -27,7 +27,7 @@ def main():
         print(f"Table {table_path} already exists, skipping")
         return
     
-    client.create("table", table_path, attributes={"schema": schema, "dynamic": True})
+    client.create("table", table_path, attributes={"schema": schema})
     print(f"Table created: {table_path}")
 
 if __name__ == "__main__":
