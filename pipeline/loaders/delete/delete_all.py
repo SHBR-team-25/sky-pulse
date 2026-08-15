@@ -2,9 +2,10 @@ import os
 import sys
 import argparse
 import subprocess
+from pathlib import Path
 
-
-DEFAULT_PROXY = "localhost:8000"
+sys.path.append(str(Path(__file__).parent.parent))
+from config import BASE_PATH, YT_PROXY
 
 TABLES = [
     ("ref_aircraft", "static", "icao24"),
@@ -22,17 +23,18 @@ DELETE_SCRIPTS = [
     "delete_positions_history.py",
 ]
 
-
-def delete_all_tables(proxy: str = DEFAULT_PROXY, force: bool = False):
+def delete_all_tables(proxy: str = None, force: bool = False):
+    proxy = proxy or YT_PROXY
     print("=" * 80)
     print("DELETE ALL TABLES")
     print("=" * 80)
     print(f"Proxy: {proxy}")
+    print(f"Base path: {BASE_PATH}")
     print("")
 
     print("Tables to be deleted:")
     for name, type_, key in TABLES:
-        print(f"  //home/{name} ({type_}, key: {key})")
+        print(f"  {BASE_PATH}/{name} ({type_}, key: {key})")
     print("")
 
     if not force:
@@ -79,7 +81,6 @@ def delete_all_tables(proxy: str = DEFAULT_PROXY, force: bool = False):
     else:
         print("SUCCESS: All tables deleted")
 
-
 def main():
     parser = argparse.ArgumentParser(
         description="Delete all tables from YTsaurus"
@@ -91,12 +92,11 @@ def main():
     )
     parser.add_argument(
         "--proxy",
-        default=os.environ.get("YT_PROXY", DEFAULT_PROXY),
-        help=f"YTsaurus cluster proxy (default: {DEFAULT_PROXY})"
+        default=os.environ.get("YT_PROXY", YT_PROXY),
+        help=f"YTsaurus cluster proxy (default: {YT_PROXY})"
     )
     args = parser.parse_args()
     delete_all_tables(args.proxy, args.yes)
-
 
 if __name__ == "__main__":
     main()

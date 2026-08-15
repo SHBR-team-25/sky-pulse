@@ -2,24 +2,26 @@ import os
 import sys
 import argparse
 import subprocess
+from pathlib import Path
 
-
-DEFAULT_PROXY = "localhost:8000"
+sys.path.append(str(Path(__file__).parent.parent))
+from config import BASE_PATH, YT_PROXY
 
 TABLES = [
-    "//home/ref_aircraft",
-    "//home/ref_airports",
-    "//home/positions_raw",
-    "//home/positions_current",
-    "//home/positions_history",
+    f"{BASE_PATH}/ref_aircraft",
+    f"{BASE_PATH}/ref_airports",
+    f"{BASE_PATH}/positions_raw",
+    f"{BASE_PATH}/positions_current",
+    f"{BASE_PATH}/positions_history",
 ]
 
-
-def inspect_all_tables(proxy: str = DEFAULT_PROXY):
+def inspect_all_tables(proxy: str = None):
+    proxy = proxy or YT_PROXY
     print("=" * 80)
     print("INSPECT ALL TABLES")
     print("=" * 80)
     print(f"Proxy: {proxy}")
+    print(f"Base path: {BASE_PATH}")
     print("")
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -48,19 +50,17 @@ def inspect_all_tables(proxy: str = DEFAULT_PROXY):
     print("INSPECTION COMPLETE")
     print("=" * 80)
 
-
 def main():
     parser = argparse.ArgumentParser(
         description="Inspect all tables in YTsaurus"
     )
     parser.add_argument(
         "--proxy",
-        default=os.environ.get("YT_PROXY", DEFAULT_PROXY),
-        help=f"YTsaurus cluster proxy (default: {DEFAULT_PROXY})"
+        default=os.environ.get("YT_PROXY", YT_PROXY),
+        help=f"YTsaurus cluster proxy (default: {YT_PROXY})"
     )
     args = parser.parse_args()
     inspect_all_tables(args.proxy)
-
 
 if __name__ == "__main__":
     main()

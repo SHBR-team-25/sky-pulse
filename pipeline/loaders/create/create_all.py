@@ -2,9 +2,10 @@ import os
 import sys
 import argparse
 import subprocess
+from pathlib import Path
 
-
-DEFAULT_PROXY = "localhost:8000"
+sys.path.append(str(Path(__file__).parent.parent))
+from config import BASE_PATH, YT_PROXY
 
 SCRIPTS = [
     "create_ref_aircraft.py",
@@ -14,12 +15,13 @@ SCRIPTS = [
     "create_positions_history.py",
 ]
 
-
-def create_all_tables(proxy: str = DEFAULT_PROXY):
+def create_all_tables(proxy: str = None):
+    proxy = proxy or YT_PROXY
     print("=" * 80)
     print("CREATING ALL TABLES")
     print("=" * 80)
     print(f"Proxy: {proxy}")
+    print(f"Base path: {BASE_PATH}")
     print("")
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -60,13 +62,12 @@ def create_all_tables(proxy: str = DEFAULT_PROXY):
     else:
         print("SUCCESS: All tables created")
         print("")
-        print("Tables created:")
-        print("  //home/ref_aircraft (static)")
-        print("  //home/ref_airports (static)")
-        print("  //home/positions_raw (dynamic, mounted)")
-        print("  //home/positions_current (dynamic, mounted)")
-        print("  //home/positions_history (dynamic, mounted)")
-
+        print(f"Tables created under {BASE_PATH}:")
+        print(f"  {BASE_PATH}/ref_aircraft (static)")
+        print(f"  {BASE_PATH}/ref_airports (static)")
+        print(f"  {BASE_PATH}/positions_raw (dynamic, mounted)")
+        print(f"  {BASE_PATH}/positions_current (dynamic, mounted)")
+        print(f"  {BASE_PATH}/positions_history (dynamic, mounted)")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -74,12 +75,11 @@ def main():
     )
     parser.add_argument(
         "--proxy",
-        default=os.environ.get("YT_PROXY", DEFAULT_PROXY),
-        help=f"YTsaurus cluster proxy (default: {DEFAULT_PROXY})"
+        default=os.environ.get("YT_PROXY", YT_PROXY),
+        help=f"YTsaurus cluster proxy (default: {YT_PROXY})"
     )
     args = parser.parse_args()
     create_all_tables(args.proxy)
-
 
 if __name__ == "__main__":
     main()

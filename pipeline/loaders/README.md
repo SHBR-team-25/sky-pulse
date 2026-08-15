@@ -45,20 +45,22 @@
 |Переменная|Значение по умолчанию|Описание|
 |----------|---------------------|--------|
 |YT_PROXY|localhost:8000|Прокси кластера YTsaurus|
+|BASE_PATH|//home|Базовый путь в YTsaurus для таблиц|
 
 ```bash
 export YT_PROXY=localhost:8000
+export BASE_PATH=//home
 ```
 
 # Доступные таблицы
 
 |Таблица|Тип|Ключ|Путь|
 |-------|---|----|----|
-|ref_aircraft|статическая|icao24|//home/ref_aircraft|
-|ref_airports|статическая|ident|//home/ref_airports|
-|positions_raw|динамическая, сортированная|(icao24, time_position)|//home/positions_raw|
-|positions_current|динамическая, сортированная|icao24|//home/positions_current|
-|positions_history|динамическая, сортированная|(icao24, time_position)|//home/positions_history|
+|ref_aircraft|статическая|icao24|{BASE_PATH}/ref_aircraft|
+|ref_airports|статическая|ident|{BASE_PATH}/ref_airports|
+|positions_raw|динамическая, сортированная|(icao24, time_position)|{BASE_PATH}/positions_raw|
+|positions_current|динамическая, сортированная|icao24|{BASE_PATH}/positions_current|
+|positions_history|динамическая, сортированная|(icao24, time_position)|{BASE_PATH}/positions_history|
 
 # Зависимости
 ```bash
