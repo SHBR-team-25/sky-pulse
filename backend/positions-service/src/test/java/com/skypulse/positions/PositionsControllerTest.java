@@ -27,7 +27,8 @@ class PositionsControllerTest {
                 .andExpect(jsonPath("$[0].icao24").value("abc123"))
                 .andExpect(jsonPath("$[0].originCountry").value("Russia"))
                 .andExpect(jsonPath("$[0].baroAltitude").value(10600.0))
-                .andExpect(jsonPath("$[0].manufacturername").value("Airbus A320"));
+                .andExpect(jsonPath("$[0].manufacturername").value("Airbus"))
+                .andExpect(jsonPath("$[0].model").value("A320"));
     }
 
     @Test

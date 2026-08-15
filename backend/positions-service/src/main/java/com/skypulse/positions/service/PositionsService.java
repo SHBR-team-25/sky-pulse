@@ -30,7 +30,7 @@ public class PositionsService {
 
     public List<TrackPointDto> track(String icao24, long sinceSeconds) {
         return repository.historyByIcao24(icao24, sinceSeconds).stream()
-й                .map(p -> new TrackPointDto(p.timePosition(), p.lat(), p.lon(), p.baroAltitude()))
+                .map(p -> new TrackPointDto(p.timePosition(), p.lat(), p.lon(), p.baroAltitude()))
                 .toList();
     }
 }
