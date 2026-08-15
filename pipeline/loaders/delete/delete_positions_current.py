@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 from yt.wrapper import YtClient
 
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from config import BASE_PATH, YT_PROXY
 
 def main():
