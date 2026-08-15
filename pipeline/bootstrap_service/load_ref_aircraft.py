@@ -25,5 +25,6 @@ def load(source_url: str = DEFAULT_SOURCE_URL, overwrite: bool = False) -> None:
         return
 
     rows = (_to_row(row) for row in iter_csv_rows(source_url))
+    rows = (row for row in rows if row["icao24"])  # icao24 — обязательный ключ
     client.write_table(table_path, rows)
     logger.info("ref_aircraft loaded into %s", table_path)
