@@ -9,43 +9,56 @@ import {
 } from 'react';
 import { Xmark } from '@gravity-ui/icons';
 import { Button, Icon, Popover, Spin } from '@gravity-ui/uikit';
-import { FlightDetailsCard } from './FlightDetailsCard';
-import styles from './FlightDetailsPopover.module.css';
+import type { Airport } from '@/entities/airport';
+import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
+import { AirportDetailsCard } from './AirportDetailsCard';
 import { MarkerTooltip } from './MarkerTooltip';
-import type { FlightDetailsResponse } from '@/features/getTargetFlight';
+import styles from './AirportDetailsPopover.module.css';
 
 type MarkerElementProps = HTMLAttributes<HTMLElement> & RefAttributes<HTMLElement>;
 
-interface FlightDetailsPopoverProps {
+interface AirportDetailsPopoverProps {
+    airport: Airport;
     children: ReactElement<MarkerElementProps>;
-    details: FlightDetailsResponse | null;
-    flightId: string;
+    details: AirportFlightsResponse | null;
     isLoading: boolean;
     open: boolean;
     tooltipContent: ReactNode;
-    onOpenChange: (flightId: string, open: boolean) => void;
+    onOpenChange: (airportId: string, open: boolean) => void;
 }
 
-export function FlightDetailsPopover({
+export function AirportDetailsPopover({
+    airport,
     children,
     details,
-    flightId,
     isLoading,
     open,
     tooltipContent,
     onOpenChange,
-}: FlightDetailsPopoverProps) {
+}: AirportDetailsPopoverProps) {
     const handleOpenChange = useCallback(
-        (nextOpen: boolean) => onOpenChange(flightId, nextOpen),
-        [flightId, onOpenChange]
+        (nextOpen: boolean) => onOpenChange(airport.icao, nextOpen),
+        [airport.icao, onOpenChange]
     );
-
     useEffect(
         () => () => {
-            onOpenChange(flightId, false);
+            onOpenChange(airport.icao, false);
         },
-        [flightId, onOpenChange]
+        [airport.icao, onOpenChange]
     );
+
+    let content: ReactNode = null;
+
+    if (isLoading) {
+        content = (
+            <div className={styles.message} role="status" aria-live="polite">
+                <Spin size="l" />
+                <span>Загружаем рейсы аэропорта</span>
+            </div>
+        );
+    } else if (details) {
+        content = <AirportDetailsCard airport={airport} details={details} />;
+    }
 
     return (
         <Popover
@@ -61,14 +74,7 @@ export function FlightDetailsPopover({
                     >
                         <Icon data={Xmark} size={16} />
                     </Button>
-                    {isLoading ? (
-                        <div className={styles.loading} role="status" aria-live="polite">
-                            <Spin size="l" />
-                            <span>Загружаем данные о рейсе</span>
-                        </div>
-                    ) : (
-                        details && <FlightDetailsCard details={details} />
-                    )}
+                    {content}
                 </div>
             }
             open={open}
