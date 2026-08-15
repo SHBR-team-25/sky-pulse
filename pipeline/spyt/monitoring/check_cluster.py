@@ -4,8 +4,8 @@ import argparse
 import subprocess
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from config.spark_config import CLUSTER_CONFIG, PATHS
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+from pipeline.spyt.config.spark_config import CLUSTER_CONFIG, PATHS
 
 def check_cluster(proxy=None, discovery_path=None):
     proxy = proxy or os.getenv('YT_PROXY', CLUSTER_CONFIG['proxy'])
