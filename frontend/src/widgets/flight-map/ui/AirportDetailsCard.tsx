@@ -1,7 +1,13 @@
+import { useCallback, useState } from 'react';
+import { List } from '@gravity-ui/uikit';
 import { formatFlightNumber, formatTime } from '@/shared/lib/formatters';
 import type { Airport, AirportFlightsDirection } from '@/entities/airport';
 import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
 import styles from './AirportDetailsPopover.module.css';
+
+const FLIGHTS_PAGE_SIZE = 10;
+const FLIGHT_ROW_HEIGHT = 45;
+const LIST_OVERSCAN = 2;
 
 const directionTabs: { value: AirportFlightsDirection; label: string }[] = [
     { value: 'all', label: 'Все' },
@@ -25,9 +31,19 @@ export function AirportDetailsCard({
     const airportMeta = [airport.city, airport.country, airport.iata ? airport.icao : null]
         .filter(Boolean)
         .join(' · ');
-    const visibleFlights = details.items.toSorted(
-        (left, right) => right.observedAt - left.observedAt
+    // Временно тут, потом уйдет в зустанд стор
+    const [visibleFlights] = useState(() =>
+        details.items.toSorted((left, right) => right.observedAt - left.observedAt)
     );
+    const [visibleFlightsCount, setVisibleFlightsCount] = useState(FLIGHTS_PAGE_SIZE);
+    const displayedFlights = visibleFlights.slice(0, visibleFlightsCount + LIST_OVERSCAN);
+    const hasMoreFlights = displayedFlights.length < visibleFlights.length;
+
+    const handleLoadMore = useCallback(() => {
+        setVisibleFlightsCount((currentCount) =>
+            Math.min(currentCount + FLIGHTS_PAGE_SIZE, visibleFlights.length)
+        );
+    }, [visibleFlights.length]);
 
     return (
         <article className={styles.card} aria-label={`Информация об аэропорте ${airport.name}`}>
@@ -36,8 +52,8 @@ export function AirportDetailsCard({
                     <span className={styles.airportName}>{airport.name}</span>
                     <span className={styles.airportMeta}>{airportMeta}</span>
                 </div>
-                {/* // TODO: переделать стили  */}
-                <span className={styles.flightCount}>{details.items.length}</span>
+
+                <span className={styles.flightCount}>{visibleFlights.length}</span>
             </header>
 
             <div className={styles.tabs} role="tablist" aria-label="Направление рейсов">
@@ -64,8 +80,18 @@ export function AirportDetailsCard({
                         <span>Маршрут</span>
                         <span>Тип</span>
                     </div>
-                    <ol className={styles.flightList}>
-                        {visibleFlights.map((flight) => {
+                    <List
+                        className={styles.flightList}
+                        items={displayedFlights}
+                        itemHeight={FLIGHT_ROW_HEIGHT}
+                        itemKey={(flight) =>
+                            `${flight.icao24}-${flight.direction}-${flight.observedAt}`
+                        }
+                        filterable={false}
+                        virtualized
+                        loading={hasMoreFlights}
+                        onLoadMore={handleLoadMore}
+                        renderItem={(flight) => {
                             const otherAirportCode =
                                 flight.otherAirport?.iata ?? flight.otherAirport?.icao ?? '—';
                             const otherAirportName =
@@ -74,10 +100,7 @@ export function AirportDetailsCard({
                             const directionLabel = isDeparture ? 'Вылет' : 'Прилёт';
 
                             return (
-                                <li
-                                    className={styles.flightRow}
-                                    key={`${flight.icao24}-${flight.direction}-${flight.observedAt}`}
-                                >
+                                <div className={styles.flightRow}>
                                     {/* // FIXME:  проверить как будет приходить с бека */}
                                     <time
                                         dateTime={new Date(flight.observedAt * 1000).toISOString()}
@@ -101,10 +124,10 @@ export function AirportDetailsCard({
                                         <span aria-hidden="true" />
                                         {directionLabel}
                                     </span>
-                                </li>
+                                </div>
                             );
-                        })}
-                    </ol>
+                        }}
+                    />
                 </>
             ) : (
                 <div className={styles.empty}>Рейсы не найдены</div>

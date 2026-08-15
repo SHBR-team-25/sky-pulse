@@ -52,7 +52,7 @@ export const airportsMock = {
     total: 5,
 } satisfies AirportsListResponse;
 
-export const airportFlightsMock = {
+const airportFlightsMockBase = {
     airport: {
         icao: 'UUEE',
         iata: 'SVO',
@@ -166,4 +166,16 @@ export const airportFlightsMock = {
             observedAt: 1_785_571_800,
         },
     ],
+} satisfies AirportFlightsResponse;
+
+// клонировала мок вылеты и прилеты для виртуального списка
+export const airportFlightsMock = {
+    ...airportFlightsMockBase,
+    items: Array.from({ length: 4 }, (_, batchIndex) =>
+        airportFlightsMockBase.items.map((flight) => ({
+            ...flight,
+            icao24: `${batchIndex.toString(16)}${flight.icao24.slice(1)}`,
+            observedAt: flight.observedAt - batchIndex * 7_200,
+        }))
+    ).flat(),
 } satisfies AirportFlightsResponse;
