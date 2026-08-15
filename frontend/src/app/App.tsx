@@ -9,7 +9,7 @@ import './styles/index.css';
 export function App() {
     return (
         <QueryProvider>
-            <ThemeProvider theme="dark">
+            <ThemeProvider theme="light">
                 {/* Контект хранит значение зума и координаты центральной точки на карте */}
                 <MapViewProvider>
                     <div className={styles.app}>

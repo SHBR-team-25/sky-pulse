@@ -15,7 +15,7 @@ export const router = createBrowserRouter([
         Component: Layout,
         children: [
             { index: true, element: <Navigate to="/map" replace /> },
-            { path: 'map', element: <MapPage theme="dark" /> },
+            { path: 'map', element: <MapPage theme="light" /> },
             {
                 path: 'dashboard',
                 Component: DashboardPage,

@@ -1,5 +1,7 @@
 :root {
-    /* Core dark surfaces from the design */
+    color-scheme: dark;
+
+    /* Core dark surfaces */
     --sky-color-bg-page: #0d1117;
     --sky-color-bg-canvas: #080d16;
     --sky-color-bg-canvas-deep: #070b13;
@@ -14,11 +16,18 @@
     /* Glass surfaces and borders */
     --sky-color-surface-header: rgba(11, 17, 27, 0.82);
     --sky-color-surface-footer: rgba(11, 17, 27, 0.86);
+    --sky-color-surface-popup: rgba(13, 20, 32, 0.92);
     --sky-color-surface-control: rgba(255, 255, 255, 0.06);
     --sky-color-surface-selected: rgba(255, 255, 255, 0.1);
+    --sky-color-surface-muted: rgba(255, 255, 255, 0.04);
     --sky-color-border-subtle: rgba(255, 255, 255, 0.07);
     --sky-color-border-control: rgba(255, 255, 255, 0.09);
     --sky-color-border-strong: rgba(255, 255, 255, 0.12);
+    --sky-color-popup-border: oklch(78% 0.12 220deg / 0.45);
+    --sky-color-popup-outline: rgba(255, 255, 255, 0.04);
+    --sky-color-divider-strong: rgba(255, 255, 255, 0.08);
+    --sky-color-divider: rgba(255, 255, 255, 0.06);
+    --sky-color-divider-subtle: rgba(255, 255, 255, 0.04);
 
     /* Neutral content */
     --sky-color-text-primary: #f0f6fc;
@@ -39,6 +48,15 @@
     /* Avatar and utility colors */
     --sky-color-avatar-gradient-start: #2d3b52;
     --sky-color-avatar-gradient-end: #1a2230;
+    --sky-color-on-accent: #ffffff;
+    --sky-color-focus-ring: rgba(255, 255, 255, 0.8);
+    --sky-color-shadow: rgba(0, 0, 0, 0.35);
+    --sky-color-shadow-strong: rgba(0, 0, 0, 0.9);
+    --sky-color-accent-glow-soft: rgba(68, 192, 255, 0.25);
+    --sky-color-accent-glow: rgba(68, 192, 255, 0.4);
+    --sky-color-accent-glow-focus: rgba(68, 192, 255, 0.45);
+    --sky-color-warning-glow-soft: rgba(255, 190, 70, 0.2);
+    --sky-color-warning-glow: rgba(255, 190, 70, 0.4);
     --sky-color-transparent: transparent;
 
     font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -46,6 +64,63 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* ThemeProvider keeps this class in sync with its active theme. */
+.g-root_theme_light,
+.g-root_theme_light-hc {
+    color-scheme: light;
+
+    --sky-color-bg-page: #f5f7fa;
+    --sky-color-bg-canvas: #f3f6fa;
+    --sky-color-bg-canvas-deep: #172033;
+    --sky-color-bg-map-glow: #dce9f5;
+    --sky-color-map-grid: #d9e2ec;
+    --sky-color-map-land: #e9eef4;
+    --sky-color-map-land-border: #cbd6e2;
+    --sky-color-map-route-inactive: #98a8ba;
+    --sky-color-map-grid-transparent: rgba(91, 119, 148, 0.14);
+    --sky-color-map-vignette: rgba(70, 101, 132, 0.1);
+
+    --sky-color-surface-header: rgba(255, 255, 255, 0.88);
+    --sky-color-surface-footer: rgba(255, 255, 255, 0.92);
+    --sky-color-surface-popup: rgba(255, 255, 255, 0.96);
+    --sky-color-surface-control: rgba(35, 66, 96, 0.06);
+    --sky-color-surface-selected: rgba(16, 111, 170, 0.11);
+    --sky-color-surface-muted: rgba(35, 66, 96, 0.045);
+    --sky-color-border-subtle: rgba(35, 55, 78, 0.1);
+    --sky-color-border-control: rgba(35, 55, 78, 0.14);
+    --sky-color-border-strong: rgba(35, 55, 78, 0.2);
+    --sky-color-popup-border: rgba(35, 55, 78, 0.16);
+    --sky-color-popup-outline: rgba(35, 55, 78, 0.08);
+    --sky-color-divider-strong: rgba(35, 55, 78, 0.12);
+    --sky-color-divider: rgba(35, 55, 78, 0.1);
+    --sky-color-divider-subtle: rgba(35, 55, 78, 0.07);
+
+    --sky-color-text-primary: #172033;
+    --sky-color-text-default: #25354a;
+    --sky-color-text-secondary: #40546b;
+    --sky-color-text-muted: #607186;
+    --sky-color-text-subtle: #718196;
+    --sky-color-text-faint: #7f8da0;
+
+    --sky-color-accent-primary: oklch(58% 0.16 230deg);
+    --sky-color-accent-secondary: oklch(52% 0.14 230deg);
+    --sky-color-accent-link: oklch(50% 0.16 235deg);
+    --sky-color-status-success: oklch(53% 0.16 150deg);
+    --sky-color-status-warning: oklch(61% 0.15 75deg);
+    --sky-color-status-danger: oklch(57% 0.2 25deg);
+
+    --sky-color-avatar-gradient-start: #dce7f2;
+    --sky-color-avatar-gradient-end: #c8d7e6;
+    --sky-color-focus-ring: rgba(255, 255, 255, 0.95);
+    --sky-color-shadow: rgba(25, 47, 70, 0.22);
+    --sky-color-shadow-strong: rgba(25, 47, 70, 0.32);
+    --sky-color-accent-glow-soft: rgba(22, 143, 209, 0.18);
+    --sky-color-accent-glow: rgba(22, 143, 209, 0.28);
+    --sky-color-accent-glow-focus: rgba(22, 143, 209, 0.34);
+    --sky-color-warning-glow-soft: rgba(210, 139, 24, 0.16);
+    --sky-color-warning-glow: rgba(210, 139, 24, 0.25);
 }
 
 * {
