@@ -15,7 +15,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["common*", "svc_bootstrap*", "svc_ingest*"]
+include = ["common*", "bootstrap_service*", "ingest_service*"]
 
 [tool.ruff]
 line-length = 100

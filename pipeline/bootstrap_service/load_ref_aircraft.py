@@ -1,10 +1,10 @@
 import logging
 
+from bootstrap_service.csv_source import iter_csv_rows
+from bootstrap_service.schemas import REF_AIRCRAFT_FIELDS, REF_AIRCRAFT_SCHEMA
+from bootstrap_service.table_writer import ensure_table
 from common.config import load_yt_config
 from common.yt_client import make_client
-from svc_bootstrap.csv_source import iter_csv_rows
-from svc_bootstrap.schemas import REF_AIRCRAFT_FIELDS, REF_AIRCRAFT_SCHEMA
-from svc_bootstrap.table_writer import create_table_safely
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,9 @@ def load(source_url: str = DEFAULT_SOURCE_URL, overwrite: bool = False) -> None:
     client = make_client(config)
     table_path = f"{config.base_path}/ref_aircraft"
 
-    create_table_safely(client, table_path, REF_AIRCRAFT_SCHEMA, overwrite)
+    if not ensure_table(client, table_path, REF_AIRCRAFT_SCHEMA, overwrite):
+        logger.info("ref_aircraft already exists at %s, skipping", table_path)
+        return
 
     rows = (_to_row(row) for row in iter_csv_rows(source_url))
     client.write_table(table_path, rows)

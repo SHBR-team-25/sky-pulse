@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from svc_bootstrap import load_ref_aircraft, load_ref_airports
+from bootstrap_service import load_ref_aircraft, load_ref_airports
 
 
 def main() -> None:
