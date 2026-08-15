@@ -43,7 +43,7 @@
 │
 ├───app                                              # слой приложения: композиция провайдеров и layout
 │   │   App.module.css                               # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, MapViewProvider и RouterProvider
+│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary, MapViewProvider и RouterProvider
 │   │   index.ts                                     # публичный API слоя app
 │   │
 │   ├───providers                                    # глобальные провайдеры приложения
@@ -51,7 +51,7 @@
 │   │       QueryProvider.tsx                        # оборачивает дерево в QueryClientProvider с общим queryClient
 │   │
 │   ├───router                                       # конфигурация маршрутов приложения
-│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /dashboard с prefetch статистики в loader
+│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
 │   │
 │   └───styles                                       # глобальные стили
 │           index.css                                # CSS-переменные, reset, базовая типографика
@@ -128,7 +128,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useDashboardData.ts                  # хук и queryOptions GET /stats/dashboard с keepPreviousData и query-ключами
+│   │   │       useDashboardData.ts                  # useSuspenseQuery и queryOptions GET /stats/dashboard с query-ключами
 │   │   │
 │   │   ├───lib
 │   │   │       dashboardRange.ts                    # диапазон дат дашборда из query-параметров from/to в unix-секундах
@@ -166,14 +166,24 @@
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           Layout.tsx                           # шапка, Outlet вложенных маршрутов и подвал
+│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader и подвал
 │   │
-│   └───map                                          # страница карты полётов
+│   ├───map                                          # страница карты полётов
+│   │   │   index.ts                                 # публичный API страницы
+│   │   │
+│   │   └───ui
+│   │           MapPage.module.css                   # стили контейнера карты
+│   │           MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
+│   │
+│   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
 │       │
+│       ├───assets
+│       │       404.svg                              # иллюстрация для страницы 404
+│       │
 │       └───ui
-│               MapPage.module.css                   # стили контейнера карты
-│               MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
+│               NotFoundPage.module.css              # стили страницы 404
+│               NotFoundPage.tsx                     # иллюстрация, текст и кнопка возврата на / через useNavigate
 │
 ├───shared                                           # переиспользуемый код без привязки к домену
 │   ├───api                                          # транспортный слой
@@ -181,7 +191,7 @@
 │   │       fetchJson.ts                             # обёртка fetch: buildUrl, парсинг JSON, класс ApiError
 │   │       generated-types.ts                       # типы, сгенерированные из OpenAPI-спеки (правится только генератором)
 │   │       index.ts                                 # публичный API shared/api
-│   │       queryClient.ts                           # общий QueryClient: staleTime 60 с, без ретраев на ApiError 4xx
+│   │       queryClient.ts                           # общий QueryClient: staleTime 60 с, без ретраев на ApiError 4xx, throwOnError только без данных
 │   │
 │   ├───assets                                       # статические ресурсы
 │   │   └───images
@@ -201,16 +211,30 @@
 │   │       index.ts                                 # публичный API общих хуков
 │   │       useUtcTime.ts                            # хук текущего UTC-времени с обновлением в начале минуты
 │   │
-│   └───lib                                          # общие хуки и утилиты
-│       │   useDebouncedParams.ts                    # дебаунс объекта query-параметров со стабильной ссылкой
-│       │   useDebouncedValue.ts                     # базовый дебаунс произвольного значения
-│       │   ymaps3.ts                                # инициализация JS API Яндекс.Карт, кластеризации и ZoomControl
+│   ├───lib                                          # общие хуки и утилиты
+│   │   │   useDebouncedParams.ts                    # дебаунс объекта query-параметров со стабильной ссылкой
+│   │   │   useDebouncedValue.ts                     # базовый дебаунс произвольного значения
+│   │   │   ymaps3.ts                                # инициализация JS API Яндекс.Карт, кластеризации и ZoomControl
+│   │   │
+│   │   └───formatters                               # форматтеры дат, полётов, координат и чисел
+│   │           dateTime.ts                          # форматтеры локального времени и UTC-времени
+│   │           flight.ts                            # форматирует номер рейса и оставшееся время полёта
+│   │           index.ts                             # публичный API форматтеров
+│   │           number.ts                            # форматтеры чисел и параметров представления карты
+│   │
+│   └───ui                                           # общие компоненты загрузки и ошибок
+│       │   index.ts                                 # публичный API shared/ui
 │       │
-│       └───formatters                               # форматтеры дат, полётов, координат и чисел
-│               dateTime.ts                          # форматтеры локального времени и UTC-времени
-│               flight.ts                            # форматирует номер рейса и оставшееся время полёта
-│               index.ts                             # публичный API форматтеров
-│               number.ts                            # форматтеры чисел и параметров представления карты
+│       ├───PageLoader
+│       │       PageLoader.module.css                # стили контейнера лоадера страницы
+│       │       PageLoader.tsx                       # фолбэк для Suspense: Loader размера l с role=status
+│       │
+│       ├───RootErrorFallback
+│       │       RootErrorFallback.tsx                # фолбэк корневого ErrorBoundary с кнопкой перезагрузки страницы
+│       │
+│       └───RouterErrorFallback
+│               RouterErrorFallback.module.css       # стили блока ошибки маршрута
+│               RouterErrorFallback.tsx              # ошибка маршрута из useRouteError: разбор ErrorResponse, ApiError и Error
 │
 └───widgets                                          # слой самостоятельных блоков интерфейса
     ├───app-footer                                   # подвал приложения
