@@ -47,6 +47,9 @@ def main():
     raw_stream = spark.readStream \
         .format("yt") \
         .option("path", args.positions_raw) \
+        .option("consumer_path", args.checkpoint + "/consumer") \
+        .option("queue", "positions_raw_queue") \
+        .option("cluster", "https://http-proxy-hackathon.demo.ytsaurus.tech") \
         .load()
 
     def process_batch(batch_df, batch_id):
