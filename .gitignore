@@ -32,3 +32,6 @@ __pycache__/
 
 .env
 
+# python env and cache
+ytsaurus-env/
+__pycache__/
