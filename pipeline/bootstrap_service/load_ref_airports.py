@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_SOURCE_URL = "https://davidmegginson.github.io/ourairports-data/airports.csv"
 
 _FLOAT_FIELDS = {"latitude_deg", "longitude_deg"}
+_REQUIRED_FIELDS = ("ident", "name", "type", "latitude_deg", "longitude_deg")
 
 
 def _to_row(csv_row: dict[str, str]) -> dict[str, str | float | None]:
@@ -31,5 +32,6 @@ def load(source_url: str = DEFAULT_SOURCE_URL, overwrite: bool = False) -> None:
         return
 
     rows = (_to_row(row) for row in iter_csv_rows(source_url))
+    rows = (row for row in rows if all(row[field] is not None for field in _REQUIRED_FIELDS))
     client.write_table(table_path, rows)
     logger.info("ref_airports loaded into %s", table_path)
