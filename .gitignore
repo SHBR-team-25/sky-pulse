@@ -21,3 +21,6 @@ pnpm-debug.log*
 # Tooling and OS files.
 .DS_Store
 .idea/
+
+# python env
+ytsaurus-env/
