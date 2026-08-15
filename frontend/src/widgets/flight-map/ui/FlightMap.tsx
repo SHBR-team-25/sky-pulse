@@ -65,7 +65,12 @@ export function FlightMap({
 
     return (
         <div className={styles.map}>
-            <YMap theme={theme} location={location} zoomRange={MAP_ZOOM_RANGE}>
+            <YMap
+                theme={theme}
+                location={location}
+                zoomRange={MAP_ZOOM_RANGE}
+                zoomRounding="smooth"
+            >
                 <YMapDefaultSchemeLayer />
                 <YMapDefaultFeaturesLayer />
                 <YMapListener onUpdate={handleMapUpdate} />

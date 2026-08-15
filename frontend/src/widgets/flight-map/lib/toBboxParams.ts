@@ -21,7 +21,7 @@ function quantizeMax(value: number): number {
     return Math.ceil(value * COORDINATE_PRECISION) / COORDINATE_PRECISION;
 }
 
-/** Приводит долготу к диапазону [-180, 180). */
+// Приводит долготу к диапазону [-180, 180)
 function normalizeLon(lon: number): number {
     return ((((lon + LON_LIMIT) % WORLD_LON_SPAN) + WORLD_LON_SPAN) % WORLD_LON_SPAN) - LON_LIMIT;
 }
@@ -31,8 +31,10 @@ interface BboxSource {
     zoom: number;
 }
 
+// Все округления нужны для стабильности queryKey, иначе react-query дёргал бы сеть непрерывно
 export function toBboxParams({ bounds, zoom }: BboxSource): LiveFlightsQuery {
     const [[lonWest, latFirst], [lonEast, latSecond]] = bounds;
+    // Целое значение стабилизирует queryKey
     const roundedZoom = Math.round(zoom);
 
     if (lonEast - lonWest >= WORLD_LON_SPAN) {
@@ -46,6 +48,7 @@ export function toBboxParams({ bounds, zoom }: BboxSource): LiveFlightsQuery {
         return { zoom: roundedZoom };
     }
 
+    // clamp - округляет до предлов [-180, 180) и [-90, 90)
     return {
         lonMin: clamp(quantizeMin(normalizedWest), LON_LIMIT),
         latMin: clamp(quantizeMin(Math.min(latFirst, latSecond)), LAT_LIMIT),
