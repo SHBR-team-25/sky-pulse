@@ -20,7 +20,11 @@ def run() -> None:
     client = make_client(yt_config)
     table_path = f"{yt_config.base_path}/positions_raw"
 
-    token_cache = TokenCache(ingest_config.opensky_client_id, ingest_config.opensky_client_secret)
+    token_cache = TokenCache(
+        ingest_config.opensky_client_id,
+        ingest_config.opensky_client_secret,
+        ingest_config.token_url,
+    )
     budget = DailyRequestBudget(ingest_config.daily_request_budget)
 
     while True:
@@ -31,7 +35,7 @@ def run() -> None:
             continue
 
         try:
-            response = fetch_states(ingest_config.bbox, token_cache)
+            response = fetch_states(ingest_config.bbox, token_cache, ingest_config.states_url)
             rows = to_positions_raw_rows(response)
             write_rows(client, table_path, rows)
             logger.info("wrote %d rows to %s", len(rows), table_path)

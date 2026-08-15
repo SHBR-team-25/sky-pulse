@@ -2,17 +2,14 @@ import time
 
 import requests
 
-TOKEN_URL = (
-    "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
-)
-
 _SAFETY_MARGIN_SECONDS = 30
 
 
 class TokenCache:
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(self, client_id: str, client_secret: str, token_url: str) -> None:
         self._client_id = client_id
         self._client_secret = client_secret
+        self._token_url = token_url
         self._token: str | None = None
         self._expires_at: float = 0.0
 
@@ -24,7 +21,7 @@ class TokenCache:
 
     def _refresh(self) -> None:
         response = requests.post(
-            TOKEN_URL,
+            self._token_url,
             data={
                 "grant_type": "client_credentials",
                 "client_id": self._client_id,
