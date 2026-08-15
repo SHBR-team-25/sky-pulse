@@ -2,7 +2,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
     align-items: start;
-    gap: 16px;
+    gap: 32px;
     min-height: 0;
     padding: 0 16px 16px;
     overflow: auto;
@@ -24,7 +24,6 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    padding-block: 16px;
     background: var(--sky-color-bg-canvas);
 }
 
@@ -44,6 +43,4 @@
     justify-content: center;
     min-height: 320px;
     margin-block-start: 16px;
-    border: 1px dashed var(--sky-color-border-subtle);
-    border-radius: 8px;
 }

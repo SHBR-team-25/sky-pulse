@@ -31,6 +31,7 @@ export function Dashboard() {
 
     //TODO: изменить на реальные данные
     const dashboardData = makeDashboardMock(date.from, date.to);
+    const isSingleDay = useMemo(() => range.start.isSame(range.end, 'day'), [range]);
 
     const handleRangeUpdate = (value: DashboardRange | null) => {
         const nextRange = value ?? getDefaultDashboardRange();
@@ -61,6 +62,7 @@ export function Dashboard() {
             </div>
 
             <div className={styles.column}>
+                <h2 className={styles.title}>За выбранный период: </h2>
                 <div className={styles.controls}>
                     <RangeDatePicker
                         value={range}
@@ -72,7 +74,10 @@ export function Dashboard() {
                 </div>
                 <EmergencyBadge count={dashboardData.emergencyCount} />
                 <div className={styles.chart} aria-label="График">
-                    <TrafficTrendGraph data={dashboardData.trafficTrend} />
+                    <TrafficTrendGraph
+                        isSingleDay={isSingleDay}
+                        data={dashboardData.trafficTrend}
+                    />
                 </div>
             </div>
         </div>
