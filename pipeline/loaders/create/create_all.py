@@ -13,6 +13,7 @@ SCRIPTS = [
     "create_ref_aircraft.py",
     "create_ref_airports.py",
     "create_positions_raw.py",
+    "create_positions_raw_consumer.py",
     "create_positions_current.py",
     "create_positions_history.py",
 ]
@@ -67,7 +68,8 @@ def create_all_tables(proxy: str = None):
         print(f"Tables created under {BASE_PATH}:")
         print(f"  {BASE_PATH}/ref_aircraft (static)")
         print(f"  {BASE_PATH}/ref_airports (static)")
-        print(f"  {BASE_PATH}/positions_raw (dynamic, mounted)")
+        print(f"  {BASE_PATH}/positions_raw (dynamic, mounted, queue)")
+        print(f"  {BASE_PATH}/positions_raw_consumer (registered consumer)")
         print(f"  {BASE_PATH}/positions_current (dynamic, mounted)")
         print(f"  {BASE_PATH}/positions_history (dynamic, mounted)")
 

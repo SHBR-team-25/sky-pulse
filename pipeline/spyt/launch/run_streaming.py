@@ -28,7 +28,7 @@ def upload_job_file(proxy, token, job_path, local_path=LOCAL_JOB_PATH):
 
 
 def run_streaming_job(proxy=None, token=None, job_path=None,
-                      positions_raw=None, ref_aircraft=None,
+                      positions_raw=None, positions_raw_consumer=None, ref_aircraft=None,
                       positions_current=None, positions_history=None,
                       checkpoint_path=None, num_executors=1,
                       py_files=DEFAULT_PY_FILES,
@@ -37,6 +37,7 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
     token = token or os.getenv('YT_TOKEN', CLUSTER_CONFIG['token'])
     job_path = job_path or f"{PATHS['code']}/streaming_job.py"
     positions_raw = positions_raw or PATHS['positions_raw']
+    positions_raw_consumer = positions_raw_consumer or PATHS['positions_raw_consumer']
     ref_aircraft = ref_aircraft or PATHS['ref_aircraft']
     positions_current = positions_current or PATHS['positions_current']
     positions_history = positions_history or PATHS['positions_history']
@@ -55,6 +56,7 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
     print(f"  Master: ytsaurus://{proxy}")
     print(f"  Job path: yt://{job_path}")
     print(f"  positions_raw: {positions_raw}")
+    print(f"  positions_raw_consumer: {positions_raw_consumer}")
     print(f"  ref_aircraft: {ref_aircraft}")
     print(f"  positions_current: {positions_current}")
     print(f"  positions_history: {positions_history}")
@@ -69,6 +71,7 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         "--py-files", py_files,
         f"yt://{job_path}",
         "--positions-raw", positions_raw,
+        "--positions-raw-consumer", positions_raw_consumer,
         "--ref-aircraft", ref_aircraft,
         "--positions-current", positions_current,
         "--positions-history", positions_history,
@@ -89,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument('--token', help='YT auth token')
     parser.add_argument('--job-path', help='Cypress path where the job script will be uploaded')
     parser.add_argument('--positions-raw', help='positions_raw table path')
+    parser.add_argument('--positions-raw-consumer', help='registered queue_consumer path for positions_raw')
     parser.add_argument('--ref-aircraft', help='ref_aircraft table path')
     parser.add_argument('--positions-current', help='positions_current table path')
     parser.add_argument('--positions-history', help='positions_history table path')
@@ -107,6 +111,7 @@ if __name__ == "__main__":
         token=args.token,
         job_path=args.job_path,
         positions_raw=args.positions_raw,
+        positions_raw_consumer=args.positions_raw_consumer,
         ref_aircraft=args.ref_aircraft,
         positions_current=args.positions_current,
         positions_history=args.positions_history,

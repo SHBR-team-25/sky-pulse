@@ -2,11 +2,11 @@ import argparse
 import logging
 
 from bootstrap_service import (
-    load_ref_aircraft,
-    load_ref_airports,
-    load_positions_table,
     load_positions_current,
     load_positions_history,
+    load_positions_table,
+    load_ref_aircraft,
+    load_ref_airports,
 )
 
 

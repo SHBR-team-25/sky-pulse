@@ -13,7 +13,7 @@ def ensure_table(
     if client.exists(path) and not overwrite:
         return False
 
-    attributes = {"schema": schema}
+    attributes: dict[str, Any] = {"schema": schema}
     if dynamic:
         attributes["dynamic"] = True
         attributes["primary_medium"] = "default"

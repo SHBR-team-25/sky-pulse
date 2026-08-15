@@ -30,8 +30,8 @@ REF_AIRPORTS_SCHEMA: list[dict[str, Any]] = [
 REF_AIRPORTS_FIELDS = [field["name"] for field in REF_AIRPORTS_SCHEMA]
 
 POSITIONS_RAW_SCHEMA: list[dict[str, Any]] = [
-    {"name": "icao24", "type": "string", "sort_order": "ascending"},
-    {"name": "time_position", "type": "int64", "sort_order": "ascending"},
+    {"name": "icao24", "type": "string"},
+    {"name": "time_position", "type": "int64"},
     {"name": "callsign", "type": "string"},
     {"name": "origin_country", "type": "string"},
     {"name": "last_contact", "type": "int64"},
