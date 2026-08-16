@@ -22,5 +22,5 @@ skypulse:
   yt:
     proxy: ${YT_PROXY:localhost:80}
     token: ${YT_TOKEN:}
-    positions-current-path: //home/skypulse/positions_current
-    positions-history-path: //home/skypulse/positions_history
+    positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
+    positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
