@@ -6,6 +6,11 @@ from pyspark.sql.functions import col, current_timestamp, row_number, unix_times
 def parse_arguments():
     parser = argparse.ArgumentParser(description='job_enrich: positions_raw + ref_aircraft -> positions_current/positions_history')
     parser.add_argument('--positions-raw', required=True, help='Input: positions_raw queue path in YT')
+    parser.add_argument(
+        '--positions-raw-consumer',
+        required=True,
+        help='Registered queue_consumer path for positions_raw',
+    )
     parser.add_argument('--ref-aircraft', required=True, help='Reference: ref_aircraft table path in YT')
     parser.add_argument('--positions-current', required=True, help='Output: positions_current table path in YT')
     parser.add_argument('--positions-history', required=True, help='Output: positions_history table path in YT')
@@ -35,6 +40,7 @@ def main():
 
     print("Starting job_enrich:")
     print(f"  positions_raw: {args.positions_raw}")
+    print(f"  positions_raw_consumer: {args.positions_raw_consumer}")
     print(f"  ref_aircraft: {args.ref_aircraft}")
     print(f"  positions_current: {args.positions_current}")
     print(f"  positions_history: {args.positions_history}")
@@ -47,6 +53,9 @@ def main():
     raw_stream = spark.readStream \
         .format("yt") \
         .option("path", args.positions_raw) \
+        .option("queue", args.positions_raw) \
+        .option("consumer_path", args.positions_raw_consumer) \
+        .option("cluster", "https://http-proxy-hackathon.demo.ytsaurus.tech") \
         .load()
 
     def process_batch(batch_df, batch_id):

@@ -20,6 +20,10 @@ def run() -> None:
     client = make_client(yt_config)
     table_path = f"{yt_config.base_path}/positions_raw"
 
+    if not client.exists(table_path):
+        logger.error("Table %s does not exist, run bootstrap first", table_path)
+        return
+
     token_cache = TokenCache(
         ingest_config.opensky_client_id,
         ingest_config.opensky_client_secret,

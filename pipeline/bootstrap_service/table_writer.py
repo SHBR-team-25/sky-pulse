@@ -8,9 +8,15 @@ def ensure_table(
     path: str,
     schema: list[dict[str, Any]],
     overwrite: bool,
+    dynamic: bool = False,
 ) -> bool:
     if client.exists(path) and not overwrite:
         return False
 
-    client.create("table", path, attributes={"schema": schema}, recursive=True, force=True)
+    attributes: dict[str, Any] = {"schema": schema}
+    if dynamic:
+        attributes["dynamic"] = True
+        attributes["primary_medium"] = "default"
+
+    client.create("table", path, attributes=attributes, recursive=True, force=True)
     return True

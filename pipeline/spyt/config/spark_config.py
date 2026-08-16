@@ -22,6 +22,9 @@ PATHS = {
     'code': os.getenv('YT_CODE_PATH', f"{TEAM_BASE_PATH}/spark/code"),
     'checkpoints': os.getenv('YT_CHECKPOINT_PATH', f"{TEAM_BASE_PATH}/spark/checkpoints"),
     'positions_raw': os.getenv('YT_POSITIONS_RAW_PATH', f"{TEAM_BASE_PATH}/positions_raw"),
+    'positions_raw_consumer': os.getenv(
+        'YT_POSITIONS_RAW_CONSUMER_PATH', f"{TEAM_BASE_PATH}/positions_raw_consumer"
+    ),
     'ref_aircraft': os.getenv('YT_REF_AIRCRAFT_PATH', f"{TEAM_BASE_PATH}/ref_aircraft"),
     'positions_current': os.getenv('YT_POSITIONS_CURRENT_PATH', f"{TEAM_BASE_PATH}/positions_current"),
     'positions_history': os.getenv('YT_POSITIONS_HISTORY_PATH', f"{TEAM_BASE_PATH}/positions_history"),

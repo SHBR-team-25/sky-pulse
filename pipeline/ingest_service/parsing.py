@@ -20,6 +20,12 @@ POSITION_SOURCE = 16
 CATEGORY = 17
 
 
+def _to_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    return float(value)
+
+
 def to_positions_raw_rows(response: dict[str, Any]) -> list[dict[str, Any]]:
     snapshot_time = response["time"]
     ingested_at = int(time.time())
@@ -36,14 +42,14 @@ def to_positions_raw_rows(response: dict[str, Any]) -> list[dict[str, Any]]:
                 "callsign": (state[CALLSIGN] or "").strip() or None,
                 "origin_country": state[ORIGIN_COUNTRY],
                 "last_contact": state[LAST_CONTACT],
-                "lat": state[LATITUDE],
-                "lon": state[LONGITUDE],
-                "baro_altitude": state[BARO_ALTITUDE],
-                "geo_altitude": state[GEO_ALTITUDE],
+                "lat": _to_float(state[LATITUDE]),
+                "lon": _to_float(state[LONGITUDE]),
+                "baro_altitude": _to_float(state[BARO_ALTITUDE]),
+                "geo_altitude": _to_float(state[GEO_ALTITUDE]),
                 "on_ground": state[ON_GROUND],
-                "velocity": state[VELOCITY],
-                "true_track": state[TRUE_TRACK],
-                "vertical_rate": state[VERTICAL_RATE],
+                "velocity": _to_float(state[VELOCITY]),
+                "true_track": _to_float(state[TRUE_TRACK]),
+                "vertical_rate": _to_float(state[VERTICAL_RATE]),
                 "squawk": state[SQUAWK],
                 "spi": state[SPI],
                 "position_source": state[POSITION_SOURCE],
