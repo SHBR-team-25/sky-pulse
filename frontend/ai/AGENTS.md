@@ -119,7 +119,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirportsFlights.ts                # хук GET /airports/{icao}/flights, запрос только при заданном icao
+│   │   │       useAirportsFlights.ts                # хук GET /airports/{icao}/flights с таймаутом 5 с без повторных попыток
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /airports/{icao}/flights
@@ -149,7 +149,7 @@
 │       │   index.ts                                 # публичный API фичи
 │       │
 │       ├───api
-│       │       useTargetFlight.ts                   # хук GET /flights/{icao24}: детали и трек борта
+│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} с таймаутом 5 с без повторных попыток
 │       │
 │       └───model
 │               types.ts                             # тип ответа GET /flights/{icao24}
@@ -265,23 +265,23 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
-        │       useMockAirportFlights.ts             # mock-запрос рейсов аэропорта с задержкой 500 мс
-        │       useMockFlightDetails.ts              # временный хук мок-запроса деталей выбранного рейса
+        │       useMockAirportFlights.ts             # мок-запрос рейсов аэропорта с задержкой 500 мс и таймаутом 5 с
+        │       useMockFlightDetails.ts              # мок-запрос деталей рейса с задержкой 500 мс и таймаутом 5 с
         │
         └───ui
                 AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов
                 AirportDetailsPopover.module.css     # стили поповера, карточки и виртуального списка рейсов аэропорта
-                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой и кнопкой закрытия
+                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой, ошибкой и кнопкой закрытия
                 AirportFlightsList.tsx               # виртуальный список рейсов с загрузкой по 10 строк
                 AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
                 AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
                 AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
                 FlightDetailsCard.tsx                # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
-                FlightDetailsPopover.module.css      # стили поповера и карточки деталей рейса
-                FlightDetailsPopover.tsx             # управляемый поповер деталей выбранного рейса
+                FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
+                FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
                 FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта с zoom 3–15, слоями и синхронизацией вида в контексте
-                FlightsLayer.module.css              # стили маркеров рейсов и кластеров
+                FlightMap.tsx                        # карта с начальным центром в Лондоне, zoom 3–15 и синхронизацией вида
+                FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
                 FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера
                 MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс

@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import type { FlightDetailsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
 
+const REQUEST_TIMEOUT_MS = 5_000;
+
 export const targetFlightQueryKeys = {
     all: ['target-flight'] as const,
     details: (icao24: string | undefined) => [...targetFlightQueryKeys.all, icao24] as const,
@@ -21,12 +23,13 @@ export function useTargetFlight(icao24: string | undefined, options: UseTargetFl
             }
 
             return fetchJson<FlightDetailsResponse>(`/flights/${encodeURIComponent(icao24)}`, {
-                signal,
+                signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
             });
         },
         enabled: Boolean(icao24) && (options.enabled ?? true),
         refetchInterval: options.refetchInterval,
         refetchIntervalInBackground: false,
+        retry: false, // TODO: подумать надо ли ретрай
         staleTime: 0,
     });
 }
