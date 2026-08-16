@@ -75,7 +75,7 @@
     "features/getLiveFlights": "получение бортов в воздухе в реальном времени",
     "features/getLiveFlights/index.ts": "публичный API фичи",
     "features/getLiveFlights/api": "",
-    "features/getLiveFlights/api/useLiveFlights.ts": "хук GET /flights/live с поллингом раз в 3 с",
+    "features/getLiveFlights/api/useLiveFlights.ts": "хук GET /positions с поллингом 15 с и преобразованием до 20 рейсов",
     "features/getLiveFlights/model": "",
     "features/getLiveFlights/model/types.ts": "типы query-параметров и ответа GET /flights/live",
     "features/getTargetFlight": "получение деталей выбранного рейса",
@@ -106,7 +106,7 @@
     "pages/map/index.ts": "публичный API страницы",
     "pages/map/ui": "",
     "pages/map/ui/MapPage.module.css": "стили контейнера карты",
-    "pages/map/ui/MapPage.tsx": "YMap со схемой и слоем фич, тема light/dark",
+    "pages/map/ui/MapPage.tsx": "страница карты с мок-аэропортами и рейсами из useLiveFlights",
 
     "shared": "переиспользуемый код без привязки к домену",
     "shared/api": "транспортный слой",

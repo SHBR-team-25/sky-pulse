@@ -140,7 +140,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 3 с
+│   │   │       useLiveFlights.ts                    # хук GET /positions с поллингом 15 с и преобразованием до 20 рейсов
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -173,7 +173,7 @@
 │   │   │
 │   │   └───ui
 │   │           MapPage.module.css                   # стили контейнера карты
-│   │           MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
+│   │           MapPage.tsx                          # страница карты с мок-аэропортами и рейсами из useLiveFlights
 │   │
 │   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
