@@ -1,16 +1,33 @@
-import { INITIAL_MAP_VIEW, MAP_ZOOM_RANGE, type MapView } from '../types';
+import type { LngLatBounds } from '@yandex/ymaps3-types';
+import {
+    INITIAL_MAP_BOUNDS_VIEW,
+    MAP_ZOOM_RANGE,
+    type MapBoundsParams,
+    type MapBoundsView,
+    type MapRectParams,
+} from '../types';
 
-export const MAP_VIEW_LNG_PARAM = 'lng';
-export const MAP_VIEW_LAT_PARAM = 'lat';
+export const MAP_LON_MIN_PARAM = 'lonMin';
+export const MAP_LAT_MIN_PARAM = 'latMin';
+export const MAP_LON_MAX_PARAM = 'lonMax';
+export const MAP_LAT_MAX_PARAM = 'latMax';
 export const MAP_VIEW_ZOOM_PARAM = 'zoom';
 
 export const MAP_VIEW_SYNC_DELAY_MS = 300;
 
-const COORDINATE_DIGITS = 4;
-const ZOOM_DIGITS = 2;
+const BOUNDS_PRECISION = 100;
+const EPSILON = 2;
 
 const LAT_LIMIT = 90;
 const LON_LIMIT = 180;
+const WORLD_LON_SPAN = 360;
+
+const RECT_PARAMS = [
+    MAP_LON_MIN_PARAM,
+    MAP_LAT_MIN_PARAM,
+    MAP_LON_MAX_PARAM,
+    MAP_LAT_MAX_PARAM,
+] as const;
 
 function isWithin(value: number, limit: number): boolean {
     return Number.isFinite(value) && Math.abs(value) <= limit;
@@ -20,42 +37,99 @@ function round(value: number, digits: number): number {
     return Number(value.toFixed(digits));
 }
 
-export function parseMapView(searchParams: URLSearchParams): MapView {
-    const lng = Number(searchParams.get(MAP_VIEW_LNG_PARAM));
-    const lat = Number(searchParams.get(MAP_VIEW_LAT_PARAM));
+function clamp(value: number, limit: number): number {
+    return Math.min(Math.max(value, -limit), limit);
+}
+
+function toGrid(value: number): number {
+    return round(value * BOUNDS_PRECISION, EPSILON);
+}
+
+function quantizeMin(value: number): number {
+    return Math.floor(toGrid(value)) / BOUNDS_PRECISION;
+}
+
+function quantizeMax(value: number): number {
+    return Math.ceil(toGrid(value)) / BOUNDS_PRECISION;
+}
+
+// Приводит долготу к диапазону [-180, 180)
+function normalizeLon(lon: number): number {
+    return ((((lon + LON_LIMIT) % WORLD_LON_SPAN) + WORLD_LON_SPAN) % WORLD_LON_SPAN) - LON_LIMIT;
+}
+
+// Возвращает null, если в параметрах нет корректного вида карты
+export function tryParseMapBoundsView(searchParams: URLSearchParams): MapBoundsView | null {
+    const lonMin = Number(searchParams.get(MAP_LON_MIN_PARAM));
+    const latMin = Number(searchParams.get(MAP_LAT_MIN_PARAM));
+    const lonMax = Number(searchParams.get(MAP_LON_MAX_PARAM));
+    const latMax = Number(searchParams.get(MAP_LAT_MAX_PARAM));
     const zoom = Number(searchParams.get(MAP_VIEW_ZOOM_PARAM));
 
     const isValid =
-        isWithin(lng, LON_LIMIT) &&
-        isWithin(lat, LAT_LIMIT) &&
+        isWithin(lonMin, LON_LIMIT) &&
+        isWithin(lonMax, LON_LIMIT) &&
+        isWithin(latMin, LAT_LIMIT) &&
+        isWithin(latMax, LAT_LIMIT) &&
+        lonMin < lonMax &&
+        latMin < latMax &&
         Number.isFinite(zoom) &&
         zoom >= MAP_ZOOM_RANGE.min &&
         zoom <= MAP_ZOOM_RANGE.max;
 
     if (!isValid) {
-        return INITIAL_MAP_VIEW;
+        return null;
     }
 
-    return { center: [lng, lat], zoom };
-}
-
-export function toMapViewQuery(view: MapView): Record<string, string> {
-    const [lng, lat] = view.center;
-
     return {
-        [MAP_VIEW_LNG_PARAM]: String(round(lng, COORDINATE_DIGITS)),
-        [MAP_VIEW_LAT_PARAM]: String(round(lat, COORDINATE_DIGITS)),
-        [MAP_VIEW_ZOOM_PARAM]: String(round(view.zoom, ZOOM_DIGITS)),
+        bounds: [
+            [lonMin, latMax],
+            [lonMax, latMin],
+        ],
+        zoom,
     };
 }
 
-export function isSameMapView(was: MapView, current: MapView): boolean {
-    const wasQuery = toMapViewQuery(was);
-    const currentQuery = toMapViewQuery(current);
+export function parseMapBoundsView(searchParams: URLSearchParams): MapBoundsView {
+    return tryParseMapBoundsView(searchParams) ?? INITIAL_MAP_BOUNDS_VIEW;
+}
 
-    return (
-        wasQuery[MAP_VIEW_LNG_PARAM] === currentQuery[MAP_VIEW_LNG_PARAM] &&
-        wasQuery[MAP_VIEW_LAT_PARAM] === currentQuery[MAP_VIEW_LAT_PARAM] &&
-        wasQuery[MAP_VIEW_ZOOM_PARAM] === currentQuery[MAP_VIEW_ZOOM_PARAM]
-    );
+function toMapRectParams(bounds: LngLatBounds): MapRectParams {
+    const [[lonWest, latFirst], [lonEast, latSecond]] = bounds;
+
+    const isWholeWorld = lonEast - lonWest >= WORLD_LON_SPAN;
+    const normalizedWest = normalizeLon(lonWest);
+    const normalizedEast = normalizeLon(lonEast);
+
+    const isCrossingAntimeridian = normalizedWest > normalizedEast;
+
+    const [lonMin, lonMax] =
+        isWholeWorld || isCrossingAntimeridian
+            ? [-LON_LIMIT, LON_LIMIT]
+            : [
+                  clamp(quantizeMin(normalizedWest), LON_LIMIT),
+                  clamp(quantizeMax(normalizedEast), LON_LIMIT),
+              ];
+
+    return {
+        [MAP_LON_MIN_PARAM]: lonMin,
+        [MAP_LAT_MIN_PARAM]: clamp(quantizeMin(Math.min(latFirst, latSecond)), LAT_LIMIT),
+        [MAP_LON_MAX_PARAM]: lonMax,
+        [MAP_LAT_MAX_PARAM]: clamp(quantizeMax(Math.max(latFirst, latSecond)), LAT_LIMIT),
+    };
+}
+
+export function toMapBoundsParams(view: MapBoundsView): MapBoundsParams {
+    return {
+        ...toMapRectParams(view.bounds),
+        [MAP_VIEW_ZOOM_PARAM]: round(view.zoom, EPSILON),
+    };
+}
+
+function isSameMapRect(was: MapRectParams, current: MapRectParams): boolean {
+    return RECT_PARAMS.every((param) => was[param] === current[param]);
+}
+
+export function isSameMapBoundsParams(was: MapBoundsParams, current: MapBoundsParams): boolean {
+    return isSameMapRect(was, current) && was.zoom === current.zoom;
 }

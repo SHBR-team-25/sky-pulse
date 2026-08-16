@@ -1,16 +1,14 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router';
 import { MapViewContext, SetMapViewContext } from './context';
-import { parseMapView } from './lib/mapViewParams';
-import { type MapView } from './types';
+import { INITIAL_MAP_VIEW, type MapView } from './types';
 
 interface MapViewProviderProps {
     children: ReactNode;
 }
 
+// Хранит живые center + zoom для подписей в интерфейсе
 export function MapViewProvider({ children }: MapViewProviderProps) {
-    const [searchParams] = useSearchParams();
-    const [mapView, setMapView] = useState(() => parseMapView(searchParams));
+    const [mapView, setMapView] = useState<MapView>(INITIAL_MAP_VIEW);
 
     const updateMapView = useCallback((nextMapView: MapView) => {
         setMapView((currentMapView) => {

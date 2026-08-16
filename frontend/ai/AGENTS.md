@@ -51,7 +51,7 @@
 │   │       QueryProvider.tsx                        # оборачивает дерево в QueryClientProvider с общим queryClient
 │   │
 │   ├───router                                       # конфигурация маршрутов приложения
-│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
+│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader'ах карты и дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
 │   │
 │   └───styles                                       # глобальные стили
 │           index.css                                # CSS-переменные, reset, базовая типографика
@@ -110,7 +110,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и airportsQueryOptions для prefetch
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /airports
@@ -140,7 +140,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 3 с
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 15 с и liveFlightsQueryOptions для prefetch
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -200,15 +200,17 @@
 │   │           vite.svg                             # логотип Vite / favicon
 │   │
 │   ├───contexts                                     # React-контексты общего состояния
-│   │   └───map-view                                 # состояние центра и масштаба карты
+│   │   └───map-view                                 # состояние центра и масштаба карты, работа с query-параметрами области
 │   │       │   context.ts                           # контексты текущего представления карты и его обновления
 │   │       │   index.ts                             # публичный API контекста представления карты
-│   │       │   MapViewProvider.tsx                  # провайдер вида карты: начальное состояние из query-параметров, защита от дублей
-│   │       │   types.ts                             # тип MapView, начальные центр [34, 57.8] и zoom 5, диапазон зума 3–15
+│   │       │   MapViewProvider.tsx                  # провайдер живых центра и зума карты для подписей, защита от дублей
+│   │       │   types.ts                             # типы MapView, MapBoundsView, MapRectParams, начальные область и zoom 5, диапазон зума 3–15
 │   │       │   useMapView.ts                        # хуки для чтения и обновления представления карты
 │   │       │
-│   │       └───lib                                  # чтение и запись представления карты в query-параметры
-│   │               mapViewParams.ts                 # разбор и сериализация lng/lat/zoom с валидацией, задержка синхронизации 300 мс
+│   │       └───lib                                  # чтение и запись представления карты в query-параметры и localStorage
+│   │               mapViewParams.ts                 # единственное квантование области до 0.01° и её сравнение, разбор lonMin/latMin/lonMax/latMax/zoom, задержка 300 мс
+│   │               mapViewStorage.ts                # сохранение search-строки карты в localStorage и её чтение при заходе на /map, безопасно к отключённому storage
+│   │               resolveMapSearch.ts              # выбор источника вида карты для первого рендера: URL важнее сохранённого search, общий для MapPage и loader'а /map
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
@@ -267,9 +269,6 @@
     └───flight-map                                   # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                                 # публичный API виджета
         │
-        ├───lib                                      # перевод видимой области карты в параметры запроса бортов
-        │       toBboxParams.ts                      # bbox из bounds с квантованием до 0.1° и отбрасыванием границ за 180°
-        │
         ├───model
         │       useMockFlightDetails.ts              # временный хук мок-запроса деталей выбранного рейса
         │
@@ -280,7 +279,7 @@
                 FlightDetailsPopover.module.css      # стили поповера и карточки деталей рейса
                 FlightDetailsPopover.tsx             # управляемый поповер деталей выбранного рейса
                 FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта с zoom 3–15: применяет внешний view, синхронизирует вид в контекст, отдаёт bbox
+                FlightMap.tsx                        # карта с zoom 3–15: применяет bounds из URL только при отличии квантованной области, отдаёт bbox
                 FlightsLayer.module.css              # стили маркеров рейсов и кластеров
                 FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера

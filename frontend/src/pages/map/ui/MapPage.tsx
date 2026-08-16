@@ -1,20 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert } from '@gravity-ui/uikit';
 import { airportsMock } from '@/entities/airport';
 // eslint-disable-next-line
-import { useLiveFlights, type LiveFlightsQuery } from '@/features/getLiveFlights';
-import { FlightMap, isSameQuery } from '@/widgets/flight-map';
+import { useLiveFlights } from '@/features/getLiveFlights';
+import { FlightMap } from '@/widgets/flight-map';
 import {
-    isSameMapView,
+    isSameMapBoundsParams,
     MAP_VIEW_SYNC_DELAY_MS,
-    parseMapView,
-    toMapViewQuery,
-    useMapView,
+    parseMapBoundsView,
+    resolveStoredMapSearch,
+    toMapBoundsParams,
+    writeStoredMapSearch,
+    type MapBoundsParams,
 } from '@/shared/contexts/map-view';
 import { useDebouncedValue } from '@/shared/lib/useDebouncedValue';
 import styles from './MapPage.module.css';
 import { flightsMock } from '@/entities/flight';
-import { useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 
 interface MapPageProps {
     theme?: 'light' | 'dark';
@@ -22,31 +24,48 @@ interface MapPageProps {
 
 export function MapPage({ theme = 'light' }: MapPageProps) {
     const [searchParams, setSearchParams] = useSearchParams();
-    const view = useMemo(() => parseMapView(searchParams), [searchParams]);
-    const hasMapReportedRef = useRef(false);
+    const { search } = useLocation();
 
-    // eslint-disable-next-line
-    const [flightsQuery, setFlightsQuery] = useState<LiveFlightsQuery>({});
-    const handleBoundsChange = useCallback((next: LiveFlightsQuery) => {
-        hasMapReportedRef.current = true;
-        setFlightsQuery((prev) => (isSameQuery(prev, next) ? prev : next));
-    }, []);
+    const [restoredSearch] = useState(() => resolveStoredMapSearch(searchParams));
 
-    const liveView = useMapView();
-    const debouncedView = useDebouncedValue(liveView, MAP_VIEW_SYNC_DELAY_MS);
+    const [initialView] = useState(() =>
+        parseMapBoundsView(restoredSearch ? new URLSearchParams(restoredSearch) : searchParams)
+    );
 
     useEffect(() => {
-        if (!hasMapReportedRef.current || isSameMapView(debouncedView, view)) return;
-        const nextQuery = toMapViewQuery(debouncedView);
+        if (restoredSearch) {
+            setSearchParams(new URLSearchParams(restoredSearch), { replace: true });
+        }
+    }, [restoredSearch, setSearchParams]);
+
+    // Пустой search не пишется, поэтому первый рендер с голым URL не затирает сохранённое
+    useEffect(() => {
+        writeStoredMapSearch(search);
+    }, [search]);
+
+    const [flightsQuery, setFlightsQuery] = useState<MapBoundsParams>(() =>
+        toMapBoundsParams(initialView)
+    );
+
+    const handleBoundsChange = useCallback((next: MapBoundsParams) => {
+        setFlightsQuery((prev) => (isSameMapBoundsParams(prev, next) ? prev : next));
+    }, []);
+
+    const urlQuery = useDebouncedValue(flightsQuery, MAP_VIEW_SYNC_DELAY_MS);
+
+    useEffect(() => {
         setSearchParams(
             (prev) => {
                 const params = new URLSearchParams(prev);
-                Object.entries(nextQuery).forEach(([key, value]) => params.set(key, value));
+                Object.entries(urlQuery).forEach(([key, value]) => {
+                    params.set(key, String(value));
+                });
+
                 return params;
             },
             { replace: true }
         );
-    }, [debouncedView, setSearchParams]);
+    }, [urlQuery, setSearchParams]);
 
     // const { data, isError } = useLiveFlights(flightsQuery);
     const data = flightsMock;
@@ -55,7 +74,7 @@ export function MapPage({ theme = 'light' }: MapPageProps) {
     return (
         <main className={styles.map} aria-label="Карта полётов и аэропортов">
             <FlightMap
-                view={view}
+                initialBounds={initialView.bounds}
                 theme={theme}
                 airports={airportsMock.items}
                 flights={data?.flights ?? []}
