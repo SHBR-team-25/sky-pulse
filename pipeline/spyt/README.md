@@ -1,4 +1,4 @@
-# SPYT Streaming Pipeline
+# SPYT Pipeline
 
 Управление стриминговыми задачами на Spark поверх YTsaurus.
 
@@ -19,6 +19,17 @@ Java 17, `pip install ytsaurus-spyt==2.11.0 pyspark==4.2.0`, запись про
 |python pipeline/spyt/launch/run_streaming.py --input //home/hackathon/team25/input --output //home/hackathon/team25/output|Указать пути|
 |python pipeline/spyt/launch/run_streaming.py --num-executors 2|Указать число executor'ов|
 |python pipeline/spyt/launch/run_streaming.py --skip-upload|Не перезаливать джобу (если она уже актуальна в Cypress)|
+
+## Запуск пакетных джоб
+
+|Команда|Описание|
+|-------|--------|
+|python pipeline/spyt/launch/run_segment.py|Сегментировать новые позиции в рейсы; запускать раз в 15 минут|
+|python pipeline/spyt/launch/run_aggregate.py|Пересчитать витрины дашборда; запускать раз в час|
+
+Расписание задаётся внешним оркестратором. `job_segment` хранит watermark последнего
+успешного запуска в `pipeline_job_state`. Радиус поиска аэропорта и таймаут рейса
+настраиваются через `AIRPORT_RADIUS_KM` и `FLIGHT_TIMEOUT_SECONDS`.
 
 ## Мониторинг
 
