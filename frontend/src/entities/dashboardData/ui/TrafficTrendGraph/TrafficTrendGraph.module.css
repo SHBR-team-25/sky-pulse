@@ -8,3 +8,9 @@
     font-size: 13px;
     color: var(--sky-color-text-secondary);
 }
+
+@media (max-width: 600px) {
+    .graph {
+        min-height: 260px;
+    }
+}

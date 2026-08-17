@@ -44,3 +44,35 @@
     min-height: 320px;
     margin-block-start: 16px;
 }
+
+@media (max-width: 960px) {
+    .dashboard {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
+
+    .controls {
+        padding-bottom: 8px;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard {
+        gap: 12px;
+        padding: 0 12px 12px;
+    }
+
+    .title {
+        padding: 12px 0;
+        font-size: 20px;
+    }
+
+    .datePicker {
+        max-width: none;
+    }
+
+    .chart {
+        min-height: 260px;
+        margin-block-start: 8px;
+    }
+}

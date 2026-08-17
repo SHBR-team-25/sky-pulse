@@ -60,3 +60,22 @@
     font-family: 'Roboto Mono', monospace;
     white-space: nowrap;
 }
+
+@media (max-width: 768px) {
+    .footer {
+        height: 36px;
+        padding-inline: 12px;
+    }
+
+    .technicalInfo {
+        width: 100%;
+        gap: 12px;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .technicalInfo li:not(:last-child) {
+        display: none;
+    }
+}

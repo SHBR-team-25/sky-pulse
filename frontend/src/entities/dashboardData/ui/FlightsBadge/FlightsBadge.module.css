@@ -46,3 +46,10 @@
     font-variant-numeric: tabular-nums;
     color: var(--sky-color-text-primary);
 }
+
+@media (max-width: 600px) {
+    .flightsBadge {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+}

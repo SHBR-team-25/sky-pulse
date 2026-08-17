@@ -27,3 +27,10 @@
     font-size: 13px;
     color: var(--sky-color-text-secondary);
 }
+
+@media (max-width: 600px) {
+    .averageDataBadge {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+}

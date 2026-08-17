@@ -50,3 +50,10 @@
     color: var(--sky-color-status-warning);
     letter-spacing: 0.06em;
 }
+
+@media (max-width: 768px) {
+    .airportMarker {
+        width: 28px;
+        height: 28px;
+    }
+}

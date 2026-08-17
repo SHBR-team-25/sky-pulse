@@ -1,18 +1,32 @@
-.popover {
-    --g-popup-background-color: rgba(13, 20, 32, 0.92);
-    --g-popup-border-color: oklch(78% 0.12 220deg / 0.45);
-    --g-popup-border-radius: 13px;
-    --g-popup-border-width: 1px;
+.drawer {
+    --g-color-sfx-veil: rgba(2, 6, 12, 0.56);
+
+    z-index: 2147483000;
+}
+
+.drawerContent {
     --airport-details-content-height: 332px;
 
-    width: 360px;
-    max-width: calc(100vw - 32px);
     color: var(--sky-color-text-primary);
-    overflow: visible;
+    overflow: hidden;
+    background: rgba(13, 20, 32, 0.96);
+    border: 1px solid oklch(78% 0.12 220deg / 0.35);
     box-shadow:
         0 26px 60px -18px rgba(0, 0, 0, 0.9),
         0 0 0 1px rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(22px);
+}
+
+.drawerContentSide {
+    max-height: none;
+    border-left: 0;
+    border-radius: 0 18px 18px 0;
+}
+
+.drawerContentBottom {
+    max-height: calc(100dvh - 48px);
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
 }
 
 .card {
@@ -25,6 +39,12 @@
 .content {
     position: relative;
     width: 100%;
+    padding: 20px 24px calc(72px + env(safe-area-inset-bottom));
+}
+
+.content .closeButton {
+    top: 28px;
+    right: 28px;
 }
 
 .closeButton {
@@ -245,4 +265,62 @@
     min-height: 184px;
     padding: 20px;
     text-align: center;
+}
+
+@media (max-width: 640px) {
+    .drawerContentBottom {
+        max-height: calc(100dvh - 24px);
+        border-radius: 14px 14px 0 0;
+    }
+
+    .content {
+        padding: 14px 14px calc(80px + env(safe-area-inset-bottom));
+    }
+
+    .content .closeButton {
+        top: 20px;
+        right: 18px;
+    }
+
+    .header {
+        padding: 14px 44px 12px 14px;
+    }
+
+    .tabs {
+        justify-content: space-between;
+        gap: 8px;
+        padding-inline: 14px;
+    }
+
+    .tableHeader,
+    .flightRow {
+        grid-template-columns: 40px 60px minmax(72px, 1fr) 52px;
+        column-gap: 7px;
+    }
+
+    .tableHeader {
+        padding-inline: 14px calc(14px + var(--sky-scrollbar-size));
+    }
+
+    .flightRow {
+        padding-inline: 14px;
+    }
+
+    .flightList {
+        height: clamp(220px, 42dvh, 282px);
+        max-height: 42dvh;
+    }
+}
+
+@media (max-width: 380px) {
+    .tableHeader,
+    .flightRow {
+        grid-template-columns: 38px 58px minmax(65px, 1fr) 10px;
+        column-gap: 6px;
+    }
+
+    .direction {
+        overflow: hidden;
+        font-size: 0;
+    }
 }

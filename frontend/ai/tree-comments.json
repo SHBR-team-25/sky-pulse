@@ -1,4 +1,5 @@
 {
+    "shared/hooks/useMediaQuery.ts": "responsive CSS media query hook",
     "main.tsx": "точка входа: монтирует App в DOM",
     "vite-env.d.ts": "типы Vite и переменных окружения (import.meta.env)",
 

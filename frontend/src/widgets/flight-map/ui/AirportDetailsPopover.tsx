@@ -2,15 +2,18 @@ import {
     cloneElement,
     useCallback,
     useEffect,
+    type KeyboardEvent,
+    type MouseEvent,
     type HTMLAttributes,
     type ReactElement,
     type ReactNode,
     type RefAttributes,
 } from 'react';
 import { Xmark } from '@gravity-ui/icons';
-import { Button, Icon, Popover, Spin } from '@gravity-ui/uikit';
+import { Button, Drawer, Icon, Spin } from '@gravity-ui/uikit';
 import type { Airport } from '@/entities/airport';
 import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
+import { useMediaQuery } from '@/shared/hooks';
 import { AirportDetailsCard } from './AirportDetailsCard';
 import { MarkerTooltip } from './MarkerTooltip';
 import styles from './AirportDetailsPopover.module.css';
@@ -36,6 +39,8 @@ export function AirportDetailsPopover({
     tooltipContent,
     onOpenChange,
 }: AirportDetailsPopoverProps) {
+    const isMobile = useMediaQuery('(max-width: 640px)');
+    const drawerPlacement = isMobile ? 'bottom' : 'left';
     const handleOpenChange = useCallback(
         (nextOpen: boolean) => onOpenChange(airport.icao, nextOpen),
         [airport.icao, onOpenChange]
@@ -60,10 +65,50 @@ export function AirportDetailsPopover({
         content = <AirportDetailsCard airport={airport} details={details} />;
     }
 
+    const handleMarkerClick = useCallback(
+        (event: MouseEvent<HTMLElement>) => {
+            children.props.onClick?.(event);
+            handleOpenChange(true);
+        },
+        [children.props, handleOpenChange]
+    );
+
+    const handleMarkerKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLElement>) => {
+            children.props.onKeyDown?.(event);
+
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleOpenChange(true);
+            }
+        },
+        [children.props, handleOpenChange]
+    );
+
     return (
-        <Popover
-            className={styles.popover}
-            content={
+        <>
+            <MarkerTooltip content={tooltipContent} disabled={open}>
+                {cloneElement(children, {
+                    'aria-expanded': open,
+                    'aria-haspopup': 'dialog',
+                    onClick: handleMarkerClick,
+                    onKeyDown: handleMarkerKeyDown,
+                })}
+            </MarkerTooltip>
+            <Drawer
+                className={styles.drawer}
+                contentClassName={`${styles.drawerContent} ${
+                    isMobile ? styles.drawerContentBottom : styles.drawerContentSide
+                }`}
+                open={open}
+                onOpenChange={handleOpenChange}
+                placement={drawerPlacement}
+                resizable
+                minSize={280}
+                maxSize={800}
+                contentOverflow="auto"
+                aria-label="Airport details"
+            >
                 <div className={styles.content}>
                     <Button
                         className={styles.closeButton}
@@ -76,21 +121,7 @@ export function AirportDetailsPopover({
                     </Button>
                     {content}
                 </div>
-            }
-            open={open}
-            onOpenChange={handleOpenChange}
-            trigger="click"
-            placement="right"
-            hasArrow={false}
-        >
-            {(popoverProps, popoverRef) => (
-                <MarkerTooltip content={tooltipContent} disabled={open}>
-                    {cloneElement(children, {
-                        ...(popoverProps as MarkerElementProps),
-                        ref: popoverRef,
-                    })}
-                </MarkerTooltip>
-            )}
-        </Popover>
+            </Drawer>
+        </>
     );
 }

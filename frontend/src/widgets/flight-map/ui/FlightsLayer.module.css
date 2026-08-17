@@ -67,3 +67,15 @@
     border-radius: 50%;
     content: '';
 }
+
+@media (max-width: 768px) {
+    .flightMarker {
+        width: 30px;
+        height: 30px;
+    }
+
+    .clusterMarker {
+        width: 34px;
+        height: 34px;
+    }
+}

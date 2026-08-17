@@ -209,6 +209,7 @@
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
+│   │       useMediaQuery.ts                         # responsive CSS media query hook
 │   │       useUtcTime.ts                            # хук текущего UTC-времени с обновлением в начале минуты
 │   │
 │   ├───lib                                          # общие хуки и утилиты
