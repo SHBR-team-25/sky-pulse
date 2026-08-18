@@ -27,7 +27,6 @@ skypulse:
     ingest-heartbeat-path: ${YT_INGEST_HEARTBEAT_PATH://home/skypulse/ingest_heartbeat}
     # Борт, о котором давно не было позиции, скорее всего сел.
     max-position-age-seconds: ${YT_MAX_POSITION_AGE_SECONDS:300}
-    max-current-positions: ${YT_MAX_CURRENT_POSITIONS:5000}
   pipeline:
     # Несколько пропущенных опросов подряд при интервале 15 с.
     stale-after-seconds: ${PIPELINE_STALE_AFTER_SECONDS:120}

@@ -21,27 +21,23 @@ public class YtPositionRepository implements PositionRepository {
     private final String positionsCurrentPath;
     private final String positionsHistoryPath;
     private final long maxPositionAgeSeconds;
-    private final int maxCurrentPositions;
 
     public YtPositionRepository(
             YtQueryClient ytQueryClient,
             @Value("${skypulse.yt.positions-current-path}") String positionsCurrentPath,
             @Value("${skypulse.yt.positions-history-path}") String positionsHistoryPath,
-            @Value("${skypulse.yt.max-position-age-seconds}") long maxPositionAgeSeconds,
-            @Value("${skypulse.yt.max-current-positions}") int maxCurrentPositions) {
+            @Value("${skypulse.yt.max-position-age-seconds}") long maxPositionAgeSeconds) {
         this.ytQueryClient = ytQueryClient;
         this.positionsCurrentPath = positionsCurrentPath;
         this.positionsHistoryPath = positionsHistoryPath;
         this.maxPositionAgeSeconds = maxPositionAgeSeconds;
-        this.maxCurrentPositions = maxCurrentPositions;
     }
 
     @Override
     public List<Position> currentPositions(BoundingBox area) {
         long freshnessThreshold = Instant.now().getEpochSecond() - maxPositionAgeSeconds;
-        // Пайплайн опрашивает весь мир, поэтому запрос без bbox надо ограничивать.
-        String query = "* from [%s]%s limit %d"
-                .formatted(positionsCurrentPath, whereClause(area, freshnessThreshold), maxCurrentPositions);
+        String query = "* from [%s]%s"
+                .formatted(positionsCurrentPath, whereClause(area, freshnessThreshold));
         return ytQueryClient.selectRows(query).stream().map(YtPositionRepository::toPosition).toList();
     }
 
