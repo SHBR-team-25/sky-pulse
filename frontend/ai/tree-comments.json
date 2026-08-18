@@ -49,6 +49,7 @@
     "entities/flight/index.ts": "публичный API сущности",
     "entities/flight/model": "",
     "entities/flight/model/mock-data.ts": "моки списка live-бортов и деталей рейса 4242b3",
+    "entities/flight/model/position-dto.ts": "DTO позиции и трека positions-service и мапперы в доменные типы",
     "entities/flight/model/types.ts": "типы live-бортов, трека, позиции и фазы полёта",
 
     "features": "слой фич: пользовательские сценарии получения данных",
@@ -82,8 +83,6 @@
     "features/getTargetFlight/index.ts": "публичный API фичи",
     "features/getTargetFlight/api": "",
     "features/getTargetFlight/api/useTargetFlight.ts": "хук GET /flights/{icao24}: детали и трек борта",
-    "features/getTargetFlight/model": "",
-    "features/getTargetFlight/model/types.ts": "тип ответа GET /flights/{icao24}",
 
     "pages": "слой страниц",
     "pages/dashboard": "страница дашборда со статистикой полётов",
@@ -171,6 +170,7 @@
     "widgets/flight-map": "карта аэропортов и рейсов с маркерами, кластерами и деталями",
     "widgets/flight-map/index.ts": "публичный API виджета",
     "widgets/flight-map/model": "",
+    "widgets/flight-map/model/useFlightDetails.ts": "состояние выбранного борта и загрузка его деталей через useTargetFlight",
     "widgets/flight-map/model/useMockAirportFlights.ts": "mock-запрос рейсов аэропорта с задержкой 500 мс",
     "widgets/flight-map/model/useMockFlightDetails.ts": "временный хук мок-запроса деталей выбранного рейса",
     "widgets/flight-map/ui": "",

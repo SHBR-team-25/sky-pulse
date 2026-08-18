@@ -12,13 +12,13 @@ import { Button, Icon, Popover, Spin } from '@gravity-ui/uikit';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetailsPopover.module.css';
 import { MarkerTooltip } from './MarkerTooltip';
-import type { FlightDetailsResponse } from '@/features/getTargetFlight';
+import type { FlightDetails } from '@/entities/flight';
 
 type MarkerElementProps = HTMLAttributes<HTMLElement> & RefAttributes<HTMLElement>;
 
 interface FlightDetailsPopoverProps {
     children: ReactElement<MarkerElementProps>;
-    details: FlightDetailsResponse | null;
+    details: FlightDetails | null;
     flightId: string;
     isLoading: boolean;
     open: boolean;

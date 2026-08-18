@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import type { FlightDetailsResponse } from '../model/types';
+import {
+    toFlightDetails,
+    type FlightDetails,
+    type PositionDto,
+    type TrackPointDto,
+} from '@/entities/flight';
 import { fetchJson } from '@shared/api';
 
 export const targetFlightQueryKeys = {
@@ -15,14 +20,18 @@ interface UseTargetFlightOptions {
 export function useTargetFlight(icao24: string | undefined, options: UseTargetFlightOptions = {}) {
     return useQuery({
         queryKey: targetFlightQueryKeys.details(icao24),
-        queryFn: ({ signal }) => {
+        queryFn: async ({ signal }): Promise<FlightDetails> => {
             if (!icao24) {
                 throw new Error('useTargetFlight: icao24 обязателен');
             }
 
-            return fetchJson<FlightDetailsResponse>(`/flights/${encodeURIComponent(icao24)}`, {
-                signal,
-            });
+            const id = encodeURIComponent(icao24);
+            const [position, track] = await Promise.all([
+                fetchJson<PositionDto>(`/flights/${id}`, { signal }),
+                fetchJson<TrackPointDto[]>(`/flights/${id}/track`, { signal }).catch(() => []),
+            ]);
+
+            return toFlightDetails(position, track);
         },
         enabled: Boolean(icao24) && (options.enabled ?? true),
         refetchInterval: options.refetchInterval,

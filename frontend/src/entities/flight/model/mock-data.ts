@@ -1,7 +1,7 @@
 import type { components } from '@/shared/api';
+import type { FlightDetailsResponse } from './types';
 
 type LiveFlightsResponse = components['schemas']['LiveFlightsResponse'];
-type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
 
 const MOCK_TIMESTAMP = 1_785_578_400;
 

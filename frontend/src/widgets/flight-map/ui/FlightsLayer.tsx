@@ -14,7 +14,7 @@ import {
 
 import { FlightDetailsPopover } from './FlightDetailsPopover';
 import styles from './FlightsLayer.module.css';
-import { useMockFlightDetails } from '../model/useMockFlightDetails';
+import { useFlightDetails } from '../model/useFlightDetails';
 import type { LiveFlight } from '@/entities/flight';
 
 const CLUSTER_SOURCE = 'clustered-flights';
@@ -28,7 +28,7 @@ interface FlightsLayerProps {
 }
 
 export function FlightsLayer({ flights }: FlightsLayerProps) {
-    const { selectedFlight, handleDetailsOpenChange } = useMockFlightDetails();
+    const { selectedFlight, handleDetailsOpenChange } = useFlightDetails();
 
     const selectedPathCoordinates = useMemo<LngLat[] | null>(() => {
         const path = selectedFlight?.details?.path;

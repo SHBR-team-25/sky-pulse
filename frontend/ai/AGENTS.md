@@ -103,6 +103,7 @@
 │       │
 │       └───model
 │               mock-data.ts                         # моки списка live-бортов и деталей рейса 4242b3
+│               position-dto.ts                      # DTO позиции и трека positions-service и мапперы в доменные типы
 │               types.ts                             # типы live-бортов, трека, позиции и фазы полёта
 │
 ├───features                                         # слой фич: пользовательские сценарии получения данных
@@ -148,11 +149,8 @@
 │   └───getTargetFlight                              # получение деталей выбранного рейса
 │       │   index.ts                                 # публичный API фичи
 │       │
-│       ├───api
-│       │       useTargetFlight.ts                   # хук GET /flights/{icao24}: детали и трек борта
-│       │
-│       └───model
-│               types.ts                             # тип ответа GET /flights/{icao24}
+│       └───api
+│               useTargetFlight.ts                   # хук GET /flights/{icao24}: детали и трек борта
 │
 ├───pages                                            # слой страниц
 │   ├───dashboard                                    # страница дашборда со статистикой полётов
@@ -265,6 +263,7 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
+        │       useFlightDetails.ts                  # состояние выбранного борта и загрузка его деталей через useTargetFlight
         │       useMockAirportFlights.ts             # mock-запрос рейсов аэропорта с задержкой 500 мс
         │       useMockFlightDetails.ts              # временный хук мок-запроса деталей выбранного рейса
         │

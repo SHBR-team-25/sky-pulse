@@ -5,7 +5,14 @@ export type LiveFlight = components['schemas']['LiveFlightsResponse']['flights']
 /** 'solo' — один борт, 'multie' — кластер*/
 export type LiveFlightType = LiveFlight['type'];
 
-export type FlightTrackPoint = components['schemas']['FlightDetailsResponse']['path'][number];
+export type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
+
+export type FlightDetails = Omit<FlightDetailsResponse, 'startTime' | 'endTime'> & {
+    startTime: number | null;
+    endTime: number | null;
+};
+
+export type FlightTrackPoint = FlightDetailsResponse['path'][number];
 
 export type AircraftPosition = components['schemas']['AircraftPosition'];
 

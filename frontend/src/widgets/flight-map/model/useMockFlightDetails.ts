@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { flightDetailsMock } from '@/entities/flight';
-import type { FlightDetailsResponse } from '@/features/getTargetFlight';
+import { flightDetailsMock, type FlightDetailsResponse } from '@/entities/flight';
 
 const MOCK_REQUEST_DELAY_MS = 500;
 

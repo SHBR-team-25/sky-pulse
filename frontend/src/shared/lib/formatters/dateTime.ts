@@ -13,7 +13,11 @@ export const utcTimeFormatter = new Intl.DateTimeFormat('en-GB', {
 });
 
 /** Форматирует timestamp в секундах как часы и минуты. */
-export function formatTime(timestamp: number) {
+export function formatTime(timestamp: number | null) {
+    if (timestamp === null) {
+        return '—';
+    }
+
     return timeFormatter.format(timestamp * 1000);
 }
 

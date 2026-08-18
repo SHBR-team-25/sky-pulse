@@ -6,13 +6,13 @@ import {
     numberFormatter,
 } from '@/shared/lib/formatters';
 import styles from './FlightDetailsPopover.module.css';
-import type { FlightDetailsResponse } from '@/features/getTargetFlight';
+import type { FlightDetails } from '@/entities/flight';
 
 interface FlightDetailsCardProps {
-    details: FlightDetailsResponse;
+    details: FlightDetails;
 }
 
-const phaseLabels: Record<FlightDetailsResponse['phase'], string> = {
+const phaseLabels: Record<FlightDetails['phase'], string> = {
     on_ground: 'На земле',
     climbing: 'Набор',
     descending: 'Снижение',
