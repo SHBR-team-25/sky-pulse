@@ -26,8 +26,7 @@ interface AirportCodeTooltipProps {
 
 function AirportCodeTooltip({ code, name }: AirportCodeTooltipProps) {
     return (
-        // disablePortal чтобы рендерился внтури поповера
-        <AirportTooltip content={name} disablePortal>
+        <AirportTooltip content={name}>
             <strong className={styles.airportCode} tabIndex={0}>
                 {code}
             </strong>

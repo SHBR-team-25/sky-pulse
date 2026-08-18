@@ -1,0 +1,69 @@
+networks:
+  yt_local_cluster_network:
+    name: yt_local_cluster_network
+
+services:
+
+  yt-backend:
+    image: ghcr.io/ytsaurus/local:stable
+    container_name: yt.backend
+    hostname: yt.backend
+    networks:
+      - yt_local_cluster_network
+    environment:
+      YT_FORCE_IPV4: "1"
+      YT_FORCE_IPV6: "0"
+      YT_USE_HOSTS: "0"
+      YTSERVER_ALL_PATH: "/usr/bin/ytserver-all"
+      YT_LOCAL_ROOT_PATH: "/tmp"
+    ports:
+      - "8000:80"
+      - "8002:8002"
+    command:
+      - "--fqdn"
+      - "localhost"
+      - "--port-range-start"
+      - "24400"
+      - "--node-port-set-size"
+      - "100"
+      - "--proxy-config"
+      - '{coordinator={public_fqdn="localhost:8000"}}'
+      - "--rpc-proxy-count"
+      - "0"
+      - "--rpc-proxy-port"
+      - "8002"
+      - "--node-count"
+      - "1"
+      - "--queue-agent-count"
+      - "1"
+      - "--address-resolver-config"
+      - "{enable_ipv4=%true;enable_ipv6=%false;}"
+      - "--native-client-supported"
+      - "--id"
+      - "locasaurus"
+      - "-c"
+      - "{name=query-tracker}"
+      - "-c"
+      - '{name=yql-agent;config={path="/usr/bin";count=1;artifacts_path="/usr/bin"}}'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/ping || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+      start_period: 20s
+
+  yt-frontend:
+    image: ghcr.io/ytsaurus/ui:stable
+    container_name: yt.frontend
+    networks:
+      - yt_local_cluster_network
+    environment:
+      YT_LOCAL_CLUSTER_ID: "locasaurus"
+      PROXY: "localhost:8000"
+      PROXY_INTERNAL: "yt.backend:80"
+      APP_ENV: "local"
+    ports:
+      - "8001:80"
+    depends_on:
+      yt-backend:
+        condition: service_healthy

@@ -1,0 +1,26 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: positions-service
+  config:
+    import: "optional:file:.env[.properties]"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+skypulse:
+  yt:
+    proxy: ${YT_PROXY:localhost:80}
+    token: ${YT_TOKEN:}
+    positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
+    positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}

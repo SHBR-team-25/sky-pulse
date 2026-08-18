@@ -7,7 +7,8 @@ import {
     type ReactNode,
     type RefAttributes,
 } from 'react';
-import { Popover, Spin } from '@gravity-ui/uikit';
+import { Xmark } from '@gravity-ui/icons';
+import { Button, Icon, Popover, Spin } from '@gravity-ui/uikit';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetailsPopover.module.css';
 import { MarkerTooltip } from './MarkerTooltip';
@@ -50,22 +51,31 @@ export function FlightDetailsPopover({
         <Popover
             className={styles.popover}
             content={
-                isLoading ? (
-                    <div className={styles.loading} role="status" aria-live="polite">
-                        <Spin size="l" />
-                        <span>Загружаем данные о рейсе</span>
-                    </div>
-                ) : (
-                    details && <FlightDetailsCard details={details} />
-                )
+                <div className={styles.content}>
+                    <Button
+                        className={styles.closeButton}
+                        view="flat"
+                        size="s"
+                        aria-label="Закрыть"
+                        onClick={() => handleOpenChange(false)}
+                    >
+                        <Icon data={Xmark} size={16} />
+                    </Button>
+                    {isLoading ? (
+                        <div className={styles.loading} role="status" aria-live="polite">
+                            <Spin size="l" />
+                            <span>Загружаем данные о рейсе</span>
+                        </div>
+                    ) : (
+                        details && <FlightDetailsCard details={details} />
+                    )}
+                </div>
             }
             open={open}
             onOpenChange={handleOpenChange}
             trigger="click"
             placement="right"
-            offset={14}
             hasArrow={false}
-            zIndex={2147483647}
         >
             {(popoverProps, popoverRef) => (
                 <MarkerTooltip content={tooltipContent} disabled={open}>

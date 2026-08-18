@@ -21,3 +21,17 @@ pnpm-debug.log*
 # Tooling and OS files.
 .DS_Store
 .idea/
+
+# Python pipeline.
+/pipeline/.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+.env
+
+# python env and cache
+ytsaurus-env/
+__pycache__/
