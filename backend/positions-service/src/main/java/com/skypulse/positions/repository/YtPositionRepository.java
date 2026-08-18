@@ -11,7 +11,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
@@ -24,7 +23,6 @@ import org.springframework.web.client.RestClient;
  * из docker-compose.yml бьёт напрямую в http-proxy по обычному DNS.
  */
 @Repository
-@Profile("yt")
 public class YtPositionRepository implements PositionRepository {
 
     // ICAO24 — всегда 6 hex-символов; заодно защищает от инъекции в QL-строку select_rows.
