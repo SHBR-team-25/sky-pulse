@@ -8,11 +8,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class YtPositionRepository implements PositionRepository {
+
+    private static final Logger LOG = LoggerFactory.getLogger(YtPositionRepository.class);
 
     // Заодно защищает от инъекции в QL-строку select_rows.
     private static final Pattern ICAO24_PATTERN = Pattern.compile("^[0-9a-fA-F]{6}$");
@@ -38,7 +42,7 @@ public class YtPositionRepository implements PositionRepository {
         long freshnessThreshold = Instant.now().getEpochSecond() - maxPositionAgeSeconds;
         String query = "* from [%s]%s"
                 .formatted(positionsCurrentPath, whereClause(area, freshnessThreshold));
-        return ytQueryClient.selectRows(query).stream().map(YtPositionRepository::toPosition).toList();
+        return positions(ytQueryClient.selectRows(query));
     }
 
     @Override
@@ -48,7 +52,8 @@ public class YtPositionRepository implements PositionRepository {
         }
         String query = "* from [%s] where icao24 = '%s' limit 1"
                 .formatted(positionsCurrentPath, icao24.toLowerCase(Locale.ROOT));
-        return ytQueryClient.selectRows(query).stream().map(YtPositionRepository::toPosition).findFirst();
+        // Строк здесь максимум одна, и негодная означает сломанный источник, а не «нет борта».
+        return ytQueryClient.selectRows(query).stream().findFirst().map(YtPositionRepository::toPosition);
     }
 
     @Override
@@ -61,7 +66,11 @@ public class YtPositionRepository implements PositionRepository {
         long threshold = Instant.now().getEpochSecond() - sinceSeconds;
         String query = "* from [%s] where icao24 = '%s' and time_position >= %d"
                 .formatted(positionsHistoryPath, icao24.toLowerCase(Locale.ROOT), threshold);
-        return ytQueryClient.selectRows(query).stream().map(YtPositionRepository::toPosition).toList();
+        return positions(ytQueryClient.selectRows(query));
+    }
+
+    static List<Position> positions(List<JsonNode> rows) {
+        return YtRow.mapSkippingBroken(rows, YtPositionRepository::toPosition, LOG);
     }
 
     static boolean isValidIcao24(String icao24) {
@@ -80,25 +89,24 @@ public class YtPositionRepository implements PositionRepository {
     }
 
     static Position toPosition(JsonNode row) {
-        return new Position(
-                row.path("icao24").asText(),
-                row.path("callsign").asText(null),
-                row.path("origin_country").asText(null),
-                row.path("time_position").asLong(),
-                row.path("lat").asDouble(),
-                row.path("lon").asDouble(),
-                nullableDouble(row, "baro_altitude"),
-                row.path("on_ground").asBoolean(),
-                nullableDouble(row, "velocity"),
-                nullableDouble(row, "true_track"),
-                row.path("manufacturername").asText(null),
-                row.path("model").asText(null),
-                row.path("operator").asText(null)
-        );
-    }
-
-    private static Double nullableDouble(JsonNode row, String field) {
-        JsonNode value = row.get(field);
-        return value == null || value.isNull() ? null : value.asDouble();
+        try {
+            return new Position(
+                    YtRow.requiredText(row, "icao24"),
+                    YtRow.text(row, "callsign"),
+                    YtRow.text(row, "origin_country"),
+                    YtRow.requiredLong(row, "time_position"),
+                    YtRow.requiredDouble(row, "lat"),
+                    YtRow.requiredDouble(row, "lon"),
+                    YtRow.nullableDouble(row, "baro_altitude"),
+                    YtRow.flag(row, "on_ground"),
+                    YtRow.nullableDouble(row, "velocity"),
+                    YtRow.nullableDouble(row, "true_track"),
+                    YtRow.text(row, "manufacturername"),
+                    YtRow.text(row, "model"),
+                    YtRow.text(row, "operator")
+            );
+        } catch (IllegalArgumentException e) {
+            throw new MalformedRowException(e.getMessage(), e);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.skypulse.positions.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,5 +72,25 @@ class YtAirportRepositoryTest {
         assertThat(airport.icao()).isEqualTo("00A");
         assertThat(airport.iata()).isNull();
         assertThat(airport.city()).isNull();
+    }
+
+    // Аэропорт без координат отрисовать негде, а без названия — нечего показать
+    // в списке и не с чем сравнивать при сортировке.
+    @Test
+    void rejectsRowWithoutCoordinatesOrName() throws Exception {
+        JsonNode noCoordinates = objectMapper.readTree("""
+                {"ident": "00AA", "name": "Aero B Ranch Airport", "type": "small_airport"}
+                """);
+        JsonNode noName = objectMapper.readTree("""
+                {"ident": "00AA", "type": "small_airport",
+                 "latitude_deg": 38.704022, "longitude_deg": -101.473911}
+                """);
+
+        assertThatThrownBy(() -> YtAirportRepository.toAirport(noCoordinates))
+                .isInstanceOf(MalformedRowException.class)
+                .hasMessageContaining("latitude_deg");
+        assertThatThrownBy(() -> YtAirportRepository.toAirport(noName))
+                .isInstanceOf(MalformedRowException.class)
+                .hasMessageContaining("name");
     }
 }

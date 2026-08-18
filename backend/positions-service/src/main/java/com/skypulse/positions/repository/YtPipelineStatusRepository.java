@@ -49,13 +49,8 @@ public class YtPipelineStatusRepository implements PipelineStatusRepository {
         return new PipelineStatus(
                 STATUS_REPORTING,
                 row.path("updated_at").asLong(),
-                nullableLong(row, "watermark_ts"),
+                YtRow.nullableLong(row, "watermark_ts"),
                 null
         );
-    }
-
-    private static Long nullableLong(JsonNode row, String field) {
-        JsonNode value = row.get(field);
-        return value == null || value.isNull() ? null : value.asLong();
     }
 }

@@ -1,11 +1,13 @@
 package com.skypulse.positions.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skypulse.positions.api.dto.BoundingBox;
 import com.skypulse.positions.model.Position;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class YtPositionRepositoryTest {
@@ -54,6 +56,50 @@ class YtPositionRepositoryTest {
         assertThat(position.manufacturername()).isNull();
         assertThat(position.model()).isNull();
         assertThat(position.operator()).isNull();
+    }
+
+    // Пропущенная координата, прочитанная как 0.0, — это самолёт в Гвинейском
+    // заливе, который вдобавок попадает в любой bbox вокруг нуля.
+    @Test
+    void rejectsRowWithoutCoordinates() throws Exception {
+        JsonNode row = objectMapper.readTree("""
+                {"icao24": "01023b", "time_position": 1786841273, "on_ground": false}
+                """);
+
+        assertThatThrownBy(() -> YtPositionRepository.toPosition(row))
+                .isInstanceOf(MalformedRowException.class)
+                .hasMessageContaining("lat");
+    }
+
+    @Test
+    void rejectsNonNumericAndOutOfRangeCoordinates() throws Exception {
+        JsonNode text = objectMapper.readTree("""
+                {"icao24": "01023b", "time_position": 1, "lat": "55,7", "lon": 20.0}
+                """);
+        JsonNode offMap = objectMapper.readTree("""
+                {"icao24": "01023b", "time_position": 1, "lat": 145.0, "lon": 20.0}
+                """);
+
+        assertThatThrownBy(() -> YtPositionRepository.toPosition(text))
+                .isInstanceOf(MalformedRowException.class);
+        assertThatThrownBy(() -> YtPositionRepository.toPosition(offMap))
+                .isInstanceOf(MalformedRowException.class);
+    }
+
+    // Одна битая строка не должна стоить клиенту всей карты.
+    @Test
+    void keepsSoundRowsWhenOneIsBroken() throws Exception {
+        List<JsonNode> rows = List.of(
+                objectMapper.readTree("""
+                        {"icao24": "01023b", "time_position": 1, "lat": 45.4, "lon": 20.0}
+                        """),
+                objectMapper.readTree("""
+                        {"icao24": "01025c", "time_position": 2, "lon": 20.15}
+                        """));
+
+        assertThat(YtPositionRepository.positions(rows))
+                .singleElement()
+                .satisfies(position -> assertThat(position.icao24()).isEqualTo("01023b"));
     }
 
     @Test

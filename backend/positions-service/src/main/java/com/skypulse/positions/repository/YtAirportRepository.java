@@ -54,9 +54,8 @@ public class YtAirportRepository implements AirportRepository {
 
     private AirportDirectory load() {
         long startedAt = System.currentTimeMillis();
-        var airports = ytQueryClient.readTable(refAirportsPath).stream()
-                .map(YtAirportRepository::toAirport)
-                .toList();
+        var airports = YtRow.mapSkippingBroken(
+                ytQueryClient.readTable(refAirportsPath), YtAirportRepository::toAirport, LOG);
         LOG.info("Прочитан справочник аэропортов: {} строк за {} мс", airports.size(),
                 System.currentTimeMillis() - startedAt);
         return new AirportDirectory(airports, modificationTime());
@@ -73,26 +72,22 @@ public class YtAirportRepository implements AirportRepository {
     }
 
     static Airport toAirport(JsonNode row) {
-        String icaoCode = text(row, "icao_code");
-        return new Airport(
-                icaoCode != null ? icaoCode : text(row, "ident"),
-                text(row, "iata_code"),
-                text(row, "name"),
-                text(row, "type"),
-                text(row, "municipality"),
-                text(row, "iso_country"),
-                row.path("latitude_deg").asDouble(),
-                row.path("longitude_deg").asDouble()
-        );
-    }
-
-    private static String text(JsonNode row, String field) {
-        JsonNode value = row.get(field);
-        if (value == null || value.isNull()) {
-            return null;
+        try {
+            String icaoCode = YtRow.text(row, "icao_code");
+            return new Airport(
+                    icaoCode != null ? icaoCode : YtRow.requiredText(row, "ident"),
+                    YtRow.text(row, "iata_code"),
+                    // Без названия аэропорт нечего показать и не с чем сравнить при сортировке.
+                    YtRow.requiredText(row, "name"),
+                    YtRow.text(row, "type"),
+                    YtRow.text(row, "municipality"),
+                    YtRow.text(row, "iso_country"),
+                    YtRow.requiredDouble(row, "latitude_deg"),
+                    YtRow.requiredDouble(row, "longitude_deg")
+            );
+        } catch (IllegalArgumentException e) {
+            throw new MalformedRowException(e.getMessage(), e);
         }
-        String asText = value.asText();
-        return asText.isBlank() ? null : asText;
     }
 
     private record CachedDirectory(AirportDirectory directory, long loadedAt) {
