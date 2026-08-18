@@ -34,7 +34,7 @@
     color: var(--sky-color-text-muted);
 }
 
-.loading {
+.message {
     display: grid;
     width: 100%;
     min-height: var(--flight-details-content-height);
