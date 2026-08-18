@@ -1,0 +1,496 @@
+openapi: 3.0.3
+info:
+  title: skyPulse positions-service API
+  description: >-
+    Контракт того, что `positions-service` **реально отдаёт сегодня**. Всё
+    описанное здесь реализовано и покрыто тестами; ручек «на будущее» в этом
+    файле нет — продуктовый черновик со всеми запланированными эндпоинтами
+    живёт отдельно, в `docs/openapi.yaml`, и с реализацией не сверяется.
+
+
+    Обновление карты — поллинг `GET /api/flights/live` с клиента. Чаще одного
+    раза в 5 секунд смысла нет: пайплайн обновляет позиции раз в 15 секунд.
+    Плавность движения маркеров добирается экстраполяцией по `velocity`
+    и `trueTrack`, а не частотой запросов.
+
+
+    Единицы: время — unix seconds в UTC, высота — метры, скорость — м/с,
+    курс — градусы от севера по часовой стрелке.
+  version: 1.0.0
+
+servers:
+  - url: /api
+
+tags:
+  - name: flights
+    description: Борта, позиции, треки
+  - name: pipeline
+    description: Состояние поставщика данных
+
+paths:
+  /flights/live:
+    get:
+      tags: [flights]
+      summary: Борта для отрисовки маркеров на карте
+      description: >-
+        Основной запрос карты. Возвращает **плоский массив** позиций, без
+        конверта и без метаданных о свежести — за свежестью идти
+        в `GET /pipeline-status`.
+
+
+        Отдаются только борта, о которых была позиция за последние
+        `YT_MAX_POSITION_AGE_SECONDS` (по умолчанию 300 с). Севшие и потерянные
+        борта пропадают из выдачи: `positions_current` хранит последнюю позицию
+        каждого `icao24` вечно, поэтому отсечка по времени обязательна.
+
+
+        Ответ ограничен сверху `YT_MAX_CURRENT_POSITIONS` (по умолчанию 5000)
+        и **обрезается молча** — ни счётчика, ни флага усечения в ответе нет.
+        Какие именно борта отбросит, не определено, поэтому на мировом зуме
+        состав выборки может меняться между поллингами.
+      parameters:
+        - $ref: "#/components/parameters/MinLat"
+        - $ref: "#/components/parameters/MinLon"
+        - $ref: "#/components/parameters/MaxLat"
+        - $ref: "#/components/parameters/MaxLon"
+      responses:
+        "200":
+          description: >-
+            Массив позиций. Пустой массив — валидный ответ и **не** признак
+            ошибки: так же выглядит и пустой участок карты, и остановленный
+            пайплайн. Различить их можно только через `GET /pipeline-status`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Flight"
+        "500":
+          description: >-
+            YTsaurus недоступен или вернул ошибку. Тело стандартное
+            для Spring Boot, без поля `message`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpringError"
+
+  /flights/{icao24}:
+    get:
+      tags: [flights]
+      summary: Последняя известная позиция борта
+      description: >-
+        Карточка борта по клику на карте. Тело ответа — тот же объект, что
+        и элемент массива в `GET /flights/live`.
+
+
+        Трек сюда **не входит**, за ним нужен отдельный запрос
+        к `GET /flights/{icao24}/track`.
+      parameters:
+        - $ref: "#/components/parameters/Icao24"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flight"
+        "404":
+          description: >-
+            Борта нет в выдаче. Два неразличимых по ответу случая: `icao24`
+            не прошёл проверку формата (не 6 hex-символов) либо борта нет
+            в `positions_current` — он не наблюдался дольше окна свежести.
+            Отдельного 400 на кривой формат нет.
+
+
+            Поле `message` заполнено по-русски и пригодно для показа
+            пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: YTsaurus недоступен или вернул ошибку.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpringError"
+
+  /flights/{icao24}/track:
+    get:
+      tags: [flights]
+      summary: Трек борта из накопленной истории
+      description: >-
+        Точки строятся по `positions_history` и приходят **уже
+        в хронологическом порядке** — сортировать на клиенте не нужно.
+
+
+        Плотность точек — одна на опрос пайплайна, то есть примерно раз
+        в 15 секунд (около 240 точек за час). В паузах пайплайна в треке будут
+        разрывы, поэтому соединять прямой линией далеко разнесённые по времени
+        точки не стоит.
+      parameters:
+        - $ref: "#/components/parameters/Icao24"
+        - name: sinceSeconds
+          in: query
+          required: false
+          description: Глубина окна назад от текущего момента, в секундах
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            default: 3600
+      responses:
+        "200":
+          description: >-
+            Массив точек трека. В отличие от карточки борта, неизвестный или
+            некорректный `icao24` даёт **пустой массив и 200**, а не 404.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackPoint"
+        "500":
+          description: YTsaurus недоступен или вернул ошибку.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpringError"
+
+  /pipeline-status:
+    get:
+      tags: [pipeline]
+      summary: Состояние поставщика позиций
+      description: >-
+        Отвечает на вопрос «почему на карте пусто». Без этого эндпоинта
+        отличить остановленный пайплайн от честно пустого участка карты
+        невозможно — оба случая выглядят как `200 []`.
+
+
+        Достаточно поллить раз в 30 секунд, отдельно от позиций.
+      responses:
+        "200":
+          description: >-
+            Текущее состояние. Отвечает всегда, даже если пайплайн ни разу
+            не запускался — тогда `status: unknown` и `stale: true`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineStatus"
+        "500":
+          description: YTsaurus недоступен или вернул ошибку.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpringError"
+
+components:
+  parameters:
+    Icao24:
+      name: icao24
+      in: path
+      required: true
+      description: >-
+        ICAO24-адрес борта: ровно 6 hex-символов. Регистр не важен, сервер
+        приводит значение к нижнему. Всё, что не подходит под формат,
+        трактуется как «борт не найден».
+      schema:
+        type: string
+        pattern: "^[0-9a-fA-F]{6}$"
+        example: "01023b"
+    MinLat:
+      name: minLat
+      in: query
+      required: false
+      description: >-
+        Южная граница видимой области карты.
+
+
+        Параметры `minLat`/`minLon`/`maxLat`/`maxLon` задаются **только все
+        четыре вместе**. Если задан не весь набор, фильтр молча игнорируется
+        и вернётся весь мир (до 5000 бортов) — ошибки при этом не будет.
+
+
+        Проверок на осмысленность нет: при `minLat > maxLat` вернётся пустой
+        массив, а не 400. Переход через антимеридиан (±180°) не поддержан —
+        такой bbox тоже даст пусто.
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+        example: 41.0
+    MinLon:
+      name: minLon
+      in: query
+      required: false
+      description: Западная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+        example: -6.0
+    MaxLat:
+      name: maxLat
+      in: query
+      required: false
+      description: Северная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+        example: 52.0
+    MaxLon:
+      name: maxLon
+      in: query
+      required: false
+      description: Восточная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+        example: 10.0
+
+  schemas:
+    Flight:
+      type: object
+      description: >-
+        Позиция борта из `positions_current`, обогащённая справочником ВС
+        по `icao24`.
+
+
+        Все поля всегда присутствуют в JSON; необязательность выражена через
+        `nullable`, а не через отсутствие ключа.
+      properties:
+        icao24:
+          type: string
+          description: ICAO24-адрес, 6 hex-символов в нижнем регистре. Ключ борта
+          example: "01023b"
+        callsign:
+          type: string
+          nullable: true
+          description: Позывной, уже обрезанный от пробелов
+          example: "MSC2932"
+        originCountry:
+          type: string
+          nullable: true
+          description: Страна регистрации борта
+          example: "Egypt"
+        timePosition:
+          type: integer
+          format: int64
+          description: Момент фиксации позиции, unix seconds
+          example: 1786841273
+        lat:
+          type: number
+          format: double
+          description: Широта WGS-84, градусы
+          example: 45.41
+        lon:
+          type: number
+          format: double
+          description: Долгота WGS-84, градусы
+          example: 20.0
+        baroAltitude:
+          type: number
+          format: double
+          nullable: true
+          description: Барометрическая высота в **метрах**
+          example: 10957.5
+        onGround:
+          type: boolean
+          description: Борт находится на земле
+        velocity:
+          type: number
+          format: double
+          nullable: true
+          description: Путевая скорость в **м/с**
+          example: 229.9
+        trueTrack:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Курс в градусах от севера по часовой стрелке. Задаёт поворот
+            иконки борта на карте
+          example: 324.75
+        manufacturername:
+          type: string
+          nullable: true
+          description: >-
+            Производитель из справочника ВС. Имя поля в одно слово и в нижнем
+            регистре — так колонка называется в схеме YT
+          example: "Airbus Industrie"
+        model:
+          type: string
+          nullable: true
+          description: Модель ВС из справочника
+          example: "A320-251N"
+        operator:
+          type: string
+          nullable: true
+          description: >-
+            Авиакомпания-эксплуатант. Борт, которого нет в справочнике ВС,
+            всё равно возвращается (FR4) — тогда `manufacturername`, `model`
+            и `operator` равны `null`
+          example: "Air Cairo"
+      required:
+        - icao24
+        - callsign
+        - originCountry
+        - timePosition
+        - lat
+        - lon
+        - baroAltitude
+        - onGround
+        - velocity
+        - trueTrack
+        - manufacturername
+        - model
+        - operator
+
+    TrackPoint:
+      type: object
+      description: Одна точка трека борта из `positions_history`
+      properties:
+        timePosition:
+          type: integer
+          format: int64
+          description: Момент фиксации позиции, unix seconds
+        lat:
+          type: number
+          format: double
+          description: Широта WGS-84
+        lon:
+          type: number
+          format: double
+          description: Долгота WGS-84
+        baroAltitude:
+          type: number
+          format: double
+          nullable: true
+          description: Барометрическая высота в метрах, позволяет красить трек по высоте
+      required: [timePosition, lat, lon, baroAltitude]
+
+    PipelineStatus:
+      type: object
+      description: >-
+        Состояние поставщика позиций. `status` и `stale` — два **разных**
+        сигнала, и они намеренно расходятся: `status` говорит, что происходит
+        прямо сейчас, `stale` — что данные уже протухли.
+
+
+        В момент срабатывания стоп-крана будет `status: budget_exhausted` при
+        `stale: false`, потому что последний снапшот приехал секунду назад.
+        Отсюда двухступенчатый UX: пока `stale: false`, но статус не `ok` —
+        мягкое уведомление «обновление приостановлено до HH:MM»; когда `stale`
+        станет `true` — баннер «данные устарели».
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - budget_exhausted
+            - rate_limited
+            - opensky_unreachable
+            - poll_failed
+            - unknown
+          description: >-
+            Что делает поставщик данных прямо сейчас:
+
+
+            * `ok` — опрос идёт штатно, показывать пользователю нечего.
+
+
+            * `budget_exhausted` — исчерпан суточный лимит кредитов OpenSky.
+            Самая частая пауза, штатно занимает до 20 часов в сутки.
+            `resumesAt` заполнен, можно назвать точное время возобновления.
+
+
+            * `rate_limited` — короткий троттлинг со стороны OpenSky, обычно
+            минуты. `resumesAt` заполнен из заголовка `Retry-After`.
+
+
+            * `opensky_unreachable` — источник не отвечает. Сервис ретраит
+            с растущей паузой, максимум 5 минут между попытками.
+
+
+            * `poll_failed` — опрос упал по иной причине (разбор ответа,
+            запись в YT). Ведёт себя как `opensky_unreachable`.
+
+
+            * `unknown` — строки хартбита нет вовсе: `ingest_service` ни разу
+            не отработал либо не создана таблица `ingest_heartbeat`. Всегда
+            приходит вместе со `stale: true`.
+        lastSuccessAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            Момент последнего успешного опроса OpenSky, unix seconds.
+            `null` — успешных опросов ещё не было ни одного
+        resumesAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            Момент, когда опрос возобновится, unix seconds. `null` — срок
+            заранее неизвестен, например источник просто не отвечает
+        stale:
+          type: boolean
+          description: >-
+            Данные считаются устаревшими: успешного опроса не было дольше
+            `PIPELINE_STALE_AFTER_SECONDS` (по умолчанию 120 с).
+            При `lastSuccessAt: null` всегда `true`
+      required: [status, lastSuccessAt, resumesAt, stale]
+
+    ApiError:
+      type: object
+      description: >-
+        Тело доменной ошибки сервиса. Формируется `ApiExceptionHandler`
+        и отличается от стандартного тела Spring наличием `message`.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Момент формирования ответа, ISO-8601
+          example: "2026-08-18T09:14:22.481Z"
+        status:
+          type: integer
+          description: HTTP-код, дублирует статус ответа
+          example: 404
+        error:
+          type: string
+          description: Стандартное название HTTP-статуса
+          example: "Not Found"
+        message:
+          type: string
+          description: Причина по-русски, пригодна для показа пользователю без обработки
+          example: "Позиция для борта icao24=abc123 не найдена"
+      required: [timestamp, status, error, message]
+
+    SpringError:
+      type: object
+      description: >-
+        Тело ошибки по умолчанию от Spring Boot — приходит там, где нет
+        доменного обработчика, прежде всего на 5xx. Поля `message` в нём
+        **нет**: показывать пользователю нечего, нужен свой текст на клиенте.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-18T09:14:22.481+00:00"
+        status:
+          type: integer
+          example: 500
+        error:
+          type: string
+          example: "Internal Server Error"
+        path:
+          type: string
+          description: Путь запроса, на котором произошла ошибка
+          example: "/api/flights/live"
+      required: [timestamp, status, error, path]

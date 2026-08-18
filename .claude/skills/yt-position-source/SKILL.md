@@ -1,45 +1,60 @@
 ---
 name: yt-position-source
-description: Guide for implementing and wiring the YTsaurus-backed PositionRepository in SkyPulse positions-service (reading positions_current / positions_history dynamic tables and mapping rows to the Position domain model). Use when adding or debugging real YT integration behind the positions API.
+description: Guide for working with the YTsaurus-backed repositories in SkyPulse positions-service (reading positions_current / positions_history / ingest_heartbeat dynamic tables via select_rows and mapping rows to domain models). Use when adding or debugging YT integration behind the positions API.
 ---
 
 # YT Position Source
 
-Как подключить реальный источник позиций из YTsaurus вместо заглушки
-`InMemoryPositionRepository`.
+Как устроен доступ к данным в `positions-service` и что учитывать, добавляя
+новый источник.
 
 ## Контекст
 
 Сервис соответствует блоку `svc_positions` на схеме архитектуры:
-- читает **обогащённую** динамическую таблицу `positions_current` — текущие позиции;
+- читает обогащённую динамическую таблицу `positions_current` — текущие позиции;
 - читает `positions_history` — для построения трека борта;
-- отдаёт результат клиенту «Карта» через REST (`/api/positions/**`).
+- читает `ingest_heartbeat` — состояние поставщика данных;
+- отдаёт результат клиенту «Карта» через REST (`/api/flights/**`,
+  `/api/pipeline-status`).
 
-Интерфейс доступа к данным уже определён: `com.skypulse.positions.repository.PositionRepository`.
-Внедрение — через Spring DI (конструктор), выбор реализации — через `@Profile`.
+Заглушек в `src/main` нет: сервис всегда ходит в реальный YTsaurus. Фейковые
+реализации портов живут только в тестах.
 
-## Шаги
+## Как это собрано
 
-1. Добавить зависимость YT-клиента (`tech.ytsaurus:ytsaurus-client`) в `build.gradle.kts`.
-2. Создать `YtPositionRepository implements PositionRepository` в пакете `repository`,
-   пометить `@Repository @Profile("yt")` — тогда заглушка (`@Profile("!yt")`)
-   автоматически отключится. Параметры подключения брать из `skypulse.yt.*`
-   (`application.yml`) через `@ConfigurationProperties`/`@Value`.
-3. Профиль включается `SPRING_PROFILES_ACTIVE=yt` (`.env`) или
-   `--spring.profiles.active=yt`.
-4. Смаппить строки YT в доменную модель `Position` (ключ джойна — `icao24`).
-   Помнить FR4: борт без записи в справочнике всё равно возвращается, поля
-   `aircraftType/airline` = `null`.
-5. Реализовать три метода порта: `currentPositions(bbox)`, `latestByIcao24`,
-   `historyByIcao24(icao24, sinceSeconds)`.
+- `YtQueryClient` (`@Component`) — единственная точка входа в YT. Ходит в
+  HTTP-прокси на `/api/v4/select_rows`, а не через RPC-клиент
+  `tech.ytsaurus:ytsaurus-client`: так не нужен ни новый Maven-артефакт, ни
+  DNS-хак для RPC-proxy. Ответ приходит в NDJSON — объект на строку, не массив.
+- Репозитории (`YtPositionRepository`, `YtPipelineStatusRepository`) собирают
+  QL-строку и мапят `JsonNode` в доменные модели. Маппинг — статические методы,
+  чтобы их можно было тестировать без поднятия контекста Spring.
+- Параметры подключения и пути таблиц — из `skypulse.yt.*` через `@Value`.
+
+## Подводные камни
+
+1. **Подстановка в QL-строку.** Значения из запроса клеятся в текст запроса,
+   поэтому всё, что туда попадает, должно быть провалидировано форматом.
+   Пример — `ICAO24_PATTERN` (ровно 6 hex-символов).
+2. **Отсечка по свежести обязательна.** SPYT-джоба апсертит `positions_current`
+   по ключу `icao24` и никогда не удаляет строки. Без условия
+   `time_position >= now - N` в выдаче навсегда остаются севшие борта.
+3. **Лимит на выдачу обязателен.** Пайплайн опрашивает весь мир, это десятки
+   тысяч строк на запрос без bbox.
+4. **FR4.** Борт без записи в `ref_aircraft` всё равно возвращается, поля
+   `manufacturername`/`model`/`operator` при этом `null`.
+5. **Пути таблиц** должны совпадать с `YT_BASE_PATH` пайплайна — расхождение
+   дефолтов даёт пустые ответы без единой ошибки в логах.
 
 ## Проверки
 
-- Не ломать REST-контракт (`api/dto/*` и сигнатуры `PositionsController` — контракт с фронтом).
-- Прогнать `./gradlew build` — тесты на заглушке должны остаться зелёными.
-- Соблюдать SLA из NFR1: путь «событие → карта» — десятки секунд максимум.
+- Не ломать REST-контракт: `api/dto/*` и сигнатуры контроллеров — договор с
+  фронтом, он зафиксирован в `backend/positions-service/openapi.yaml`.
+- `./gradlew build` — компиляция, Checkstyle (`maxWarnings=0`) и тесты.
+- Соблюдать NFR1: путь «событие → карта» — десятки секунд максимум.
 
 ## Ссылки
 
-- Требования и схемы таблиц: `docs/SRS.md` (FR1–FR5, NFR1, NFR3, NFR5).
-- Контракт REST: `backend/positions-service/README.md` и Swagger UI (`/swagger-ui.html`).
+- Требования: `docs/SRS.md` (FR1–FR5, NFR1, NFR3, NFR5).
+- Схемы таблиц: `docs/database.md` и `pipeline/bootstrap_service/schemas.py`.
+- Контракт REST: `backend/positions-service/openapi.yaml`, Swagger UI на `/swagger-ui.html`.
