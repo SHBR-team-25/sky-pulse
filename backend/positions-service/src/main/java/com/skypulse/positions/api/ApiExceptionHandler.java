@@ -1,5 +1,7 @@
 package com.skypulse.positions.api;
 
+import com.skypulse.positions.repository.DataSourceRejectedException;
+import com.skypulse.positions.repository.DataSourceUnavailableException;
 import com.skypulse.positions.service.PositionNotFoundException;
 import java.time.Instant;
 import java.util.Map;
@@ -13,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
@@ -33,18 +34,26 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Недоступность YTsaurus — отказ источника, а не баг сервиса, поэтому 503:
-     * по коду фронт отличает «данные временно не отдаются» от «сервис сломан».
+     * Отказ источника, а не баг сервиса, поэтому 503: по коду фронт отличает
+     * «данные временно не отдаются» от «сервис сломан». Сюда же попадает
+     * негодный ответ YT — повторить запрос осмысленно и в этом случае.
      */
-    @ExceptionHandler(RestClientException.class)
-    public ResponseEntity<Map<String, Object>> handleYtFailure(RestClientException ex) {
-        // Ошибка YT — многоэтажный JSON с trace_id; наружу отдаём показуемый текст,
-        // подробности остаются в логе.
-        LOG.error("Запрос в YTsaurus не удался", ex);
+    @ExceptionHandler(DataSourceUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleSourceUnavailable(DataSourceUnavailableException ex) {
+        // Подробности источника — trace_id, текст QL-запроса, пути таблиц — остаются в логе.
+        LOG.error("Источник данных недоступен", ex);
         Map<String, Object> body = errorBody(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "Источник данных YTsaurus недоступен, попробуйте повторить запрос позже");
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
+    }
+
+    // Источник отклонил наш запрос: повтор не поможет, чинить нужно сервис.
+    @ExceptionHandler(DataSourceRejectedException.class)
+    public ResponseEntity<Map<String, Object>> handleSourceRejected(DataSourceRejectedException ex) {
+        LOG.error("YTsaurus отклонил запрос сервиса", ex);
+        Map<String, Object> body = errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервиса");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 
     @ExceptionHandler(Exception.class)

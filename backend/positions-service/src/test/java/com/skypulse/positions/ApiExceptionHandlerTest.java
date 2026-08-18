@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.skypulse.positions.api.FlightsController;
 import com.skypulse.positions.api.dto.BoundingBox;
 import com.skypulse.positions.model.Position;
+import com.skypulse.positions.repository.DataSourceRejectedException;
+import com.skypulse.positions.repository.DataSourceUnavailableException;
 import com.skypulse.positions.repository.PositionRepository;
 import com.skypulse.positions.service.PositionsService;
 import java.util.List;
@@ -18,8 +20,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResourceAccessException;
 
 @WebMvcTest(FlightsController.class)
 @Import({PositionsService.class, ApiExceptionHandlerTest.FailingRepositoryConfig.class})
@@ -34,19 +34,18 @@ class ApiExceptionHandlerTest {
 
                 @Override
                 public List<Position> currentPositions(BoundingBox area) {
-                    throw new ResourceAccessException("YT proxy unreachable");
+                    throw new DataSourceUnavailableException("Запрос select_rows в YTsaurus не удался");
                 }
 
                 @Override
                 public Optional<Position> latestByIcao24(String icao24) {
-                    throw HttpServerErrorException.create(
-                            org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
-                            "Internal Server Error", null, null, null);
+                    throw new DataSourceUnavailableException(
+                            "YTsaurus вернул неразбираемый ответ: <html>502 Bad Gateway</html>");
                 }
 
                 @Override
                 public List<Position> historyByIcao24(String icao24, long sinceSeconds) {
-                    throw new IllegalStateException("Не удалось разобрать строку ответа YT");
+                    throw new DataSourceRejectedException("select_rows", 400, null);
                 }
             };
         }
@@ -65,17 +64,19 @@ class ApiExceptionHandlerTest {
                 .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
+    // Битый ответ источника — тоже 503, а не 500: сервис исправен, и повторить
+    // запрос осмысленно.
     @Test
-    void reportsYtErrorResponseAsServiceUnavailable() throws Exception {
+    void reportsMalformedYtResponseAsServiceUnavailable() throws Exception {
         mockMvc.perform(get("/api/flights/abc123"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
-    // Любая другая необработанная ошибка тоже обязана прийти с message, а не
-    // дефолтным телом Spring, в котором показывать пользователю нечего.
+    // А вот отклонённый источником запрос — наш баг, и текст ответа YT наружу
+    // не уходит: у клиента только «внутренняя ошибка».
     @Test
-    void reportsUnexpectedFailureAsInternalErrorWithMessage() throws Exception {
+    void reportsRejectedRequestAsInternalErrorWithMessage() throws Exception {
         mockMvc.perform(get("/api/flights/abc123/track"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
