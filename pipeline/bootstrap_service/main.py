@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from bootstrap_service import (
+    load_ingest_heartbeat,
     load_positions_current,
     load_positions_history,
     load_positions_table,
@@ -21,6 +22,7 @@ def main() -> None:
     load_positions_table.load(overwrite=args.overwrite)
     load_positions_current.load(overwrite=args.overwrite)
     load_positions_history.load(overwrite=args.overwrite)
+    load_ingest_heartbeat.load(overwrite=args.overwrite)
 
 
 if __name__ == "__main__":

@@ -68,6 +68,9 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         "--deploy-mode", "cluster",
         "--num-executors", str(num_executors),
         "--conf", f"spark.pyspark.python={pyspark_python}",
+        # На exec-нодах кластера есть только /opt/jdk17 и /opt/jdk11 — дефолтный
+        # /opt/jdk<major-версия-локальной-JVM> (обычно jdk21) там не существует.
+        "--conf", "spark.ytsaurus.java.home=/opt/jdk17",
         "--py-files", py_files,
         f"yt://{job_path}",
         "--positions-raw", positions_raw,

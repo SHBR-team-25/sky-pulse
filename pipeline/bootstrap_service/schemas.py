@@ -114,3 +114,14 @@ POSITIONS_HISTORY_SCHEMA: list[dict[str, Any]] = [
     {"name": "ingested_at", "type": "int64"},
     {"name": "enriched_at", "type": "int64"},
 ]
+
+# Одна строка на сервис-поставщик: бэкенд по ней отличает «пайплайн стоит»
+# от «в этом bbox честно нет бортов».
+INGEST_HEARTBEAT_SCHEMA: list[dict[str, Any]] = [
+    {"name": "service", "type": "string", "sort_order": "ascending", "required": True},
+    {"name": "status", "type": "string", "required": True},
+    {"name": "updated_at", "type": "int64", "required": True},
+    {"name": "last_success_at", "type": "int64", "required": False},
+    {"name": "resumes_at", "type": "int64", "required": False},
+    {"name": "credits_remaining", "type": "int64", "required": False},
+]
