@@ -3,7 +3,9 @@
     display: grid;
     width: 20px;
     height: 20px;
+    padding: 0;
     color: var(--sky-color-status-warning);
+    appearance: none;
     background: var(--sky-color-surface-header);
     border: 2px solid currentColor;
     border-radius: 50%;
@@ -13,7 +15,18 @@
         0 0 11px var(--sky-color-warning-glow-soft);
     transform: translate(-50%, -50%);
     backdrop-filter: blur(8px);
+    cursor: pointer;
     place-items: center;
+}
+
+/* .. FIXME: */
+.airportMarkerSelected {
+    color: var(--sky-color-accent-secondary);
+    border-color: var(--sky-color-accent-primary);
+    box-shadow:
+        0 5px 16px rgba(0, 0, 0, 0.35),
+        0 0 0 4px oklch(78% 0.12 220deg / 0.16),
+        0 0 16px oklch(78% 0.12 220deg / 0.4);
 }
 
 .airportMarker:focus-visible {

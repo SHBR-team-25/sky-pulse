@@ -1,9 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { LiveFlightsQuery, LiveFlightsResponse } from '../model/types';
-import { fetchJson } from '@shared/api';
+import { DEFAULT_POLLING_INTERVAL_MS, fetchJson } from '@shared/api';
 import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
-
-const DEFAULT_POLL_INTERVAL_MS = 3_000;
 
 export const liveFlightsQueryKeys = {
     all: ['live-flights'] as const,
@@ -24,7 +22,7 @@ export function useLiveFlights(params: LiveFlightsQuery = {}, options: UseLiveFl
         queryFn: ({ signal }) =>
             fetchJson<LiveFlightsResponse>('/flights/live', { params: debouncedParams, signal }),
         enabled: options.enabled ?? true,
-        refetchInterval: options.refetchInterval ?? DEFAULT_POLL_INTERVAL_MS,
+        refetchInterval: options.refetchInterval ?? DEFAULT_POLLING_INTERVAL_MS, // polling
         refetchIntervalInBackground: false,
         staleTime: 0,
         placeholderData: keepPreviousData,

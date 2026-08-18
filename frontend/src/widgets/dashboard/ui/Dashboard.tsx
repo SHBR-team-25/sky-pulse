@@ -19,7 +19,6 @@ import {
 import { RangeDatePicker } from '@gravity-ui/date-components';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import { Loader, Alert } from '@gravity-ui/uikit';
 import { dateTime } from '@gravity-ui/date-utils';
 
 export function Dashboard() {
@@ -28,13 +27,11 @@ export function Dashboard() {
     const range = useMemo(() => parseDashboardRange(searchParams), [searchParams]);
     const date = useMemo(() => toDashboardQuery(range), [range]);
     const maxDate = useMemo(() => dateTime().endOf('day'), []);
-    // const { data: dashboardData, isLoading, isError, error } = useDashboardData(date);
+    // const { data: dashboardData } = useDashboardData(date);
 
     //TODO: изменить на реальные данные
     const dashboardData = makeDashboardMock(date.from, date.to);
-    const isLoading = false;
-    const isError = false;
-    const error = { message: '' };
+    const isSingleDay = useMemo(() => range.start.isSame(range.end, 'day'), [range]);
 
     const handleRangeUpdate = (value: DashboardRange | null) => {
         const nextRange = value ?? getDefaultDashboardRange();
@@ -49,36 +46,23 @@ export function Dashboard() {
         );
     };
 
-    if (isError) return <Alert theme="danger" title="Возникла ошибка" message={error.message} />;
-
     return (
         <div className={styles.dashboard}>
             <div className={styles.column}>
                 <h2 className={styles.title}>На данный момент</h2>
                 <div className={styles.badges}>
-                    {isLoading ? (
-                        <Loader />
-                    ) : (
-                        <>
-                            {dashboardData && (
-                                <>
-                                    <FlightsBadge
-                                        flightsByPhase={dashboardData.flightsByPhase}
-                                        activeFlights={dashboardData.totals.activeFlights}
-                                    />
+                    <FlightsBadge
+                        flightsByPhase={dashboardData.flightsByPhase}
+                        activeFlights={dashboardData.totals.activeFlights}
+                    />
 
-                                    <AverageDataBadge totals={dashboardData.totals} />
-                                    <BusiestAirportsBadge
-                                        airports={dashboardData.topBusiestAirports}
-                                    />
-                                </>
-                            )}
-                        </>
-                    )}
+                    <AverageDataBadge totals={dashboardData.totals} />
+                    <BusiestAirportsBadge airports={dashboardData.topBusiestAirports} />
                 </div>
             </div>
 
             <div className={styles.column}>
+                <h2 className={styles.title}>За выбранный период: </h2>
                 <div className={styles.controls}>
                     <RangeDatePicker
                         value={range}
@@ -88,9 +72,12 @@ export function Dashboard() {
                         maxValue={maxDate}
                     />
                 </div>
-                <EmergencyBadge count={dashboardData?.emergencyCount} />
+                <EmergencyBadge count={dashboardData.emergencyCount} />
                 <div className={styles.chart} aria-label="График">
-                    <TrafficTrendGraph data={dashboardData.trafficTrend} />
+                    <TrafficTrendGraph
+                        isSingleDay={isSingleDay}
+                        data={dashboardData.trafficTrend}
+                    />
                 </div>
             </div>
         </div>
