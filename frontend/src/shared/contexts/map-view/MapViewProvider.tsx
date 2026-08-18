@@ -6,10 +6,10 @@ interface MapViewProviderProps {
     children: ReactNode;
 }
 
+// Хранит живые center + zoom для подписей в интерфейсе
 export function MapViewProvider({ children }: MapViewProviderProps) {
-    const [mapView, setMapView] = useState(INITIAL_MAP_VIEW);
+    const [mapView, setMapView] = useState<MapView>(INITIAL_MAP_VIEW);
 
-    // обновляет значение только если зум или координаты действительно изменились
     const updateMapView = useCallback((nextMapView: MapView) => {
         setMapView((currentMapView) => {
             const hasNotChanged =
