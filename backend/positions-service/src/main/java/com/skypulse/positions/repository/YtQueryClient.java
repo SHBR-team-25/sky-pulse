@@ -41,7 +41,36 @@ public class YtQueryClient {
         return parseNdjson(body);
     }
 
-    // select_rows с Accept: application/json отдаёт NDJSON, а не JSON-массив.
+    /**
+     * Читает статическую таблицу целиком: `select_rows` умеет только динамические
+     * таблицы и на `ref_airports` отвечает «Table ... is not dynamic».
+     */
+    public List<JsonNode> readTable(String path) {
+        String body = restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/v4/read_table")
+                        .queryParam("path", path)
+                        .queryParam("output_format", "json")
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "OAuth " + token)
+                .retrieve()
+                .body(String.class);
+        return parseNdjson(body);
+    }
+
+    /** Значение атрибута узла Кипариса, например `modification_time`. */
+    public JsonNode getAttribute(String path, String attribute) {
+        String body = restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/v4/get")
+                        .queryParam("path", path + "/@" + attribute)
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION, "OAuth " + token)
+                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .retrieve()
+                .body(String.class);
+        return readTree(body == null ? "{}" : body).path("value");
+    }
+
+    // select_rows и read_table с Accept: application/json отдают NDJSON, а не JSON-массив.
     private List<JsonNode> parseNdjson(String body) {
         if (body == null || body.isBlank()) {
             return List.of();

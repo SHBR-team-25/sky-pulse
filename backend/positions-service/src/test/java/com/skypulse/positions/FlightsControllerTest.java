@@ -71,7 +71,7 @@ class FlightsControllerTest {
 
     @Test
     void appliesBoundingBoxFilter() throws Exception {
-        mockMvc.perform(get("/api/flights/live?minLat=0&minLon=0&maxLat=10&maxLon=10"))
+        mockMvc.perform(get("/api/flights/live?lonMin=0&latMin=0&lonMax=10&latMax=10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
@@ -79,7 +79,7 @@ class FlightsControllerTest {
     // Частичный набор координат фильтром не считается — отдаём всё.
     @Test
     void ignoresIncompleteBoundingBox() throws Exception {
-        mockMvc.perform(get("/api/flights/live?minLat=0&minLon=0"))
+        mockMvc.perform(get("/api/flights/live?lonMin=0&latMin=0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].icao24").value("abc123"));
     }

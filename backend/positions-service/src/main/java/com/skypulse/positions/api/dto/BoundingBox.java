@@ -1,8 +1,9 @@
 package com.skypulse.positions.api.dto;
 
-public record BoundingBox(double minLat, double minLon, double maxLat, double maxLon) {
+
+public record BoundingBox(double lonMin, double latMin, double lonMax, double latMax) {
 
     public boolean contains(double lat, double lon) {
-        return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
+        return lat >= latMin && lat <= latMax && lon >= lonMin && lon <= lonMax;
     }
 }

@@ -76,7 +76,7 @@ public class YtPositionRepository implements PositionRepository {
             return " where " + freshness;
         }
         return " where %s and lat between %s and %s and lon between %s and %s"
-                .formatted(freshness, area.minLat(), area.maxLat(), area.minLon(), area.maxLon());
+                .formatted(freshness, area.latMin(), area.latMax(), area.lonMin(), area.lonMax());
     }
 
     static Position toPosition(JsonNode row) {

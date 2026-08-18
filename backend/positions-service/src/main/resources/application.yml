@@ -24,7 +24,11 @@ skypulse:
     token: ${YT_TOKEN:}
     positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
     positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
-    ingest-heartbeat-path: ${YT_INGEST_HEARTBEAT_PATH://home/skypulse/ingest_heartbeat}
+    pipeline-job-state-path: ${YT_PIPELINE_JOB_STATE_PATH://home/skypulse/pipeline_job_state}
+    ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
+    # Справочник OurAirports статический: перечитывать его чаще раза в сутки незачем,
+    # а полное чтение таблицы стоит десятки секунд.
+    ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
     # Борт, о котором давно не было позиции, скорее всего сел.
     max-position-age-seconds: ${YT_MAX_POSITION_AGE_SECONDS:300}
   pipeline:

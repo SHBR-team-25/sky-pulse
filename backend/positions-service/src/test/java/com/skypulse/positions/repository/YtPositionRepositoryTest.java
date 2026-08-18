@@ -77,7 +77,7 @@ class YtPositionRepositoryTest {
 
     @Test
     void combinesFreshnessAndBoundingBoxIntoSingleWhere() {
-        assertThat(YtPositionRepository.whereClause(new BoundingBox(45.0, 5.0, 55.0, 25.0), 1786841000L))
+        assertThat(YtPositionRepository.whereClause(new BoundingBox(5.0, 45.0, 25.0, 55.0), 1786841000L))
                 .isEqualTo(" where time_position >= 1786841000"
                         + " and lat between 45.0 and 55.0 and lon between 5.0 and 25.0");
     }

@@ -21,6 +21,8 @@ servers:
 tags:
   - name: flights
     description: Борта, позиции, треки
+  - name: airports
+    description: Справочник аэропортов OurAirports
   - name: pipeline
     description: Состояние поставщика данных
 
@@ -46,10 +48,10 @@ paths:
         последнюю позицию каждого `icao24` вечно, и без неё на карте навсегда
         зависают борта, севшие часы назад.
       parameters:
-        - $ref: "#/components/parameters/MinLat"
-        - $ref: "#/components/parameters/MinLon"
-        - $ref: "#/components/parameters/MaxLat"
-        - $ref: "#/components/parameters/MaxLon"
+        - $ref: "#/components/parameters/LonMin"
+        - $ref: "#/components/parameters/LatMin"
+        - $ref: "#/components/parameters/LonMax"
+        - $ref: "#/components/parameters/LatMax"
       responses:
         "200":
           description: >-
@@ -62,13 +64,14 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Flight"
-        "500":
+        "503":
           description: >-
-            YTsaurus недоступен или вернул ошибку. 
+            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
+            по-русски и пригодно для показа пользователю.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SpringError"
+                $ref: "#/components/schemas/ApiError"
 
   /flights/{icao24}:
     get:
@@ -104,12 +107,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-        "500":
-          description: YTsaurus недоступен или вернул ошибку.
+        "503":
+          description: >-
+            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
+            по-русски и пригодно для показа пользователю.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SpringError"
+                $ref: "#/components/schemas/ApiError"
 
   /flights/{icao24}/track:
     get:
@@ -146,12 +151,164 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TrackPoint"
-        "500":
-          description: YTsaurus недоступен или вернул ошибку.
+        "503":
+          description: >-
+            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
+            по-русски и пригодно для показа пользователю.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SpringError"
+                $ref: "#/components/schemas/ApiError"
+
+  /airports:
+    get:
+      tags: [airports]
+      summary: Список аэропортов из справочника OurAirports
+      description: >-
+        Справочник `ref_airports` (OurAirports) с фильтрацией, сортировкой
+        и пагинацией — FR12. Загруженности, числа рейсов и индекса трафика
+        здесь **нет**: считать их не из чего, в пайплайне нет ни одной таблицы
+        рейсов.
+
+
+        **Отдаются не все строки справочника.** В OurAirports 86 тысяч записей,
+        из которых 23 тысячи вертодромов, 13 тысяч закрытых площадок, полторы
+        тысячи гидроаэродромов и воздухоплавательных площадок. Наружу уходят
+        только `large_airport`, `medium_airport` и `small_airport` — около
+        48 тысяч. Отключить этот фильтр параметром нельзя: вертодром на карте
+        рейсов не принимает, а список аэропортов он засоряет. Из-за него же
+        `total` меньше `row_count` таблицы.
+
+
+        **Первый запрос после старта сервиса занимает десятки секунд.**
+        `ref_airports` — статическая таблица, `select_rows` по ней не работает
+        («Table ... is not dynamic»), поэтому она читается целиком через
+        `read_table`: ~20 МБ и порядка 40 секунд. Снапшот кладётся в память
+        и живёт `YT_REF_AIRPORTS_CACHE_TTL_SECONDS` (сутки по умолчанию), так
+        что последующие ответы — миллисекунды. Обратная сторона: перезалив
+        справочника сервис заметит только после истечения TTL или рестарта.
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: >-
+            Подстрока без учёта регистра. Ищется по тем же полям, которые видны
+            в ответе: `name`, `city`, `icao`, `iata`. Совпадение — именно
+            подстрока, а не префикс: `sheremet` найдёт «Sheremetyevo
+            International Airport».
+
+
+            Подстановочных символов нет. Значение сравнивается в памяти
+            и в запрос к YTsaurus не попадает, поэтому кавычка и процент —
+            обычные символы: они просто ничему не соответствуют и дают пустой
+            список, а не ошибку. Длиннее 100 символов значение обрезается.
+
+
+            Поиск по коду аэропорта работает не для всех строк: `icao` — это
+            `icao_code`, а если он пуст (88% записей OurAirports), то `ident`.
+            У 785 записей заполнены оба и они различаются — такую строку
+            найдёт `icao_code`, но не `ident`.
+          schema:
+            type: string
+            example: "Sheremetyevo"
+        - name: country
+          in: query
+          required: false
+          description: >-
+            Точное совпадение с `iso_country` — двухбуквенный код ISO 3166-1
+            alpha-2, регистр не важен. Не подстрока: `RU` не найдёт `RUS`.
+            Неизвестный код — пустой список и `total: 0`, а не 400.
+          schema:
+            type: string
+            example: "RU"
+        - name: sortBy
+          in: query
+          required: false
+          description: >-
+            Единственное поддержанное значение — `name` (по названию, без учёта
+            регистра, ничьи разрешаются по `icao`). Значения `trafficIndex`
+            и `totalFlights` из `docs/openapi.yaml` не реализованы: этих метрик
+            в ответе нет.
+
+
+            Без параметра порядок — как в таблице, то есть по `ident`
+            по возрастанию; он детерминирован, поэтому пагинация без сортировки
+            тоже не перемешивает страницы. Незнакомое значение молча
+            игнорируется и даёт тот же табличный порядок.
+          schema:
+            type: string
+            enum: [name]
+        - name: page
+          in: query
+          required: false
+          description: >-
+            Номер страницы, начиная с 1. Значения меньше 1 подтягиваются к 1,
+            а не отвергаются. Страница за концом выборки — пустой `items`
+            при неизменном `total` и с тем самым `page`, который запросили.
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: pageSize
+          in: query
+          required: false
+          description: >-
+            Размер страницы. Значение зажимается в диапазон 1…500, то есть
+            `pageSize=100000` вернёт 500 записей и `pageSize: 500` в ответе —
+            запросить весь справочник одним ответом нельзя.
+          schema:
+            type: integer
+            default: 50
+            maximum: 500
+            example: 50
+        - $ref: "#/components/parameters/LonMin"
+        - $ref: "#/components/parameters/LatMin"
+        - $ref: "#/components/parameters/LonMax"
+        - $ref: "#/components/parameters/LatMax"
+        - name: limit
+          in: query
+          required: false
+          description: >-
+            Картовый режим: сколько аэропортов вернуть одним ответом.
+            Заданный `limit` **отменяет** табличную пагинацию — `page`
+            и `pageSize` в запросе игнорируются, а в ответе приходят
+            `page: 1` и `pageSize`, равный фактическому лимиту.
+            `total` при этом остаётся полным размером выборки после
+            фильтров, так что по нему видно, сколько объектов не поместилось.
+            Значение зажимается в диапазон 1…10000.
+          schema:
+            type: integer
+            maximum: 10000
+            example: 500
+      responses:
+        "200":
+          description: >-
+            Страница справочника. Пустой `items` — валидный ответ: так выглядят
+            и слишком узкий фильтр, и страница за концом выборки.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportsListResponse"
+        "400":
+          description: >-
+            Параметр не разобрался как число (`page=abc`, `latMin=север`).
+            Осмысленные, но абсурдные значения (`page=0`, `pageSize=100000`,
+            перевёрнутый bbox) под этот случай **не** подпадают — они
+            обрабатываются молча. В `message` — техническое пояснение
+            от Spring, по-английски.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: >-
+            YTsaurus недоступен, вернул ошибку или таблицы `ref_airports` нет
+            по настроенному пути. Пока снапшот жив в памяти, недоступность
+            YTsaurus на эту ручку не влияет.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /pipeline-status:
     get:
@@ -161,6 +318,10 @@ paths:
         Отвечает на вопрос «почему на карте пусто». Без этого эндпоинта
         отличить остановленный пайплайн от честно пустого участка карты
         невозможно — оба случая выглядят как `200 []`.
+
+
+        Отвечает «едут ли данные вообще», но не «почему встали»: источник —
+        таблица watermark'ов `pipeline_job_state`, причин остановки в ней нет.
 
 
         Достаточно поллить раз в 30 секунд, отдельно от позиций.
@@ -173,12 +334,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PipelineStatus"
-        "500":
-          description: YTsaurus недоступен или вернул ошибку.
+        "503":
+          description: >-
+            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
+            по-русски и пригодно для показа пользователю.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SpringError"
+                $ref: "#/components/schemas/ApiError"
 
 components:
   parameters:
@@ -194,53 +357,47 @@ components:
         type: string
         pattern: "^[0-9a-fA-F]{6}$"
         example: "01023b"
-    MinLat:
-      name: minLat
+    LonMin:
+      name: lonMin
       in: query
       required: false
       description: >-
-        Южная граница видимой области карты.
+        Западная граница видимой области карты.
 
 
-        Параметры `minLat`/`minLon`/`maxLat`/`maxLon` задаются **только все
+        Параметры `lonMin`/`latMin`/`lonMax`/`latMax` задаются **только все
         четыре вместе**. Если задан не весь набор, фильтр молча игнорируется
         и вернётся весь мир — ошибки при этом не будет, но ответ окажется
         на порядок тяжелее ожидаемого.
 
 
-        Проверок на осмысленность нет: при `minLat > maxLat` вернётся пустой
-        массив, а не 400. Переход через антимеридиан (±180°) не поддержан —
-        такой bbox тоже даст пусто.
-      schema:
-        type: number
-        format: double
-        minimum: -90
-        maximum: 90
-        example: 41.0
-    MinLon:
-      name: minLon
-      in: query
-      required: false
-      description: Западная граница видимой области карты
+        Проверок на осмысленность нет: перевёрнутая рамка (`lonMin > lonMax`
+        или `latMin > latMax`) вернёт пустую выдачу, а не 400. Переход через
+        антимеридиан (±180°) не поддержан — такой bbox тоже даст пусто.
+
+
+        Один и тот же набор имён используют все ручки с картой; порядок
+        «долгота, потом широта» взят из продуктового контракта
+        `docs/openapi.yaml`, из которого фронтенд генерит типы.
       schema:
         type: number
         format: double
         minimum: -180
         maximum: 180
         example: -6.0
-    MaxLat:
-      name: maxLat
+    LatMin:
+      name: latMin
       in: query
       required: false
-      description: Северная граница видимой области карты
+      description: Южная граница видимой области карты
       schema:
         type: number
         format: double
         minimum: -90
         maximum: 90
-        example: 52.0
-    MaxLon:
-      name: maxLon
+        example: 41.0
+    LonMax:
+      name: lonMax
       in: query
       required: false
       description: Восточная граница видимой области карты
@@ -250,6 +407,17 @@ components:
         minimum: -180
         maximum: 180
         example: 10.0
+    LatMax:
+      name: latMax
+      in: query
+      required: false
+      description: Северная граница видимой области карты
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+        example: 52.0
 
   schemas:
     Flight:
@@ -372,74 +540,161 @@ components:
           description: Барометрическая высота в метрах, позволяет красить трек по высоте
       required: [timePosition, lat, lon, baroAltitude]
 
+    AirportsListResponse:
+      type: object
+      description: >-
+        Страница справочника аэропортов. Конверт, в отличие от `/flights/live`,
+        нужен: без `total` клиент не может нарисовать пагинацию.
+      properties:
+        asOf:
+          type: integer
+          format: int64
+          description: >-
+            Момент последней записи таблицы `ref_airports` (unix seconds) —
+            `modification_time` узла в Кипарисе, а не время ответа сервиса.
+            Справочник статический и сам по себе не пересчитывается, так что
+            это единственная осмысленная отметка свежести: она показывает,
+            когда пайплайн залил справочник, и не меняется от запроса
+            к запросу. `0` — атрибут не прочитался.
+          example: 1786793001
+        items:
+          type: array
+          description: Аэропорты текущей страницы
+          items:
+            $ref: "#/components/schemas/Airport"
+        page:
+          type: integer
+          description: >-
+            Номер отданной страницы. Совпадает с запрошенным (после
+            подтягивания значений < 1 к единице); в картовом режиме
+            с `limit` всегда 1
+          example: 1
+        pageSize:
+          type: integer
+          description: >-
+            Фактический размер страницы после зажатия в допустимый диапазон.
+            В картовом режиме равен фактическому `limit`
+          example: 50
+        total:
+          type: integer
+          description: >-
+            Сколько аэропортов подошло под фильтры — до пагинации и до `limit`,
+            но уже **после** отсева нeаэропортовых типов
+          example: 943
+      required: [asOf, items, page, pageSize, total]
+
+    Airport:
+      type: object
+      description: >-
+        Запись справочника OurAirports. Полей `totalFlights24h`
+        и `trafficIndex` из `docs/openapi.yaml` здесь нет: рейсов
+        по аэропортам пайплайн не считает.
+      properties:
+        icao:
+          type: string
+          description: >-
+            `icao_code` из OurAirports, а если он пуст — `ident`. Пустым
+            не бывает, но и настоящим ICAO-кодом является не всегда: у 88%
+            записей справочника `icao_code` не заполнен, и тогда сюда попадает
+            локальный идентификатор вида `00AA` или `RU-0796`
+          example: "UUEE"
+        iata:
+          type: string
+          nullable: true
+          description: IATA-код. `null` у 89% записей справочника — это норма, а не сбой
+          example: "SVO"
+        name:
+          type: string
+          description: Название аэропорта, как в OurAirports
+          example: "Sheremetyevo International Airport"
+        city:
+          type: string
+          nullable: true
+          description: >-
+            `municipality` из OurAirports. `null` примерно у 5% записей —
+            населённый пункт в источнике не указан
+          example: "Moscow"
+        country:
+          type: string
+          nullable: true
+          description: >-
+            `iso_country`, код ISO 3166-1 alpha-2. По схеме таблицы поле
+            необязательное, поэтому объявлено nullable, хотя в текущей
+            выгрузке заполнено у всех строк
+          example: "RU"
+        position:
+          $ref: "#/components/schemas/LatLon"
+      required: [icao, iata, name, city, country, position]
+
+    LatLon:
+      type: object
+      description: Точка WGS-84
+      properties:
+        lat:
+          type: number
+          format: double
+          example: 55.976858
+        lon:
+          type: number
+          format: double
+          example: 37.41121
+      required: [lat, lon]
+
     PipelineStatus:
       type: object
       description: >-
-        Состояние поставщика позиций. `status` и `stale` — два **разных**
-        сигнала, и они намеренно расходятся: `status` говорит, что происходит
-        прямо сейчас, `stale` — что данные уже протухли.
+        Состояние пайплайна, собранное из таблицы `pipeline_job_state` —
+        watermark'ов джобов вида `(job_name, watermark_ts, updated_at)`.
+        Берётся джоб, отчитавшийся последним.
 
 
-        В момент срабатывания стоп-крана будет `status: budget_exhausted` при
-        `stale: false`, потому что последний снапшот приехал секунду назад.
-        Отсюда двухступенчатый UX: пока `stale: false`, но статус не `ok` —
-        мягкое уведомление «обновление приостановлено до HH:MM»; когда `stale`
-        станет `true` — баннер «данные устарели».
+        Источник знает только, докуда доехали данные, поэтому единственный
+        содержательный сигнал здесь — `stale`. Причину остановки он не
+        различает: паузу по лимиту кредитов OpenSky, недоступность источника
+        и упавший джоб внешне не отличить, `resumesAt` всегда `null`.
+        Двухступенчатый UX («обновление приостановлено до HH:MM», затем
+        «данные устарели») на этих данных не построить — для него нужен
+        отдельный хартбит `ingest_service`.
       properties:
         status:
           type: string
           enum:
             - ok
-            - budget_exhausted
-            - rate_limited
-            - opensky_unreachable
-            - poll_failed
             - unknown
           description: >-
-            Что делает поставщик данных прямо сейчас:
+            Отчитывался ли пайплайн вообще:
 
 
-            * `ok` — опрос идёт штатно, показывать пользователю нечего.
+            * `ok` — в таблице есть строка джоба. Означает только это:
+            «джоб зарегистрировал своё состояние». Работает ли он **сейчас**,
+            показывает `stale`, а не этот код.
 
 
-            * `budget_exhausted` — исчерпан суточный лимит кредитов OpenSky.
-            Самая частая пауза, штатно занимает до 20 часов в сутки.
-            `resumesAt` заполнен, можно назвать точное время возобновления.
-
-
-            * `rate_limited` — короткий троттлинг со стороны OpenSky, обычно
-            минуты. `resumesAt` заполнен из заголовка `Retry-After`.
-
-
-            * `opensky_unreachable` — источник не отвечает. Сервис ретраит
-            с растущей паузой, максимум 5 минут между попытками.
-
-
-            * `poll_failed` — опрос упал по иной причине (разбор ответа,
-            запись в YT). Ведёт себя как `opensky_unreachable`.
-
-
-            * `unknown` — строки хартбита нет вовсе: `ingest_service` ни разу
-            не отработал либо не создана таблица `ingest_heartbeat`. Всегда
-            приходит вместе со `stale: true`.
+            * `unknown` — в `pipeline_job_state` нет ни одной строки: джобы
+            ни разу не отчитывались либо таблицу пересоздали. Всегда приходит
+            вместе со `stale: true`.
         lastSuccessAt:
           type: integer
           format: int64
           nullable: true
           description: >-
-            Момент последнего успешного опроса OpenSky, unix seconds.
-            `null` — успешных опросов ещё не было ни одного
+            Watermark последнего отчитавшегося джоба, unix seconds — граница,
+            до которой данные обработаны. Считаем свежесть именно по нему,
+            а не по времени записи: если джоб крутится, а источник умер,
+            время записи растёт при стоящих данных. `null` — джоб
+            зарегистрировался, но ещё ничего не обработал
         resumesAt:
           type: integer
           format: int64
           nullable: true
           description: >-
-            Момент, когда опрос возобновится, unix seconds. `null` — срок
-            заранее неизвестен, например источник просто не отвечает
+            Момент, когда опрос возобновится, unix seconds. С текущим
+            источником **всегда `null`**: `pipeline_job_state` про паузы
+            ничего не знает
         stale:
           type: boolean
           description: >-
-            Данные считаются устаревшими: успешного опроса не было дольше
+            Данные считаются устаревшими: watermark не продвигался дольше
             `PIPELINE_STALE_AFTER_SECONDS` (по умолчанию 120 с).
             При `lastSuccessAt: null` всегда `true`
       required: [status, lastSuccessAt, resumesAt, stale]
@@ -447,8 +702,15 @@ components:
     ApiError:
       type: object
       description: >-
-        Тело доменной ошибки сервиса. Формируется `ApiExceptionHandler`
-        и отличается от стандартного тела Spring наличием `message`.
+        Единое тело ошибки сервиса: его формирует `ApiExceptionHandler` для
+        всех кодов, включая 5xx. Поле `message` есть всегда — дефолтное тело
+        Spring без него наружу больше не выходит.
+
+
+        У доменных ошибок (404) и у отказа YTsaurus (503) `message` написан
+        по-русски и годится для показа пользователю. У ошибок самого Spring MVC
+        (400 на неразобранный параметр, 405) там техническое пояснение
+        по-английски — его лучше заменить своим текстом на клиенте.
       properties:
         timestamp:
           type: string
@@ -465,29 +727,6 @@ components:
           example: "Not Found"
         message:
           type: string
-          description: Причина по-русски, пригодна для показа пользователю без обработки
+          description: Причина ошибки; пустым не бывает
           example: "Позиция для борта icao24=abc123 не найдена"
       required: [timestamp, status, error, message]
-
-    SpringError:
-      type: object
-      description: >-
-        Тело ошибки по умолчанию от Spring Boot — приходит там, где нет
-        доменного обработчика, прежде всего на 5xx. Поля `message` в нём
-        **нет**: показывать пользователю нечего, нужен свой текст на клиенте.
-      properties:
-        timestamp:
-          type: string
-          format: date-time
-          example: "2026-08-18T09:14:22.481+00:00"
-        status:
-          type: integer
-          example: 500
-        error:
-          type: string
-          example: "Internal Server Error"
-        path:
-          type: string
-          description: Путь запроса, на котором произошла ошибка
-          example: "/api/flights/live"
-      required: [timestamp, status, error, path]

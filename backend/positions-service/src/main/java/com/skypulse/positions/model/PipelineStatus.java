@@ -7,7 +7,8 @@ public record PipelineStatus(
         Long resumesAt
 ) {
 
-    // Хартбита нет вовсе: ingest ни разу не запускался или таблицу не создали.
+    // В pipeline_job_state нет ни одной строки: пайплайн ни разу не отчитывался
+    // либо таблицу пересоздали.
     public static PipelineStatus unknown() {
         return new PipelineStatus("unknown", 0L, null, null);
     }

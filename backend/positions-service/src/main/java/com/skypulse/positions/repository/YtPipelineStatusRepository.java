@@ -2,37 +2,55 @@ package com.skypulse.positions.repository;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.skypulse.positions.model.PipelineStatus;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Единственный след пайплайна в YT — `pipeline_job_state`, таблица watermark'ов
+ * джобов: `(job_name, watermark_ts, updated_at)`. Ни статуса, ни причины паузы,
+ * ни времени возобновления в ней нет, поэтому наружу отдаётся только факт
+ * «пайплайн отчитывался и довёл данные до такого-то момента».
+ */
 @Repository
 public class YtPipelineStatusRepository implements PipelineStatusRepository {
 
-    private static final String INGEST_SERVICE = "ingest";
+    private static final String STATUS_REPORTING = "ok";
 
     private final YtQueryClient ytQueryClient;
-    private final String heartbeatPath;
+    private final String jobStatePath;
 
     public YtPipelineStatusRepository(
             YtQueryClient ytQueryClient,
-            @Value("${skypulse.yt.ingest-heartbeat-path}") String heartbeatPath) {
+            @Value("${skypulse.yt.pipeline-job-state-path}") String jobStatePath) {
         this.ytQueryClient = ytQueryClient;
-        this.heartbeatPath = heartbeatPath;
+        this.jobStatePath = jobStatePath;
     }
 
     @Override
     public Optional<PipelineStatus> latest() {
-        String query = "* from [%s] where service = '%s' limit 1".formatted(heartbeatPath, INGEST_SERVICE);
-        return ytQueryClient.selectRows(query).stream().map(YtPipelineStatusRepository::toStatus).findFirst();
+        return latestOf(ytQueryClient.selectRows("* from [%s]".formatted(jobStatePath)));
+    }
+
+    // В таблице по строке на джоб; про пайплайн в целом говорит тот,
+    // кто отчитался последним.
+    static Optional<PipelineStatus> latestOf(List<JsonNode> rows) {
+        return rows.stream()
+                .max(Comparator.comparingLong(row -> row.path("updated_at").asLong()))
+                .map(YtPipelineStatusRepository::toStatus);
     }
 
     static PipelineStatus toStatus(JsonNode row) {
+        // Свежесть данных считаем по watermark_ts, а не по updated_at: если джоб
+        // крутится, а источник умер, updated_at продолжает расти, и по нему
+        // пайплайн выглядел бы живым при стоящих данных.
         return new PipelineStatus(
-                row.path("status").asText("unknown"),
+                STATUS_REPORTING,
                 row.path("updated_at").asLong(),
-                nullableLong(row, "last_success_at"),
-                nullableLong(row, "resumes_at")
+                nullableLong(row, "watermark_ts"),
+                null
         );
     }
 

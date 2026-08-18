@@ -25,13 +25,13 @@ public class FlightsController {
 
     @GetMapping("/live")
     public List<PositionDto> live(
-            @RequestParam(required = false) Double minLat,
-            @RequestParam(required = false) Double minLon,
-            @RequestParam(required = false) Double maxLat,
-            @RequestParam(required = false) Double maxLon) {
+            @RequestParam(required = false) Double lonMin,
+            @RequestParam(required = false) Double latMin,
+            @RequestParam(required = false) Double lonMax,
+            @RequestParam(required = false) Double latMax) {
         BoundingBox area = null;
-        if (minLat != null && minLon != null && maxLat != null && maxLon != null) {
-            area = new BoundingBox(minLat, minLon, maxLat, maxLon);
+        if (lonMin != null && latMin != null && lonMax != null && latMax != null) {
+            area = new BoundingBox(lonMin, latMin, lonMax, latMax);
         }
         return service.currentPositions(area);
     }
