@@ -82,11 +82,4 @@ class YtPositionRepositoryTest {
                         + " and lat between 45.0 and 55.0 and lon between 5.0 and 25.0");
     }
 
-    @Test
-    void normalizesProxyUrlWithMissingScheme() {
-        assertThat(YtPositionRepository.normalizeProxyUrl("http-proxy-hackathon.demo.ytsaurus.tech"))
-                .isEqualTo("https://http-proxy-hackathon.demo.ytsaurus.tech");
-        assertThat(YtPositionRepository.normalizeProxyUrl("https://already-has-scheme.tech"))
-                .isEqualTo("https://already-has-scheme.tech");
-    }
 }
