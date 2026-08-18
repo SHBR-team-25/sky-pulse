@@ -19,6 +19,10 @@ public class YtAirportRepository implements AirportRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(YtAirportRepository.class);
 
+    // Через сколько пробовать снова, если перечитать таблицу не удалось.
+    // Без паузы каждый запрос клиента ломился бы в упавший YT заново.
+    private static final long RETRY_AFTER_FAILURE_SECONDS = 60L;
+
     private final YtQueryClient ytQueryClient;
     private final String refAirportsPath;
     private final long cacheTtlSeconds;
@@ -36,19 +40,35 @@ public class YtAirportRepository implements AirportRepository {
     @Override
     public AirportDirectory directory() {
         CachedDirectory cached = cache.get();
-        long now = Instant.now().getEpochSecond();
-        if (cached != null && now - cached.loadedAt() < cacheTtlSeconds) {
+        if (isFresh(cached)) {
             return cached.directory();
         }
         // synchronized, чтобы параллельные запросы не запустили несколько чтений таблицы одновременно.
         synchronized (this) {
             CachedDirectory current = cache.get();
-            if (current != null && Instant.now().getEpochSecond() - current.loadedAt() < cacheTtlSeconds) {
-                return current.directory();
-            }
+            return isFresh(current) ? current.directory() : reload(current);
+        }
+    }
+
+    private static boolean isFresh(CachedDirectory cached) {
+        return cached != null && Instant.now().getEpochSecond() < cached.expiresAt();
+    }
+
+    private AirportDirectory reload(CachedDirectory stale) {
+        long now = Instant.now().getEpochSecond();
+        try {
             AirportDirectory loaded = load();
-            cache.set(new CachedDirectory(loaded, Instant.now().getEpochSecond()));
+            cache.set(new CachedDirectory(loaded, now + cacheTtlSeconds));
             return loaded;
+        } catch (DataSourceUnavailableException | DataSourceRejectedException e) {
+            if (stale == null) {
+                throw e;
+            }
+            // Справочник статический и устаревает месяцами: вчерашний снапшот
+            // клиенту полезнее, чем 503 на всю ручку из-за минутной недоступности YT.
+            LOG.warn("Справочник аэропортов не перечитан, отдаём прежний снапшот", e);
+            cache.set(new CachedDirectory(stale.directory(), now + RETRY_AFTER_FAILURE_SECONDS));
+            return stale.directory();
         }
     }
 
@@ -61,13 +81,17 @@ public class YtAirportRepository implements AirportRepository {
         return new AirportDirectory(airports, modificationTime());
     }
 
-    private long modificationTime() {
+    // null, а не 0: нулём клиент отрисует «справочник от 1 января 1970 года».
+    private Long modificationTime() {
         String raw = ytQueryClient.getAttribute(refAirportsPath, "modification_time").asText(null);
+        if (raw == null) {
+            return null;
+        }
         try {
-            return raw == null ? 0L : Instant.parse(raw).getEpochSecond();
+            return Instant.parse(raw).getEpochSecond();
         } catch (DateTimeParseException e) {
             LOG.warn("Не разобрано modification_time таблицы {}: {}", refAirportsPath, raw);
-            return 0L;
+            return null;
         }
     }
 
@@ -90,6 +114,6 @@ public class YtAirportRepository implements AirportRepository {
         }
     }
 
-    private record CachedDirectory(AirportDirectory directory, long loadedAt) {
+    private record CachedDirectory(AirportDirectory directory, long expiresAt) {
     }
 }

@@ -6,7 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skypulse.positions.model.Airport;
+import com.skypulse.positions.model.AirportDirectory;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestClient;
 
 class YtAirportRepositoryTest {
 
@@ -92,5 +95,74 @@ class YtAirportRepositoryTest {
         assertThatThrownBy(() -> YtAirportRepository.toAirport(noName))
                 .isInstanceOf(MalformedRowException.class)
                 .hasMessageContaining("name");
+    }
+
+    // Справочник статический: минутная недоступность YT не повод отвечать 503
+    // на всю ручку, когда прошлый снапшот всё ещё лежит в памяти.
+    @Test
+    void keepsServingTheCachedDirectoryWhenYtIsDown() throws Exception {
+        var client = new FakeQueryClient();
+        client.rows = List.of(objectMapper.readTree("""
+                {"ident": "UUEE", "name": "Sheremetyevo International Airport", "type": "large_airport",
+                 "latitude_deg": 55.976858, "longitude_deg": 37.41121}
+                """));
+        client.modificationTime = "\"2026-08-18T00:00:00.000000Z\"";
+        // TTL 0 — каждый вызов пробует перечитать таблицу заново.
+        var repository = new YtAirportRepository(client, "//home/skypulse/ref_airports", 0L);
+        AirportDirectory loaded = repository.directory();
+
+        client.failing = true;
+        AirportDirectory served = repository.directory();
+
+        assertThat(served.airports()).isEqualTo(loaded.airports());
+        assertThat(served.asOf()).isEqualTo(1787011200L);
+    }
+
+    @Test
+    void reportsUnknownModificationTimeAsNull() throws Exception {
+        var client = new FakeQueryClient();
+        client.rows = List.of();
+        client.modificationTime = "\"позавчера\"";
+        var repository = new YtAirportRepository(client, "//home/skypulse/ref_airports", 60L);
+
+        assertThat(repository.directory().asOf()).isNull();
+    }
+
+    // Пока снапшота нет вовсе, подменять отказ источника пустым справочником нечем.
+    @Test
+    void failsWhenThereIsNothingCachedYet() {
+        var client = new FakeQueryClient();
+        client.failing = true;
+        var repository = new YtAirportRepository(client, "//home/skypulse/ref_airports", 60L);
+
+        assertThatThrownBy(repository::directory).isInstanceOf(DataSourceUnavailableException.class);
+    }
+
+    private static final class FakeQueryClient extends YtQueryClient {
+
+        private List<JsonNode> rows = List.of();
+        private String modificationTime = "null";
+        private boolean failing;
+
+        private FakeQueryClient() {
+            super(RestClient.builder(), new ObjectMapper(), "localhost", "", 1L, 1L);
+        }
+
+        @Override
+        public List<JsonNode> readTable(String path) {
+            if (failing) {
+                throw new DataSourceUnavailableException("Запрос read_table в YTsaurus не удался");
+            }
+            return rows;
+        }
+
+        @Override
+        public JsonNode getAttribute(String path, String attribute) {
+            try {
+                return new ObjectMapper().readTree(modificationTime);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 }

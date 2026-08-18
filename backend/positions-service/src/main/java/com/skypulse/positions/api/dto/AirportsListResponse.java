@@ -4,7 +4,7 @@ import com.skypulse.positions.model.AirportPage;
 import java.util.List;
 
 public record AirportsListResponse(
-        long asOf,
+        Long asOf,
         List<AirportDto> items,
         int page,
         int pageSize,
