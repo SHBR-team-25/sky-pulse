@@ -1,7 +1,6 @@
-package com.skypulse.positions.api.dto;
+package com.skypulse.positions.model;
 
-
-public record AirportsQuery(
+public record AirportsFilter(
         String search,
         String country,
         String sortBy,

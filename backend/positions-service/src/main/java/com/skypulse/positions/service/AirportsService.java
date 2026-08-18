@@ -1,10 +1,9 @@
 package com.skypulse.positions.service;
 
-import com.skypulse.positions.api.dto.AirportDto;
-import com.skypulse.positions.api.dto.AirportsListResponse;
-import com.skypulse.positions.api.dto.AirportsQuery;
 import com.skypulse.positions.model.Airport;
 import com.skypulse.positions.model.AirportDirectory;
+import com.skypulse.positions.model.AirportPage;
+import com.skypulse.positions.model.AirportsFilter;
 import com.skypulse.positions.repository.AirportRepository;
 import java.util.Comparator;
 import java.util.List;
@@ -40,7 +39,7 @@ public class AirportsService {
         this.repository = repository;
     }
 
-    public AirportsListResponse list(AirportsQuery query) {
+    public AirportPage list(AirportsFilter query) {
         AirportDirectory directory = repository.directory();
         String search = normalize(query.search());
         String country = normalize(query.country());
@@ -61,13 +60,11 @@ public class AirportsService {
         long from = Math.min((long) (page - 1) * pageSize, matched.size());
         long to = Math.min(from + pageSize, matched.size());
 
-        List<AirportDto> items = matched.subList((int) from, (int) to).stream()
-                .map(AirportDto::from)
-                .toList();
-        return new AirportsListResponse(directory.asOf(), items, page, pageSize, matched.size());
+        List<Airport> items = matched.subList((int) from, (int) to);
+        return new AirportPage(items, page, pageSize, matched.size(), directory.asOf());
     }
 
-    private static int effectivePageSize(AirportsQuery query) {
+    private static int effectivePageSize(AirportsFilter query) {
         if (query.limit() != null) {
             return clamp(query.limit(), MAX_LIMIT);
         }

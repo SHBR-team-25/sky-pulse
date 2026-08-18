@@ -5,8 +5,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.skypulse.positions.api.FlightsController;
-import com.skypulse.positions.api.dto.BoundingBox;
+import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
+import com.skypulse.positions.model.TrackPoint;
 import com.skypulse.positions.repository.DataSourceRejectedException;
 import com.skypulse.positions.repository.DataSourceUnavailableException;
 import com.skypulse.positions.repository.PositionRepository;
@@ -44,7 +45,7 @@ class ApiExceptionHandlerTest {
                 }
 
                 @Override
-                public List<Position> historyByIcao24(String icao24, long sinceSeconds) {
+                public List<TrackPoint> historyByIcao24(String icao24, long sinceSeconds) {
                     throw new DataSourceRejectedException("select_rows", 400, null);
                 }
             };

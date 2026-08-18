@@ -5,8 +5,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.skypulse.positions.api.FlightsController;
-import com.skypulse.positions.api.dto.BoundingBox;
+import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
+import com.skypulse.positions.model.TrackPoint;
 import com.skypulse.positions.repository.PositionRepository;
 import com.skypulse.positions.service.PositionsService;
 import java.util.List;
@@ -48,8 +49,10 @@ class FlightsControllerTest {
                 }
 
                 @Override
-                public List<Position> historyByIcao24(String icao24, long sinceSeconds) {
-                    return latestByIcao24(icao24).map(List::of).orElseGet(List::of);
+                public List<TrackPoint> historyByIcao24(String icao24, long sinceSeconds) {
+                    return latestByIcao24(icao24)
+                            .map(p -> List.of(new TrackPoint(p.timePosition(), p.lat(), p.lon(), p.baroAltitude())))
+                            .orElseGet(List::of);
                 }
             };
         }

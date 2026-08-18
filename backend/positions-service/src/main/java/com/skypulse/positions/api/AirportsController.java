@@ -1,8 +1,8 @@
 package com.skypulse.positions.api;
 
 import com.skypulse.positions.api.dto.AirportsListResponse;
-import com.skypulse.positions.api.dto.AirportsQuery;
-import com.skypulse.positions.api.dto.BoundingBox;
+import com.skypulse.positions.model.AirportsFilter;
+import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.service.AirportsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +35,7 @@ public class AirportsController {
         if (lonMin != null && latMin != null && lonMax != null && latMax != null) {
             area = new BoundingBox(lonMin, latMin, lonMax, latMax);
         }
-        return service.list(new AirportsQuery(search, country, sortBy, area, page, pageSize, limit));
+        var filter = new AirportsFilter(search, country, sortBy, area, page, pageSize, limit);
+        return AirportsListResponse.from(service.list(filter));
     }
 }

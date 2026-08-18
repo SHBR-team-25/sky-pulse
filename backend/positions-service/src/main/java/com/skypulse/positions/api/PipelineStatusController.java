@@ -18,6 +18,6 @@ public class PipelineStatusController {
 
     @GetMapping
     public PipelineStatusDto current() {
-        return service.current();
+        return PipelineStatusDto.from(service.current());
     }
 }

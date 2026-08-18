@@ -1,6 +1,6 @@
 package com.skypulse.positions.service;
 
-import com.skypulse.positions.api.dto.PipelineStatusDto;
+import com.skypulse.positions.model.PipelineHealth;
 import com.skypulse.positions.model.PipelineStatus;
 import com.skypulse.positions.repository.PipelineStatusRepository;
 import java.time.Instant;
@@ -20,13 +20,9 @@ public class PipelineStatusService {
         this.staleAfterSeconds = staleAfterSeconds;
     }
 
-    public PipelineStatusDto current() {
+    public PipelineHealth current() {
         PipelineStatus status = repository.latest().orElseGet(PipelineStatus::unknown);
-        return new PipelineStatusDto(
-                status.status(),
-                status.lastSuccessAt(),
-                status.resumesAt(),
-                isStale(status));
+        return new PipelineHealth(status, isStale(status));
     }
 
     // Пустой список бортов неотличим от честно пустого bbox, поэтому «данные

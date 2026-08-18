@@ -1,8 +1,8 @@
 package com.skypulse.positions.api;
 
-import com.skypulse.positions.api.dto.BoundingBox;
 import com.skypulse.positions.api.dto.PositionDto;
 import com.skypulse.positions.api.dto.TrackPointDto;
+import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.service.PositionsService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,18 +33,18 @@ public class FlightsController {
         if (lonMin != null && latMin != null && lonMax != null && latMax != null) {
             area = new BoundingBox(lonMin, latMin, lonMax, latMax);
         }
-        return service.currentPositions(area);
+        return service.currentPositions(area).stream().map(PositionDto::from).toList();
     }
 
     @GetMapping("/{icao24}")
     public PositionDto latest(@PathVariable String icao24) {
-        return service.latest(icao24);
+        return PositionDto.from(service.latest(icao24));
     }
 
     @GetMapping("/{icao24}/track")
     public List<TrackPointDto> track(
             @PathVariable String icao24,
             @RequestParam(defaultValue = "" + DEFAULT_TRACK_WINDOW_SECONDS) long sinceSeconds) {
-        return service.track(icao24, sinceSeconds);
+        return service.track(icao24, sinceSeconds).stream().map(TrackPointDto::from).toList();
     }
 }

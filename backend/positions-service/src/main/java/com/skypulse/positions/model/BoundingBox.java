@@ -1,5 +1,4 @@
-package com.skypulse.positions.api.dto;
-
+package com.skypulse.positions.model;
 
 public record BoundingBox(double lonMin, double latMin, double lonMax, double latMax) {
 

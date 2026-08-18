@@ -25,7 +25,6 @@ class YtPipelineStatusRepositoryTest {
                         """));
 
         assertThat(status.status()).isEqualTo("ok");
-        assertThat(status.updatedAt()).isEqualTo(1787055889L);
         assertThat(status.lastSuccessAt()).isEqualTo(1787055847L);
         // Причин паузы таблица не хранит, обещать время возобновления нечем.
         assertThat(status.resumesAt()).isNull();

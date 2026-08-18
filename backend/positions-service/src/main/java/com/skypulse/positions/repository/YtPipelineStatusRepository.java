@@ -48,7 +48,6 @@ public class YtPipelineStatusRepository implements PipelineStatusRepository {
         // пайплайн выглядел бы живым при стоящих данных.
         return new PipelineStatus(
                 STATUS_REPORTING,
-                row.path("updated_at").asLong(),
                 YtRow.nullableLong(row, "watermark_ts"),
                 null
         );

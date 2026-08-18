@@ -2,12 +2,11 @@ package com.skypulse.positions.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.skypulse.positions.api.dto.AirportDto;
-import com.skypulse.positions.api.dto.AirportsListResponse;
-import com.skypulse.positions.api.dto.AirportsQuery;
-import com.skypulse.positions.api.dto.BoundingBox;
 import com.skypulse.positions.model.Airport;
 import com.skypulse.positions.model.AirportDirectory;
+import com.skypulse.positions.model.AirportPage;
+import com.skypulse.positions.model.AirportsFilter;
+import com.skypulse.positions.model.BoundingBox;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -32,17 +31,17 @@ class AirportsServiceTest {
     private final AirportsService service = new AirportsService(
             () -> new AirportDirectory(List.of(SVO, DME, CDG, HELIPORT, NO_CITY), 1786000000L));
 
-    private static AirportsQuery query() {
-        return new AirportsQuery(null, null, null, null, null, null, null);
+    private static AirportsFilter query() {
+        return new AirportsFilter(null, null, null, null, null, null, null);
     }
 
-    private static List<String> codes(AirportsListResponse response) {
-        return response.items().stream().map(AirportDto::icao).toList();
+    private static List<String> codes(AirportPage response) {
+        return response.items().stream().map(Airport::icao).toList();
     }
 
     @Test
     void returnsAirportsWithoutFiltersAndKeepsTableOrder() {
-        AirportsListResponse response = service.list(query());
+        AirportPage response = service.list(query());
 
         assertThat(codes(response)).containsExactly("UUEE", "UUDD", "LFPG", "00AA");
         assertThat(response.asOf()).isEqualTo(1786000000L);
@@ -59,25 +58,25 @@ class AirportsServiceTest {
 
     @Test
     void searchesByNameCaseInsensitivelyAsSubstring() {
-        var response = service.list(new AirportsQuery("sheremet", null, null, null, null, null, null));
+        var response = service.list(new AirportsFilter("sheremet", null, null, null, null, null, null));
 
         assertThat(codes(response)).containsExactly("UUEE");
     }
 
     @Test
     void searchesByCityIcaoAndIata() {
-        assertThat(codes(service.list(new AirportsQuery("moscow", null, null, null, null, null, null))))
+        assertThat(codes(service.list(new AirportsFilter("moscow", null, null, null, null, null, null))))
                 .containsExactly("UUEE", "UUDD");
-        assertThat(codes(service.list(new AirportsQuery("lfpg", null, null, null, null, null, null))))
+        assertThat(codes(service.list(new AirportsFilter("lfpg", null, null, null, null, null, null))))
                 .containsExactly("LFPG");
-        assertThat(codes(service.list(new AirportsQuery("CDG", null, null, null, null, null, null))))
+        assertThat(codes(service.list(new AirportsFilter("CDG", null, null, null, null, null, null))))
                 .containsExactly("LFPG");
     }
 
     // Кавычка и процент — обычные символы: они просто ничему не соответствуют.
     @Test
     void treatsSpecialCharactersInSearchLiterally() {
-        var response = service.list(new AirportsQuery("' or %", null, null, null, null, null, null));
+        var response = service.list(new AirportsFilter("' or %", null, null, null, null, null, null));
 
         assertThat(response.items()).isEmpty();
         assertThat(response.total()).isZero();
@@ -85,30 +84,30 @@ class AirportsServiceTest {
 
     @Test
     void filtersByCountryIgnoringCase() {
-        assertThat(codes(service.list(new AirportsQuery(null, "ru", null, null, null, null, null))))
+        assertThat(codes(service.list(new AirportsFilter(null, "ru", null, null, null, null, null))))
                 .containsExactly("UUEE", "UUDD");
-        assertThat(service.list(new AirportsQuery(null, "___", null, null, null, null, null)).total())
+        assertThat(service.list(new AirportsFilter(null, "___", null, null, null, null, null)).total())
                 .isZero();
     }
 
     @Test
     void sortsByNameWhenAsked() {
-        var response = service.list(new AirportsQuery(null, null, "name", null, null, null, null));
+        var response = service.list(new AirportsFilter(null, null, "name", null, null, null, null));
 
         assertThat(codes(response)).containsExactly("00AA", "LFPG", "UUDD", "UUEE");
     }
 
     @Test
     void ignoresUnknownSortBy() {
-        var response = service.list(new AirportsQuery(null, null, "trafficIndex", null, null, null, null));
+        var response = service.list(new AirportsFilter(null, null, "trafficIndex", null, null, null, null));
 
         assertThat(codes(response)).containsExactly("UUEE", "UUDD", "LFPG", "00AA");
     }
 
     @Test
     void paginatesWithoutOverlapAndKeepsTotalStable() {
-        var first = service.list(new AirportsQuery(null, null, "name", null, 1, 2, null));
-        var second = service.list(new AirportsQuery(null, null, "name", null, 2, 2, null));
+        var first = service.list(new AirportsFilter(null, null, "name", null, 1, 2, null));
+        var second = service.list(new AirportsFilter(null, null, "name", null, 2, 2, null));
 
         assertThat(codes(first)).containsExactly("00AA", "LFPG");
         assertThat(codes(second)).containsExactly("UUDD", "UUEE");
@@ -117,7 +116,7 @@ class AirportsServiceTest {
 
     @Test
     void returnsEmptyPageBeyondLastOne() {
-        var response = service.list(new AirportsQuery(null, null, null, null, 99, 2, null));
+        var response = service.list(new AirportsFilter(null, null, null, null, 99, 2, null));
 
         assertThat(response.items()).isEmpty();
         assertThat(response.total()).isEqualTo(4);
@@ -127,7 +126,7 @@ class AirportsServiceTest {
     // page от клиента может быть каким угодно: (page - 1) * pageSize не должно переполняться.
     @Test
     void survivesExtremePagingValues() {
-        var response = service.list(new AirportsQuery(null, null, null, null, Integer.MAX_VALUE, 1000, null));
+        var response = service.list(new AirportsFilter(null, null, null, null, Integer.MAX_VALUE, 1000, null));
 
         assertThat(response.items()).isEmpty();
         assertThat(response.pageSize()).isEqualTo(AirportsService.MAX_PAGE_SIZE);
@@ -135,7 +134,7 @@ class AirportsServiceTest {
 
     @Test
     void clampsNonPositivePagingValues() {
-        var response = service.list(new AirportsQuery(null, null, null, null, 0, 0, null));
+        var response = service.list(new AirportsFilter(null, null, null, null, 0, 0, null));
 
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.pageSize()).isEqualTo(1);
@@ -144,7 +143,7 @@ class AirportsServiceTest {
 
     @Test
     void limitReplacesTablePagination() {
-        var response = service.list(new AirportsQuery(null, null, null, null, 3, 2, 2));
+        var response = service.list(new AirportsFilter(null, null, null, null, 3, 2, 2));
 
         assertThat(codes(response)).containsExactly("UUEE", "UUDD");
         assertThat(response.page()).isEqualTo(1);
@@ -154,7 +153,7 @@ class AirportsServiceTest {
 
     @Test
     void clampsLimitToCeiling() {
-        var response = service.list(new AirportsQuery(null, null, null, null, null, null, 1_000_000));
+        var response = service.list(new AirportsFilter(null, null, null, null, null, null, 1_000_000));
 
         assertThat(response.pageSize()).isEqualTo(AirportsService.MAX_LIMIT);
         assertThat(response.items()).hasSize(4);
@@ -163,7 +162,7 @@ class AirportsServiceTest {
     @Test
     void filtersByBoundingBox() {
         var moscow = new BoundingBox(36.0, 55.0, 38.5, 56.5);
-        var response = service.list(new AirportsQuery(null, null, null, moscow, null, null, null));
+        var response = service.list(new AirportsFilter(null, null, null, moscow, null, null, null));
 
         assertThat(codes(response)).containsExactly("UUEE", "UUDD");
     }
@@ -172,7 +171,7 @@ class AirportsServiceTest {
     @Test
     void returnsEmptyForInvertedBoundingBox() {
         var inverted = new BoundingBox(38.5, 55.0, 36.0, 56.5);
-        var response = service.list(new AirportsQuery(null, null, null, inverted, null, null, null));
+        var response = service.list(new AirportsFilter(null, null, null, inverted, null, null, null));
 
         assertThat(response.items()).isEmpty();
         assertThat(response.total()).isZero();
@@ -180,14 +179,14 @@ class AirportsServiceTest {
 
     @Test
     void keepsAirportWithoutCityInResults() {
-        var response = service.list(new AirportsQuery(null, "US", null, null, null, null, null));
+        var response = service.list(new AirportsFilter(null, "US", null, null, null, null, null));
 
         assertThat(response.items()).singleElement()
                 .satisfies(item -> {
                     assertThat(item.icao()).isEqualTo("00AA");
                     assertThat(item.city()).isNull();
                     assertThat(item.iata()).isNull();
-                    assertThat(item.position().lat()).isEqualTo(38.704022);
+                    assertThat(item.lat()).isEqualTo(38.704022);
                 });
     }
 }

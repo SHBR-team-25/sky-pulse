@@ -1,8 +1,9 @@
 package com.skypulse.positions.repository;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.skypulse.positions.api.dto.BoundingBox;
+import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
+import com.skypulse.positions.model.TrackPoint;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -57,7 +58,7 @@ public class YtPositionRepository implements PositionRepository {
     }
 
     @Override
-    public List<Position> historyByIcao24(String icao24, long sinceSeconds) {
+    public List<TrackPoint> historyByIcao24(String icao24, long sinceSeconds) {
         if (!isValidIcao24(icao24)) {
             return List.of();
         }
@@ -66,11 +67,26 @@ public class YtPositionRepository implements PositionRepository {
         long threshold = Instant.now().getEpochSecond() - sinceSeconds;
         String query = "* from [%s] where icao24 = '%s' and time_position >= %d"
                 .formatted(positionsHistoryPath, icao24.toLowerCase(Locale.ROOT), threshold);
-        return positions(ytQueryClient.selectRows(query));
+        return YtRow.mapSkippingBroken(ytQueryClient.selectRows(query), YtPositionRepository::toTrackPoint, LOG);
     }
 
     static List<Position> positions(List<JsonNode> rows) {
         return YtRow.mapSkippingBroken(rows, YtPositionRepository::toPosition, LOG);
+    }
+
+    // Треку из positions_history нужны только координаты во времени: борт
+    // и его модель клиент уже знает из карточки.
+    static TrackPoint toTrackPoint(JsonNode row) {
+        try {
+            return new TrackPoint(
+                    YtRow.requiredLong(row, "time_position"),
+                    YtRow.requiredDouble(row, "lat"),
+                    YtRow.requiredDouble(row, "lon"),
+                    YtRow.nullableDouble(row, "baro_altitude")
+            );
+        } catch (IllegalArgumentException e) {
+            throw new MalformedRowException(e.getMessage(), e);
+        }
     }
 
     static boolean isValidIcao24(String icao24) {
