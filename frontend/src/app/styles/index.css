@@ -10,6 +10,7 @@
     --sky-color-map-land: #182437;
     --sky-color-map-land-border: #28374f;
     --sky-color-map-route-inactive: #3a4a63;
+    --sky-color-map-flight-path: var(--sky-color-status-warning);
     --sky-color-map-grid-transparent: rgba(22, 32, 47, 0.58);
     --sky-color-map-vignette: rgba(4, 8, 14, 0.32);
 
@@ -80,6 +81,7 @@
     --sky-color-map-land: #e9eef4;
     --sky-color-map-land-border: #cbd6e2;
     --sky-color-map-route-inactive: #98a8ba;
+    --sky-color-map-flight-path: oklch(62% 0.2 55deg);
     --sky-color-map-grid-transparent: rgba(91, 119, 148, 0.14);
     --sky-color-map-vignette: rgba(70, 101, 132, 0.1);
 

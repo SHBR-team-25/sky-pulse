@@ -23,7 +23,7 @@ export const router = createBrowserRouter([
                     Component: async () => {
                         const { MapPage } = await import('@pages/map');
 
-                        return () => <MapPage theme="light" />;
+                        return MapPage;
                     },
                 },
                 ErrorBoundary: RouterErrorFallback,
