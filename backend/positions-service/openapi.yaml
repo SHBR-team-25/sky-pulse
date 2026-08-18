@@ -74,14 +74,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "503":
-          description: >-
-            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
-            по-русски и пригодно для показа пользователю.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
+          $ref: "#/components/responses/SourceUnavailable"
 
   /flights/{icao24}:
     get:
@@ -124,14 +120,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "503":
-          description: >-
-            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
-            по-русски и пригодно для показа пользователю.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
+          $ref: "#/components/responses/SourceUnavailable"
 
   /flights/{icao24}/track:
     get:
@@ -182,14 +174,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "503":
-          description: >-
-            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
-            по-русски и пригодно для показа пользователю.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
+          $ref: "#/components/responses/SourceUnavailable"
 
   /airports:
     get:
@@ -332,6 +320,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "503":
           description: >-
             YTsaurus недоступен, вернул ошибку или таблицы `ref_airports` нет
@@ -367,16 +357,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PipelineStatus"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "503":
-          description: >-
-            YTsaurus недоступен или вернул ошибку. Поле `message` заполнено
-            по-русски и пригодно для показа пользователю.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
+          $ref: "#/components/responses/SourceUnavailable"
 
 components:
+  responses:
+    SourceUnavailable:
+      description: >-
+        Источник данных не ответил или ответил негодным: YTsaurus недоступен,
+        вернул ошибку либо прислал тело, которое не разбирается как ответ.
+        Сервис при этом исправен, поэтому повторить запрос осмысленно.
+
+
+        Поле `message` заполнено по-русски и пригодно для показа
+        пользователю; подробности источника (trace_id, текст запроса) остаются
+        в логе сервиса и наружу не выходят.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    InternalError:
+      description: >-
+        Сбой самого сервиса. Сюда же попадает запрос, который **отклонил**
+        YTsaurus, — неверный путь таблицы, протухший токен, негодный QL:
+        это дефект сервиса или его конфигурации, и, в отличие от 503,
+        повтор не поможет.
+
+
+        В `message` всегда «Внутренняя ошибка сервиса»: показывать клиенту
+        внутренности нечего, диагностика — в логе.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
   parameters:
     Icao24:
       name: icao24
@@ -463,6 +479,14 @@ components:
 
         Все поля всегда присутствуют в JSON; необязательность выражена через
         `nullable`, а не через отсутствие ключа.
+
+
+        Строка, в которой нет `icao24`, `timePosition`, `lat` или `lon`,
+        в выдачу не попадает вовсе: подставить туда ноль значило бы показать
+        борт в Гвинейском заливе. Поэтому бортов в ответе может оказаться
+        меньше, чем строк записал пайплайн, — расхождение видно в логе
+        сервиса. На `GET /flights/{icao24}` такая строка даёт 503, а не 404:
+        борт существует, негодны данные о нём.
       properties:
         icao24:
           type: string
@@ -625,6 +649,11 @@ components:
         Запись справочника OurAirports. Полей `totalFlights24h`
         и `trafficIndex` из `docs/openapi.yaml` здесь нет: рейсов
         по аэропортам пайплайн не считает.
+
+
+        Запись без кода, названия или координат в справочник не попадает —
+        отрисовать и показать её всё равно нечем, а нули вместо координат
+        увели бы аэропорт в Атлантику.
       properties:
         icao:
           type: string
