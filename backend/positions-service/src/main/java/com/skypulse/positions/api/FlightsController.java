@@ -12,19 +12,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/positions")
-public class PositionsController {
+@RequestMapping("/api/flights")
+public class FlightsController {
 
     private static final long DEFAULT_TRACK_WINDOW_SECONDS = 3600L;
 
     private final PositionsService service;
 
-    public PositionsController(PositionsService service) {
+    public FlightsController(PositionsService service) {
         this.service = service;
     }
 
-    @GetMapping
-    public List<PositionDto> current(
+    @GetMapping("/live")
+    public List<PositionDto> live(
             @RequestParam(required = false) Double minLat,
             @RequestParam(required = false) Double minLon,
             @RequestParam(required = false) Double maxLat,

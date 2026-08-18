@@ -4,7 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.skypulse.positions.api.PositionsController;
+import com.skypulse.positions.api.FlightsController;
 import com.skypulse.positions.api.dto.BoundingBox;
 import com.skypulse.positions.model.Position;
 import com.skypulse.positions.repository.PositionRepository;
@@ -19,9 +19,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(PositionsController.class)
-@Import({PositionsService.class, PositionsControllerTest.StubRepositoryConfig.class})
-class PositionsControllerTest {
+@WebMvcTest(FlightsController.class)
+@Import({PositionsService.class, FlightsControllerTest.StubRepositoryConfig.class})
+class FlightsControllerTest {
 
     private static final Position SAMPLE = new Position(
             "abc123", "SVR1234", "Russia", 1786841273L,
@@ -60,7 +60,7 @@ class PositionsControllerTest {
 
     @Test
     void returnsCurrentPositions() throws Exception {
-        mockMvc.perform(get("/api/positions"))
+        mockMvc.perform(get("/api/flights/live"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].icao24").value("abc123"))
                 .andExpect(jsonPath("$[0].originCountry").value("Russia"))
@@ -71,7 +71,7 @@ class PositionsControllerTest {
 
     @Test
     void appliesBoundingBoxFilter() throws Exception {
-        mockMvc.perform(get("/api/positions?minLat=0&minLon=0&maxLat=10&maxLon=10"))
+        mockMvc.perform(get("/api/flights/live?minLat=0&minLon=0&maxLat=10&maxLon=10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
     }
@@ -79,14 +79,14 @@ class PositionsControllerTest {
     // Частичный набор координат фильтром не считается — отдаём всё.
     @Test
     void ignoresIncompleteBoundingBox() throws Exception {
-        mockMvc.perform(get("/api/positions?minLat=0&minLon=0"))
+        mockMvc.perform(get("/api/flights/live?minLat=0&minLon=0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].icao24").value("abc123"));
     }
 
     @Test
     void returnsLatestByIcao24() throws Exception {
-        mockMvc.perform(get("/api/positions/abc123"))
+        mockMvc.perform(get("/api/flights/abc123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.callsign").value("SVR1234"))
                 .andExpect(jsonPath("$.trueTrack").value(92.0))
@@ -95,7 +95,7 @@ class PositionsControllerTest {
 
     @Test
     void returns404ForUnknownAircraft() throws Exception {
-        mockMvc.perform(get("/api/positions/unknown"))
+        mockMvc.perform(get("/api/flights/unknown"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").isNotEmpty());
@@ -103,7 +103,7 @@ class PositionsControllerTest {
 
     @Test
     void returnsTrackPoints() throws Exception {
-        mockMvc.perform(get("/api/positions/abc123/track"))
+        mockMvc.perform(get("/api/flights/abc123/track"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].timePosition").value(1786841273L))
                 .andExpect(jsonPath("$[0].lat").value(55.75));
