@@ -43,7 +43,7 @@
 │
 ├───app                                              # слой приложения: композиция провайдеров и layout
 │   │   App.module.css                               # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary и RouterProvider
+│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary, MapViewProvider и RouterProvider
 │   │   index.ts                                     # публичный API слоя app
 │   │
 │   ├───providers                                    # глобальные провайдеры приложения
@@ -51,7 +51,7 @@
 │   │       QueryProvider.tsx                        # оборачивает дерево в QueryClientProvider с общим queryClient
 │   │
 │   ├───router                                       # конфигурация маршрутов приложения
-│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader'ах карты и дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
+│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
 │   │
 │   └───styles                                       # глобальные стили
 │           index.css                                # CSS-переменные, reset, базовая типографика
@@ -61,7 +61,7 @@
 │   │   │   index.ts                                 # публичный API сущности
 │   │   │
 │   │   ├───model
-│   │   │       mock-data.ts                         # моковый ответ GET /airports с пятью аэропортами Московского региона
+│   │   │       mock-data.ts                         # моки пяти аэропортов и рейсов, клонированных для виртуального списка
 │   │   │       types.ts                             # типы аэропортов и рейсов аэропорта, выведенные из OpenAPI-схемы
 │   │   │
 │   │   └───ui
@@ -110,7 +110,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и airportsQueryOptions для prefetch
+│   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и query-ключами
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /airports
@@ -119,7 +119,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirportsFlights.ts                # хук GET /airports/{icao}/flights, запрос только при заданном icao
+│   │   │       useAirportsFlights.ts                # хук GET /airports/{icao}/flights с таймаутом 5 с без повторных попыток
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /airports/{icao}/flights
@@ -140,7 +140,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 15 с и liveFlightsQueryOptions для prefetch
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 2 с
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -149,7 +149,7 @@
 │       │   index.ts                                 # публичный API фичи
 │       │
 │       ├───api
-│       │       useTargetFlight.ts                   # хук GET /flights/{icao24}: детали и трек борта
+│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} с таймаутом 5 с без повторных попыток
 │       │
 │       └───model
 │               types.ts                             # тип ответа GET /flights/{icao24}
@@ -166,14 +166,14 @@
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           Layout.tsx                           # MapViewProvider, шапка, Outlet под Suspense с PageLoader и подвал
+│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader и подвал
 │   │
 │   ├───map                                          # страница карты полётов
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           MapPage.module.css                   # стили контейнера карты и оверлея ошибки загрузки
-│   │           MapPage.tsx                          # вид карты из query-параметров с дебаунсом 300 мс, борта и аэропорты из моков
+│   │           MapPage.module.css                   # стили контейнера карты
+│   │           MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
 │   │
 │   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
@@ -200,17 +200,12 @@
 │   │           vite.svg                             # логотип Vite / favicon
 │   │
 │   ├───contexts                                     # React-контексты общего состояния
-│   │   └───map-view                                 # состояние центра и масштаба карты, работа с query-параметрами области
-│   │       │   context.ts                           # контексты текущего представления карты и его обновления
-│   │       │   index.ts                             # публичный API контекста представления карты
-│   │       │   MapViewProvider.tsx                  # провайдер живых центра и зума карты для подписей, защита от дублей
-│   │       │   types.ts                             # типы MapView, MapBoundsView, MapRectParams, начальные область и zoom 5, диапазон зума 3–15
-│   │       │   useMapView.ts                        # хуки для чтения и обновления представления карты
-│   │       │
-│   │       └───lib                                  # чтение и запись представления карты в query-параметры и localStorage
-│   │               mapViewParams.ts                 # единственное квантование области до 0.01° и её сравнение, разбор lonMin/latMin/lonMax/latMax/zoom, задержка 300 мс
-│   │               mapViewStorage.ts                # сохранение search-строки карты в localStorage и её чтение при заходе на /map, безопасно к отключённому storage
-│   │               resolveMapSearch.ts              # выбор источника вида карты для первого рендера: URL важнее сохранённого search, общий для MapPage и loader'а /map
+│   │   └───map-view                                 # состояние центра и масштаба карты
+│   │           context.ts                           # контексты текущего представления карты и его обновления
+│   │           index.ts                             # публичный API контекста представления карты
+│   │           MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
+│   │           types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
+│   │           useMapView.ts                        # хуки для чтения и обновления представления карты
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
@@ -270,17 +265,23 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
-        │       useMockFlightDetails.ts              # временный хук мок-запроса деталей выбранного рейса
+        │       useMockAirportFlights.ts             # мок-запрос рейсов аэропорта с задержкой 500 мс и таймаутом 5 с
+        │       useMockFlightDetails.ts              # мок-запрос деталей рейса с задержкой 500 мс и таймаутом 5 с
         │
         └───ui
+                AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов
+                AirportDetailsPopover.module.css     # стили поповера, карточки и виртуального списка рейсов аэропорта
+                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой, ошибкой и кнопкой закрытия
+                AirportFlightsList.tsx               # виртуальный список рейсов с загрузкой по 10 строк
+                AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
                 AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
                 AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
                 FlightDetailsCard.tsx                # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
-                FlightDetailsPopover.module.css      # стили поповера и карточки деталей рейса
-                FlightDetailsPopover.tsx             # управляемый поповер деталей выбранного рейса
+                FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
+                FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
                 FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта с zoom 3–15: применяет bounds из URL только при отличии квантованной области, отдаёт bbox
-                FlightsLayer.module.css              # стили маркеров рейсов и кластеров
+                FlightMap.tsx                        # карта с начальным центром в Лондоне, zoom 3–15 и синхронизацией вида
+                FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
                 FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера
                 MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс

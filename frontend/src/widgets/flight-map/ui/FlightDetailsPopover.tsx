@@ -62,12 +62,16 @@ export function FlightDetailsPopover({
                         <Icon data={Xmark} size={16} />
                     </Button>
                     {isLoading ? (
-                        <div className={styles.loading} role="status" aria-live="polite">
+                        <div className={styles.message} role="status" aria-live="polite">
                             <Spin size="l" />
                             <span>Загружаем данные о рейсе</span>
                         </div>
+                    ) : details ? (
+                        <FlightDetailsCard details={details} />
                     ) : (
-                        details && <FlightDetailsCard details={details} />
+                        <div className={styles.message} role="alert">
+                            No details found
+                        </div>
                     )}
                 </div>
             }
