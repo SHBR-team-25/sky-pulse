@@ -121,6 +121,16 @@ class YtPositionRepositoryTest {
                 .isEqualTo(" where time_position >= 1786841000");
     }
 
+    // Зумленная карта возле Гринвича даёт координаты вида -0.0005, а Double.toString
+    // пишет их как -5.0E-4 — в QL такое число ехать не должно.
+    @Test
+    void writesSmallCoordinatesWithoutScientificNotation() {
+        assertThat(YtPositionRepository.whereClause(new BoundingBox(-0.0005, 51.4, 0.0005, 51.5), 1786841000L))
+                .isEqualTo(" where time_position >= 1786841000"
+                        + " and lat between 51.4 and 51.5 and lon between -0.00050 and 0.00050")
+                .doesNotContain("E-");
+    }
+
     @Test
     void combinesFreshnessAndBoundingBoxIntoSingleWhere() {
         assertThat(YtPositionRepository.whereClause(new BoundingBox(5.0, 45.0, 25.0, 55.0), 1786841000L))

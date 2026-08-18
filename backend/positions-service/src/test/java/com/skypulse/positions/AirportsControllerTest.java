@@ -96,6 +96,13 @@ class AirportsControllerTest {
     }
 
     @Test
+    void rejectsCoordinatesThatAreNotOnTheMap() throws Exception {
+        mockMvc.perform(get("/api/airports?lonMin=NaN&latMin=55&lonMax=38.5&latMax=56.5"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
     void rejectsNonNumericPaging() throws Exception {
         mockMvc.perform(get("/api/airports?page=abc"))
                 .andExpect(status().isBadRequest());

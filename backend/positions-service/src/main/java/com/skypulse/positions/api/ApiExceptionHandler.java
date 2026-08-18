@@ -2,6 +2,7 @@ package com.skypulse.positions.api;
 
 import com.skypulse.positions.repository.DataSourceRejectedException;
 import com.skypulse.positions.repository.DataSourceUnavailableException;
+import com.skypulse.positions.service.InvalidRequestException;
 import com.skypulse.positions.service.PositionNotFoundException;
 import java.time.Instant;
 import java.util.Map;
@@ -27,6 +28,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    // Виноват клиент, а не источник: такое не должно выглядеть как отказ YTsaurus.
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
 
     @ExceptionHandler(PositionNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(PositionNotFoundException ex) {

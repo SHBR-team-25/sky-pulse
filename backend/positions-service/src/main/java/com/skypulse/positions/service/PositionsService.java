@@ -5,10 +5,16 @@ import com.skypulse.positions.model.Position;
 import com.skypulse.positions.model.TrackPoint;
 import com.skypulse.positions.repository.PositionRepository;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PositionsService {
+
+    static final long MAX_TRACK_WINDOW_SECONDS = 86_400L;
+
+    private static final Pattern ICAO24_PATTERN = Pattern.compile("^[0-9a-fA-F]{6}$");
 
     private final PositionRepository repository;
 
@@ -21,11 +27,25 @@ public class PositionsService {
     }
 
     public Position latest(String icao24) {
-        return repository.latestByIcao24(icao24)
-                .orElseThrow(() -> new PositionNotFoundException(icao24));
+        String code = requireIcao24(icao24);
+        return repository.latestByIcao24(code)
+                .orElseThrow(() -> new PositionNotFoundException(code));
     }
 
     public List<TrackPoint> track(String icao24, long sinceSeconds) {
-        return repository.historyByIcao24(icao24, sinceSeconds);
+        String code = requireIcao24(icao24);
+        // Отрицательное окно переполняло вычитание и снимало отсечку по времени:
+        // один запрос выгребал всю историю борта целиком.
+        if (sinceSeconds < 1 || sinceSeconds > MAX_TRACK_WINDOW_SECONDS) {
+            throw new InvalidTrackWindowException(sinceSeconds, MAX_TRACK_WINDOW_SECONDS);
+        }
+        return repository.historyByIcao24(code, sinceSeconds);
+    }
+
+    private static String requireIcao24(String icao24) {
+        if (icao24 == null || !ICAO24_PATTERN.matcher(icao24).matches()) {
+            throw new InvalidIcao24Exception(icao24);
+        }
+        return icao24.toLowerCase(Locale.ROOT);
     }
 }

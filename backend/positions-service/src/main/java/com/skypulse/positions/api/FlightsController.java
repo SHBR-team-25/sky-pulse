@@ -2,7 +2,7 @@ package com.skypulse.positions.api;
 
 import com.skypulse.positions.api.dto.PositionDto;
 import com.skypulse.positions.api.dto.TrackPointDto;
-import com.skypulse.positions.model.BoundingBox;
+import com.skypulse.positions.service.MapArea;
 import com.skypulse.positions.service.PositionsService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,10 +29,7 @@ public class FlightsController {
             @RequestParam(required = false) Double latMin,
             @RequestParam(required = false) Double lonMax,
             @RequestParam(required = false) Double latMax) {
-        BoundingBox area = null;
-        if (lonMin != null && latMin != null && lonMax != null && latMax != null) {
-            area = new BoundingBox(lonMin, latMin, lonMax, latMax);
-        }
+        var area = MapArea.of(lonMin, latMin, lonMax, latMax);
         return service.currentPositions(area).stream().map(PositionDto::from).toList();
     }
 

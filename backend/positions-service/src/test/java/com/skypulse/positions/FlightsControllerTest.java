@@ -96,12 +96,49 @@ class FlightsControllerTest {
                 .andExpect(jsonPath("$.model").value("A320"));
     }
 
+    // Формат кода верный, борта в выдаче нет — это именно «не найдено».
     @Test
     void returns404ForUnknownAircraft() throws Exception {
-        mockMvc.perform(get("/api/flights/unknown"))
+        mockMvc.perform(get("/api/flights/ffffff"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    // А синтаксически невозможный код — ошибка ввода, и одинаковая на обеих
+    // ручках: раньше карточка отвечала 404, а трек — пустым массивом и 200.
+    @Test
+    void rejectsMalformedIcao24OnBothEndpoints() throws Exception {
+        mockMvc.perform(get("/api/flights/ZZZ"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+        mockMvc.perform(get("/api/flights/ZZZ/track"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    // Отрицательное окно переполняло вычитание порога и снимало отсечку
+    // по времени — запрос выгребал историю борта целиком.
+    @Test
+    void rejectsTrackWindowOutsideTheAllowedRange() throws Exception {
+        mockMvc.perform(get("/api/flights/abc123/track?sinceSeconds=0"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/flights/abc123/track?sinceSeconds=-9223372036854775000"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/flights/abc123/track?sinceSeconds=86401"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // Spring разбирает NaN как обычный Double, и такая рамка уезжала в QL,
+    // а клиент получал 503 «источник недоступен» вместо своей же ошибки.
+    @Test
+    void rejectsCoordinatesThatAreNotOnTheMap() throws Exception {
+        mockMvc.perform(get("/api/flights/live?lonMin=NaN&latMin=NaN&lonMax=NaN&latMax=NaN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").isNotEmpty());
+        mockMvc.perform(get("/api/flights/live?lonMin=0&latMin=0&lonMax=10&latMax=200"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
 import com.skypulse.positions.model.TrackPoint;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -48,25 +49,19 @@ public class YtPositionRepository implements PositionRepository {
 
     @Override
     public Optional<Position> latestByIcao24(String icao24) {
-        if (!isValidIcao24(icao24)) {
-            return Optional.empty();
-        }
         String query = "* from [%s] where icao24 = '%s' limit 1"
-                .formatted(positionsCurrentPath, icao24.toLowerCase(Locale.ROOT));
+                .formatted(positionsCurrentPath, safeIcao24(icao24));
         // Строк здесь максимум одна, и негодная означает сломанный источник, а не «нет борта».
         return ytQueryClient.selectRows(query).stream().findFirst().map(YtPositionRepository::toPosition);
     }
 
     @Override
     public List<TrackPoint> historyByIcao24(String icao24, long sinceSeconds) {
-        if (!isValidIcao24(icao24)) {
-            return List.of();
-        }
         // Таблица отсортирована по (icao24, time_position), так что строки придут
         // уже в хронологическом порядке.
         long threshold = Instant.now().getEpochSecond() - sinceSeconds;
         String query = "* from [%s] where icao24 = '%s' and time_position >= %d"
-                .formatted(positionsHistoryPath, icao24.toLowerCase(Locale.ROOT), threshold);
+                .formatted(positionsHistoryPath, safeIcao24(icao24), threshold);
         return YtRow.mapSkippingBroken(ytQueryClient.selectRows(query), YtPositionRepository::toTrackPoint, LOG);
     }
 
@@ -93,6 +88,14 @@ public class YtPositionRepository implements PositionRepository {
         return icao24 != null && ICAO24_PATTERN.matcher(icao24).matches();
     }
 
+    // Формат проверяет сервис; здесь это последняя защита от инъекции в QL-строку.
+    private static String safeIcao24(String icao24) {
+        if (!isValidIcao24(icao24)) {
+            throw new IllegalArgumentException("icao24 не прошёл проверку формата: " + icao24);
+        }
+        return icao24.toLowerCase(Locale.ROOT);
+    }
+
     static String whereClause(BoundingBox area, long freshnessThreshold) {
         // Джоба апсертит positions_current по icao24 и никогда не удаляет строки,
         // поэтому без отсечки по времени на карте зависают севшие борта.
@@ -101,7 +104,13 @@ public class YtPositionRepository implements PositionRepository {
             return " where " + freshness;
         }
         return " where %s and lat between %s and %s and lon between %s and %s"
-                .formatted(freshness, area.latMin(), area.latMax(), area.lonMin(), area.lonMax());
+                .formatted(freshness, ql(area.latMin()), ql(area.latMax()), ql(area.lonMin()), ql(area.lonMax()));
+    }
+
+    // Double.toString уходит в экспоненциальную запись на мелких значениях:
+    // зумленная карта возле Гринвича давала QL «lon between -5.0E-4 and 5.0E-4».
+    private static String ql(double coordinate) {
+        return BigDecimal.valueOf(coordinate).toPlainString();
     }
 
     static Position toPosition(JsonNode row) {
