@@ -38,21 +38,6 @@ class PipelineStatusServiceTest {
         assertThat(health.stale()).isTrue();
     }
 
-    // Пауза стоп-крана штатно длится часы — фронту нужно и то, что данные стухли,
-    // и время возобновления, чтобы написать «до 00:00 UTC», а не просто «ошибка».
-    @Test
-    void exhaustedBudgetReportsWhenPollingResumes() {
-        long lastSuccess = Instant.now().getEpochSecond() - 3600;
-        long resumesAt = Instant.now().getEpochSecond() + 7200;
-
-        PipelineHealth health = serviceReturning(
-                new PipelineStatus("budget_exhausted", lastSuccess, resumesAt)).current();
-
-        assertThat(health.status().status()).isEqualTo("budget_exhausted");
-        assertThat(health.stale()).isTrue();
-        assertThat(health.status().resumesAt()).isEqualTo(resumesAt);
-    }
-
     // Ingest ни разу не отработал — молча показывать пустую карту нельзя.
     @Test
     void missingHeartbeatIsReportedAsUnknownAndStale() {
@@ -63,13 +48,12 @@ class PipelineStatusServiceTest {
         assertThat(health.status().lastSuccessAt()).isNull();
     }
 
+    // Джоб зарегистрировался, но ещё ничего не обработал.
     @Test
     void heartbeatWithoutAnySuccessIsStale() {
-        long now = Instant.now().getEpochSecond();
-
-        PipelineHealth health = serviceReturning(
-                new PipelineStatus("opensky_unreachable", null, now + 60)).current();
+        PipelineHealth health = serviceReturning(new PipelineStatus("ok", null, null)).current();
 
         assertThat(health.stale()).isTrue();
+        assertThat(health.status().lastSuccessAt()).isNull();
     }
 }

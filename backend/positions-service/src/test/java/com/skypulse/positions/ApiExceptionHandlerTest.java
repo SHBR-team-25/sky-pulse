@@ -1,6 +1,7 @@
 package com.skypulse.positions;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -90,6 +91,19 @@ class ApiExceptionHandlerTest {
         mockMvc.perform(get("/api/flights/abc123/track?sinceSeconds=нет"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    // Ошибки самого Spring MVC тоже обязаны прийти в общем формате тела.
+    @Test
+    void keepsSharedBodyForUnsupportedMethodAndUnknownPath() throws Exception {
+        mockMvc.perform(post("/api/flights/live"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+        mockMvc.perform(get("/api/flights/live/nope"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").isNotEmpty());
     }
 }

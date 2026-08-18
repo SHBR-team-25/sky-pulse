@@ -97,7 +97,7 @@ public class YtQueryClient {
     }
 
     // select_rows и read_table с Accept: application/json отдают NDJSON, а не JSON-массив.
-    private List<JsonNode> parseNdjson(String body) {
+    List<JsonNode> parseNdjson(String body) {
         if (body == null || body.isBlank()) {
             return List.of();
         }
