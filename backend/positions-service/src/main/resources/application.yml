@@ -1,5 +1,9 @@
 server:
   port: ${PORT:8080}
+  error:
+    # Контейнерные ошибки уходят в /error мимо ApiExceptionHandler, и без этого
+    # тело приходит без message — единственного поля, которое можно показать.
+    include-message: always
 
 spring:
   application:
