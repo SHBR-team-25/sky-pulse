@@ -24,3 +24,6 @@ skypulse:
     token: ${YT_TOKEN:}
     positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
     positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
+    # Борт, о котором давно не было позиции, скорее всего сел.
+    max-position-age-seconds: ${YT_MAX_POSITION_AGE_SECONDS:300}
+    max-current-positions: ${YT_MAX_CURRENT_POSITIONS:5000}

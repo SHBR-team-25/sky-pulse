@@ -35,6 +35,8 @@ public class YtPositionRepository implements PositionRepository {
     private final String token;
     private final String positionsCurrentPath;
     private final String positionsHistoryPath;
+    private final long maxPositionAgeSeconds;
+    private final int maxCurrentPositions;
 
     public YtPositionRepository(
             RestClient.Builder restClientBuilder,
@@ -42,17 +44,24 @@ public class YtPositionRepository implements PositionRepository {
             @Value("${skypulse.yt.proxy}") String proxy,
             @Value("${skypulse.yt.token}") String token,
             @Value("${skypulse.yt.positions-current-path}") String positionsCurrentPath,
-            @Value("${skypulse.yt.positions-history-path}") String positionsHistoryPath) {
+            @Value("${skypulse.yt.positions-history-path}") String positionsHistoryPath,
+            @Value("${skypulse.yt.max-position-age-seconds}") long maxPositionAgeSeconds,
+            @Value("${skypulse.yt.max-current-positions}") int maxCurrentPositions) {
         this.restClient = restClientBuilder.baseUrl(normalizeProxyUrl(proxy)).build();
         this.objectMapper = objectMapper;
         this.token = token;
         this.positionsCurrentPath = positionsCurrentPath;
         this.positionsHistoryPath = positionsHistoryPath;
+        this.maxPositionAgeSeconds = maxPositionAgeSeconds;
+        this.maxCurrentPositions = maxCurrentPositions;
     }
 
     @Override
     public List<Position> currentPositions(BoundingBox area) {
-        String query = "* from [%s]%s".formatted(positionsCurrentPath, boundingBoxFilter(area));
+        long freshnessThreshold = Instant.now().getEpochSecond() - maxPositionAgeSeconds;
+        // Пайплайн опрашивает весь мир, поэтому запрос без bbox надо ограничивать.
+        String query = "* from [%s]%s limit %d"
+                .formatted(positionsCurrentPath, whereClause(area, freshnessThreshold), maxCurrentPositions);
         return selectRows(query).stream().map(YtPositionRepository::toPosition).toList();
     }
 
@@ -112,12 +121,15 @@ public class YtPositionRepository implements PositionRepository {
         return icao24 != null && ICAO24_PATTERN.matcher(icao24).matches();
     }
 
-    static String boundingBoxFilter(BoundingBox area) {
+    static String whereClause(BoundingBox area, long freshnessThreshold) {
+        // Джоба апсертит positions_current по icao24 и никогда не удаляет строки,
+        // поэтому без отсечки по времени на карте зависают севшие борта.
+        String freshness = "time_position >= %d".formatted(freshnessThreshold);
         if (area == null) {
-            return "";
+            return " where " + freshness;
         }
-        return " where lat between %s and %s and lon between %s and %s"
-                .formatted(area.minLat(), area.maxLat(), area.minLon(), area.maxLon());
+        return " where %s and lat between %s and %s and lon between %s and %s"
+                .formatted(freshness, area.minLat(), area.maxLat(), area.minLon(), area.maxLon());
     }
 
     static String normalizeProxyUrl(String proxy) {

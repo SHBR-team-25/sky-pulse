@@ -67,11 +67,19 @@ class YtPositionRepositoryTest {
         assertThat(YtPositionRepository.isValidIcao24("' or '1'='1")).isFalse();
     }
 
+    // Отсечка по свежести нужна всегда, даже без bbox: иначе на карте остаются
+    // борта, севшие часы назад, — positions_current строки не удаляет.
     @Test
-    void buildsBoundingBoxFilterOnlyWhenAreaProvided() {
-        assertThat(YtPositionRepository.boundingBoxFilter(null)).isEmpty();
-        assertThat(YtPositionRepository.boundingBoxFilter(new BoundingBox(45.0, 5.0, 55.0, 25.0)))
-                .isEqualTo(" where lat between 45.0 and 55.0 and lon between 5.0 and 25.0");
+    void filtersByFreshnessEvenWithoutBoundingBox() {
+        assertThat(YtPositionRepository.whereClause(null, 1786841000L))
+                .isEqualTo(" where time_position >= 1786841000");
+    }
+
+    @Test
+    void combinesFreshnessAndBoundingBoxIntoSingleWhere() {
+        assertThat(YtPositionRepository.whereClause(new BoundingBox(45.0, 5.0, 55.0, 25.0), 1786841000L))
+                .isEqualTo(" where time_position >= 1786841000"
+                        + " and lat between 45.0 and 55.0 and lon between 5.0 and 25.0");
     }
 
     @Test
