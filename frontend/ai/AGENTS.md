@@ -51,7 +51,7 @@
 │   │       QueryProvider.tsx                        # оборачивает дерево в QueryClientProvider с общим queryClient
 │   │
 │   ├───router                                       # конфигурация маршрутов приложения
-│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
+│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch бортов и аэропортов в loader карты и сводки в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
 │   │
 │   └───styles                                       # глобальные стили
 │           index.css                                # CSS-переменные, reset, базовая типографика
@@ -61,8 +61,9 @@
 │   │   │   index.ts                                 # публичный API сущности
 │   │   │
 │   │   ├───model
+│   │   │       legacy-flight-types.ts               # замороженные типы удалённой из спеки ручки GET /airports/{icao}/flights
 │   │   │       mock-data.ts                         # моки пяти аэропортов и рейсов, клонированных для виртуального списка
-│   │   │       types.ts                             # типы аэропортов и рейсов аэропорта, выведенные из OpenAPI-схемы
+│   │   │       types.ts                             # типы аэропорта и сортировки из OpenAPI, направления рейсов — из замороженных
 │   │   │
 │   │   └───ui
 │   │           AirportTooltip.module.css            # стили всплывающей подсказки аэропорта
@@ -75,8 +76,9 @@
 │   │   │       formatTrafficTrendData.ts            # тренд трафика в ChartData: линия по времени в мс и активным рейсам
 │   │   │
 │   │   ├───model
+│   │   │       legacy-types.ts                      # замороженные типы удалённой из спеки ручки GET /stats/dashboard
 │   │   │       mock-data.ts                         # моки дашборда: полный, пустой и генератор по диапазону дат
-│   │   │       types.ts                             # типы сводки, разбивки по фазам, топа аэропортов и тренда трафика
+│   │   │       types.ts                             # типы сводки, фаз, топа аэропортов и тренда, выведенные из замороженных
 │   │   │
 │   │   └───ui
 │   │       ├───AverageDataBadge
@@ -102,8 +104,7 @@
 │       │   index.ts                                 # публичный API сущности
 │       │
 │       └───model
-│               mock-data.ts                         # моки списка live-бортов и деталей рейса 4242b3
-│               types.ts                             # типы live-бортов, трека, позиции и фазы полёта
+│               types.ts                             # типы Flight и TrackPoint, выведенные из OpenAPI-схемы
 │
 ├───features                                         # слой фич: пользовательские сценарии получения данных
 │   ├───getAirports                                  # получение списка аэропортов
@@ -111,6 +112,9 @@
 │   │   │
 │   │   ├───api
 │   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   │
+│   │   ├───lib
+│   │   │       airportsMapQuery.ts                  # сборка query карты для /airports с общим лимитом 200 записей
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /airports
@@ -122,7 +126,7 @@
 │   │   │       useAirportsFlights.ts                # хук GET /airports/{icao}/flights с таймаутом 5 с без повторных попыток
 │   │   │
 │   │   └───model
-│   │           types.ts                             # типы query-параметров и ответа GET /airports/{icao}/flights
+│   │           types.ts                             # query GET /airports/{icao}/flights, ответ — из замороженного контракта
 │   │
 │   ├───getDashboardData                             # получение сводной статистики для дашборда
 │   │   │   index.ts                                 # публичный API фичи
@@ -134,13 +138,13 @@
 │   │   │       dashboardRange.ts                    # диапазон дат дашборда из query-параметров from/to в unix-секундах
 │   │   │
 │   │   └───model
-│   │           types.ts                             # типы query-параметров GET /stats/dashboard
+│   │           types.ts                             # query GET /stats/dashboard (from/to), расписан руками — ручки нет в спеке
 │   │
 │   ├───getLiveFlights                               # получение бортов в воздухе в реальном времени
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 2 с
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 15 с и срезом до 20 бортов
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -149,10 +153,10 @@
 │       │   index.ts                                 # публичный API фичи
 │       │
 │       ├───api
-│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} с таймаутом 5 с без повторных попыток
+│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} и /track параллельно, таймаут 5 с, без ретраев
 │       │
 │       └───model
-│               types.ts                             # тип ответа GET /flights/{icao24}
+│               types.ts                             # тип TargetFlight: борт плюс точки трека
 │
 ├───pages                                            # слой страниц
 │   ├───dashboard                                    # страница дашборда со статистикой полётов
@@ -173,7 +177,7 @@
 │   │   │
 │   │   └───ui
 │   │           MapPage.module.css                   # стили контейнера карты
-│   │           MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
+│   │           MapPage.tsx                          # карта: восстановление вида из URL и localStorage, борта и аэропорты по bbox, алерты об ошибках
 │   │
 │   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
@@ -201,11 +205,16 @@
 │   │
 │   ├───contexts                                     # React-контексты общего состояния
 │   │   └───map-view                                 # состояние центра и масштаба карты
-│   │           context.ts                           # контексты текущего представления карты и его обновления
-│   │           index.ts                             # публичный API контекста представления карты
-│   │           MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
-│   │           types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
-│   │           useMapView.ts                        # хуки для чтения и обновления представления карты
+│   │       │   context.ts                           # контексты текущего представления карты и его обновления
+│   │       │   index.ts                             # публичный API контекста представления карты
+│   │       │   MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
+│   │       │   types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
+│   │       │   useMapView.ts                        # хуки для чтения и обновления представления карты
+│   │       │
+│   │       └───lib
+│   │               mapViewParams.ts                 # разбор и сборка bbox и zoom в URL с квантованием до сотых
+│   │               mapViewStorage.ts                # чтение и запись последнего вида карты в localStorage
+│   │               resolveMapSearch.ts              # подстановка сохранённого вида карты, если в URL его нет
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
@@ -218,7 +227,7 @@
 │   │   │
 │   │   └───formatters                               # форматтеры дат, полётов, координат и чисел
 │   │           dateTime.ts                          # форматтеры локального времени и UTC-времени
-│   │           flight.ts                            # форматирует номер рейса и оставшееся время полёта
+│   │           flight.ts                            # форматирует номер рейса и путевую скорость из м/с в км/ч
 │   │           index.ts                             # публичный API форматтеров
 │   │           number.ts                            # форматтеры чисел и параметров представления карты
 │   │
@@ -265,8 +274,8 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
+        │       useFlightDetails.ts                  # выбор борта на карте поверх useTargetFlight: позиция плюс трек
         │       useMockAirportFlights.ts             # мок-запрос рейсов аэропорта с задержкой 500 мс и таймаутом 5 с
-        │       useMockFlightDetails.ts              # мок-запрос деталей рейса с задержкой 500 мс и таймаутом 5 с
         │
         └───ui
                 AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов
@@ -276,13 +285,14 @@
                 AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
                 AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
                 AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
-                FlightDetailsCard.tsx                # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
+                FlightDetailsCard.tsx                # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
                 FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
                 FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
                 FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта с начальным центром в Лондоне, zoom 3–15 и синхронизацией вида
+                FlightMap.tsx                        # карта по initialBounds, zoom 3–15, отдаёт наверх вид и bbox
+                FlightsClusterLayer.tsx              # законсервированная клиентская кластеризация бортов, пока не используется
                 FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
-                FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
+                FlightsLayer.tsx                     # слой бортов с поповерами деталей и линией трека выбранного борта
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера
                 MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
 ```

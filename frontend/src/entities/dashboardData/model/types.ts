@@ -1,6 +1,6 @@
-import type { components } from '@shared/api';
+import type { DashboardData } from './legacy-types';
 
-export type DashboardData = components['schemas']['DashboardResponse'];
+export type { DashboardData };
 
 export type DashboardTotals = DashboardData['totals'];
 

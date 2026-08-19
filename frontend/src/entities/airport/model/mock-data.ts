@@ -1,7 +1,7 @@
 import type { components } from '@/shared/api';
+import type { AirportFlightsResponse } from './legacy-flight-types';
 
 type AirportsListResponse = components['schemas']['AirportsListResponse'];
-type AirportFlightsResponse = components['schemas']['AirportFlightsResponse'];
 
 export const airportsMock = {
     asOf: 1_785_578_400,

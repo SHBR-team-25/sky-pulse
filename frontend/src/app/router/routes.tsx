@@ -5,7 +5,7 @@ import {
     parseDashboardRange,
     toDashboardQuery,
 } from '@/features/getDashboardData';
-import { airportsQueryOptions } from '@/features/getAirports';
+import { airportsQueryOptions, toAirportsMapQuery } from '@/features/getAirports';
 import { liveFlightsQueryOptions } from '@/features/getLiveFlights';
 import { queryClient } from '@shared/api';
 import {
@@ -39,7 +39,9 @@ export const router = createBrowserRouter([
                     const view = parseMapBoundsView(resolveMapSearchParams(searchParams));
                     const params = toMapBoundsParams(view);
                     void queryClient.prefetchQuery(liveFlightsQueryOptions(params));
-                    void queryClient.prefetchQuery(airportsQueryOptions(params));
+                    void queryClient.prefetchQuery(
+                        airportsQueryOptions(toAirportsMapQuery(params))
+                    );
 
                     return null;
                 },

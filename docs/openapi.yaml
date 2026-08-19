@@ -1,243 +1,434 @@
 openapi: 3.0.3
 info:
-  title: skyPulse API
+  title: skyPulse positions-service API
   description: >-
-    Контракты API skyPulse, сгенерированные на основе docs/contracts-tmp.md.
-    Real-time обновление списка бортов (экран карты) реализуется поллингом
-    GET /api/flights/live с клиента.
-  version: 0.1.0
+    Контракт того, что `positions-service` **реально отдаёт сегодня**. 
+
+  
+    Обновление карты — поллинг `GET /api/flights/live` с клиента. Чаще одного
+    раза в 5 секунд смысла нет: пайплайн обновляет позиции раз в 15 секунд.
+    Плавность движения маркеров добирается экстраполяцией по `velocity`
+    и `trueTrack`, а не частотой запросов.
+
+
+    Единицы: время — unix seconds в UTC, высота — метры, скорость — м/с,
+    курс — градусы от севера по часовой стрелке.
+  version: 1.0.0
 
 servers:
   - url: /api
 
 tags:
   - name: flights
-    description: Борты, позиции, треки
+    description: Борта, позиции, треки
   - name: airports
-    description: Аэропорты и загруженность
-  - name: stats
-    description: Агрегированная статистика трафика
+    description: Справочник аэропортов OurAirports
+  - name: pipeline
+    description: Состояние поставщика данных
 
 paths:
   /flights/live:
     get:
       tags: [flights]
-      summary: Список бортов для отрисовки маркеров на карте
+      summary: Борта для отрисовки маркеров на карте
       description: >-
-        Для получения обновлений "в реальном времени" клиент должен
-        периодически повторять (поллинг) этот же запрос раз в N секунд;
-        интервал ограничен квотой OpenSky (400–14400 кредитов/день).
+        Основной запрос карты. Возвращает **плоский массив** позиций, без
+        конверта и без метаданных о свежести — за свежестью идти
+        в `GET /pipeline-status`.
+
+
+        Возвращаются **все** борта, попавшие в область, — искусственного
+        потолка на размер ответа нет. Без bbox на мировом зуме это порядка
+        10–15 тысяч объектов, и прореживать их, если нужно, клиент решает сам.
+
+
+        Единственная отсечка — по свежести: борт, о котором не было позиции
+        дольше `YT_MAX_POSITION_AGE_SECONDS` (по умолчанию 300 с), из выдачи
+        пропадает. Она обязательна, потому что `positions_current` хранит
+        последнюю позицию каждого `icao24` вечно, и без неё на карте навсегда
+        зависают борта, севшие часы назад.
       parameters:
         - $ref: "#/components/parameters/LonMin"
         - $ref: "#/components/parameters/LatMin"
         - $ref: "#/components/parameters/LonMax"
         - $ref: "#/components/parameters/LatMax"
-        - name: zoom
-          in: query
-          required: false
-          description: >-
-            Текущий уровень зума карты
-          schema:
-            type: integer
-            minimum: 0
-            maximum: 20
-        - name: limit
-          in: query
-          required: false
-          description: Максимум бортов в ответе
-          schema:
-            type: integer
-            minimum: 1
       responses:
         "200":
-          description: OK
+          description: >-
+            Массив позиций. Пустой массив — валидный ответ и **не** признак
+            ошибки: так же выглядит и пустой участок карты, и остановленный
+            пайплайн. Различить их можно только через `GET /pipeline-status`.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LiveFlightsResponse"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Flight"
+        "400":
+          description: >-
+            Параметр не разобрался как число либо задан вне карты
+            (`lonMin=NaN`, `latMax=200`). Осмысленные, но абсурдные значения
+            (перевёрнутая рамка, неполный набор координат) под этот случай
+            **не** подпадают — они обрабатываются молча.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
 
   /flights/{icao24}:
     get:
       tags: [flights]
-      summary: Детали самолёта по клику на карте
+      summary: Последняя известная позиция борта
       description: >-
-        Ответ включает трек (path/startTime/endTime), чтобы при клике по
-        борту не делать отдельный запрос к /flights/{icao24}/track; тот
-        эндпоинт остаётся для точечного обновления/повторной подгрузки трека.
+        Карточка борта по клику на карте. Тело ответа — тот же объект, что
+        и элемент массива в `GET /flights/live`.
+
+
+        Трек сюда **не входит**, за ним нужен отдельный запрос
+        к `GET /flights/{icao24}/track`.
       parameters:
-        - name: icao24
-          in: path
-          required: true
-          description: ICAO24-адрес
-          schema:
-            type: string
+        - $ref: "#/components/parameters/Icao24"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlightDetailsResponse"
-        "404":
-          description: Борта нет в текущем снапшоте state vectors
+                $ref: "#/components/schemas/Flight"
+        "400":
+          description: >-
+            `icao24` не прошёл проверку формата — это не 6 hex-символов.
+            Поле `message` заполнено по-русски и пригодно для показа
+            пользователю.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: >-
+            Формат кода верный, но борта нет в `positions_current` — он
+            не наблюдался дольше окна свежести.
+
+
+            Поле `message` заполнено по-русски и пригодно для показа
+            пользователю.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
+  /flights/{icao24}/track:
+    get:
+      tags: [flights]
+      summary: Трек борта из накопленной истории
+      description: >-
+        Точки строятся по `positions_history` и приходят **уже
+        в хронологическом порядке** — сортировать на клиенте не нужно.
+
+
+        Плотность точек — одна на опрос пайплайна, то есть примерно раз
+        в 15 секунд (около 240 точек за час). В паузах пайплайна в треке будут
+        разрывы, поэтому соединять прямой линией далеко разнесённые по времени
+        точки не стоит.
+      parameters:
+        - $ref: "#/components/parameters/Icao24"
+        - name: sinceSeconds
+          in: query
+          required: false
+          description: >-
+            Глубина окна назад от текущего момента, в секундах. Значение вне
+            диапазона 1…86400 — это 400, а не молча усечённое окно: раньше
+            отрицательное `sinceSeconds` снимало отсечку по времени и запрос
+            выгребал историю борта целиком.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 86400
+            default: 3600
+      responses:
+        "200":
+          description: >-
+            Массив точек трека. Пустой массив означает, что за окно точек
+            не накопилось: в отличие от карточки борта, отсутствие истории
+            у существующего борта — это не 404.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackPoint"
+        "400":
+          description: >-
+            `icao24` не прошёл проверку формата либо `sinceSeconds` вне
+            диапазона 1…86400. Поле `message` заполнено по-русски.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
 
   /airports:
     get:
       tags: [airports]
-      summary: Список аэропортов с индексом загруженности
+      summary: Список аэропортов из справочника OurAirports
       description: >-
-        Индекс загруженности: во сколько раз текущий/сегодняшний трафик
-        аэропорта отличается от его собственной исторической нормы.
-        `search`/`country`/`sortBy`/`page`/`pageSize` — для табличного
-        режима; `lonMin`/`latMin`/`lonMax`/`latMax`/`zoom`/`limit` — для
-        отрисовки аэропортов на карте мира.
+        Справочник `ref_airports` (OurAirports) с фильтрацией, сортировкой
+        и пагинацией — FR12. Загруженности, числа рейсов и индекса трафика
+        здесь **нет**: считать их не из чего, в пайплайне нет ни одной таблицы
+        рейсов.
+
+
+        **Отдаются не все строки справочника.** В OurAirports 86 тысяч записей,
+        из которых 23 тысячи вертодромов, 13 тысяч закрытых площадок, полторы
+        тысячи гидроаэродромов и воздухоплавательных площадок. Наружу уходят
+        только `large_airport`, `medium_airport` и `small_airport` — около
+        48 тысяч. Отключить этот фильтр параметром нельзя: вертодром на карте
+        рейсов не принимает, а список аэропортов он засоряет. Из-за него же
+        `total` меньше `row_count` таблицы.
+
+
+        **Первый запрос после старта сервиса занимает десятки секунд.**
+        `ref_airports` — статическая таблица, `select_rows` по ней не работает
+        («Table ... is not dynamic»), поэтому она читается целиком через
+        `read_table`: ~20 МБ и порядка 40 секунд. Снапшот кладётся в память
+        и живёт `YT_REF_AIRPORTS_CACHE_TTL_SECONDS` (сутки по умолчанию), так
+        что последующие ответы — миллисекунды. Обратная сторона: перезалив
+        справочника сервис заметит только после истечения TTL или рестарта.
       parameters:
         - name: search
           in: query
           required: false
-          description: Поиск по названию/городу/коду
+          description: >-
+            Подстрока без учёта регистра. Ищется по тем же полям, которые видны
+            в ответе: `name`, `city`, `icao`, `iata`. Совпадение — именно
+            подстрока, а не префикс: `sheremet` найдёт «Sheremetyevo
+            International Airport».
+
+
+            Подстановочных символов нет. Значение сравнивается в памяти
+            и в запрос к YTsaurus не попадает, поэтому кавычка и процент —
+            обычные символы: они просто ничему не соответствуют и дают пустой
+            список, а не ошибку. Длиннее 100 символов значение обрезается.
+
+
+            Поиск по коду аэропорта работает не для всех строк: `icao` — это
+            `icao_code`, а если он пуст (88% записей OurAirports), то `ident`.
+            У 785 записей заполнены оба и они различаются — такую строку
+            найдёт `icao_code`, но не `ident`.
           schema:
             type: string
+            example: "Sheremetyevo"
         - name: country
           in: query
           required: false
-          description: Фильтр по iso_country
+          description: >-
+            Точное совпадение с `iso_country` — двухбуквенный код ISO 3166-1
+            alpha-2, регистр не важен. Не подстрока: `RU` не найдёт `RUS`.
+            Неизвестный код — пустой список и `total: 0`, а не 400.
           schema:
             type: string
+            example: "RU"
         - name: sortBy
           in: query
           required: false
+          description: >-
+            Единственное поддержанное значение — `name` (по названию, без учёта
+            регистра, ничьи разрешаются по `icao`). Значения `trafficIndex`
+            и `totalFlights` из `docs/openapi.yaml` не реализованы: этих метрик
+            в ответе нет.
+
+
+            Без параметра порядок — как в таблице, то есть по `ident`
+            по возрастанию; он детерминирован, поэтому пагинация без сортировки
+            тоже не перемешивает страницы. Незнакомое значение молча
+            игнорируется и даёт тот же табличный порядок.
           schema:
             type: string
-            enum: [trafficIndex, name, totalFlights]
+            enum: [name]
         - name: page
           in: query
           required: false
+          description: >-
+            Номер страницы, начиная с 1. Значения меньше 1 подтягиваются к 1,
+            а не отвергаются. Страница за концом выборки — пустой `items`
+            при неизменном `total` и с тем самым `page`, который запросили.
           schema:
             type: integer
-            minimum: 1
+            default: 1
+            example: 1
         - name: pageSize
           in: query
           required: false
+          description: >-
+            Размер страницы. Значение зажимается в диапазон 1…500, то есть
+            `pageSize=100000` вернёт 500 записей и `pageSize: 500` в ответе —
+            запросить весь справочник одним ответом нельзя.
           schema:
             type: integer
-            minimum: 1
+            default: 50
+            maximum: 500
+            example: 50
         - $ref: "#/components/parameters/LonMin"
         - $ref: "#/components/parameters/LatMin"
         - $ref: "#/components/parameters/LonMax"
         - $ref: "#/components/parameters/LatMax"
-        - name: zoom
-          in: query
-          required: false
-          description: >-
-            Текущий уровень зума карты (0–20); используется бэкендом для
-            адаптивной плотности/агрегации отдаваемых аэропортов при мелком
-            zoom
-          schema:
-            type: integer
-            minimum: 0
-            maximum: 20
         - name: limit
           in: query
           required: false
           description: >-
-            Максимум аэропортов в ответе для map-режима (независимо от
-            page/pageSize, которые применяются в табличном режиме)
+            Картовый режим: сколько аэропортов вернуть одним ответом.
+            Заданный `limit` **отменяет** табличную пагинацию — `page`
+            и `pageSize` в запросе игнорируются, а в ответе приходят
+            `page: 1` и `pageSize`, равный фактическому лимиту.
+            `total` при этом остаётся полным размером выборки после
+            фильтров, так что по нему видно, сколько объектов не поместилось.
+            Значение зажимается в диапазон 1…10000.
           schema:
             type: integer
-            minimum: 1
+            maximum: 10000
+            example: 500
       responses:
         "200":
-          description: OK
+          description: >-
+            Страница справочника. Пустой `items` — валидный ответ: так выглядят
+            и слишком узкий фильтр, и страница за концом выборки.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AirportsListResponse"
+        "400":
+          description: >-
+            Параметр не разобрался как число (`page=abc`, `latMin=север`)
+            либо координата задана вне карты (`lonMin=NaN`, `latMax=200`).
+            Осмысленные, но абсурдные значения (`page=0`, `pageSize=100000`,
+            перевёрнутый bbox) под этот случай **не** подпадают — они
+            обрабатываются молча. У координат `message` русский, у ошибок
+            разбора — техническое пояснение от Spring, по-английски.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: >-
+            YTsaurus недоступен, вернул ошибку или таблицы `ref_airports` нет
+            по настроенному пути — и при этом справочник ещё ни разу
+            не читался. Если снапшот уже есть в памяти, ручка продолжает
+            отвечать им, даже когда TTL истёк, а YTsaurus недоступен.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
-  /airports/{icao}/flights:
+  /pipeline-status:
     get:
-      tags: [airports]
-      summary: Лог рейсов аэропорта за период (вылеты + прилёты)
+      tags: [pipeline]
+      summary: Состояние поставщика позиций
       description: >-
-        Уже наблюдённых OpenSky рейсов, не борд предстоящих.
-      parameters:
-        - name: icao
-          in: path
-          required: true
-          description: ICAO-код аэропорта
-          schema:
-            type: string
-        - name: direction
-          in: query
-          required: false
-          description: Фильтр направления
-          schema:
-            type: string
-            enum: [arrival, departure, all]
-            default: all
-        - name: from
-          in: query
-          required: false
-          description: Окно наблюдения, unix ts (проброс в /flights/departure)
-          schema:
-            type: integer
-            format: int64
-        - name: to
-          in: query
-          required: false
-          description: Окно наблюдения, unix ts (проброс в /flights/arrival)
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AirportFlightsResponse"
+        Отвечает на вопрос «почему на карте пусто». Без этого эндпоинта
+        отличить остановленный пайплайн от честно пустого участка карты
+        невозможно — оба случая выглядят как `200 []`.
 
-  /stats/dashboard:
-    get:
-      tags: [stats]
-      summary: Дашборд статистики
-      parameters:
-        - name: from
-          in: query
-          required: false
-          description: unix ts, окно агрегации, по умолчанию последние 24ч доступного батча
-          schema:
-            type: integer
-            format: int64
-        - name: to
-          in: query
-          required: false
-          description: unix ts, окно агрегации, по умолчанию последние 24ч доступного батча
-          schema:
-            type: integer
-            format: int64
+
+        Отвечает «едут ли данные вообще», но не «почему встали»: источник —
+        таблица watermark'ов `pipeline_job_state`, причин остановки в ней нет.
+
+
+        Достаточно поллить раз в 30 секунд, отдельно от позиций.
       responses:
         "200":
-          description: OK
+          description: >-
+            Текущее состояние. Отвечает всегда, даже если пайплайн ни разу
+            не запускался — тогда `status: unknown` и `stale: true`.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DashboardResponse"
+                $ref: "#/components/schemas/PipelineStatus"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
 
 components:
+  responses:
+    SourceUnavailable:
+      description: >-
+        Источник данных не ответил или ответил негодным: YTsaurus недоступен,
+        вернул ошибку либо прислал тело, которое не разбирается как ответ.
+        Сервис при этом исправен, поэтому повторить запрос осмысленно.
+
+
+        Поле `message` заполнено по-русски и пригодно для показа
+        пользователю; подробности источника (trace_id, текст запроса) остаются
+        в логе сервиса и наружу не выходят.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    InternalError:
+      description: >-
+        Сбой самого сервиса. Сюда же попадает запрос, который **отклонил**
+        YTsaurus, — неверный путь таблицы, протухший токен, негодный QL:
+        это дефект сервиса или его конфигурации, и, в отличие от 503,
+        повтор не поможет.
+
+
+        В `message` всегда «Внутренняя ошибка сервиса»: показывать клиенту
+        внутренности нечего, диагностика — в логе.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
   parameters:
+    Icao24:
+      name: icao24
+      in: path
+      required: true
+      description: >-
+        ICAO24-адрес борта: ровно 6 hex-символов. Регистр не важен, сервер
+        приводит значение к нижнему. Всё, что не подходит под формат, —
+        это 400 на любой ручке, а не «борт не найден».
+      schema:
+        type: string
+        pattern: "^[0-9a-fA-F]{6}$"
+        example: "01023b"
     LonMin:
       name: lonMin
       in: query
       required: false
       description: >-
         Западная граница видимой области карты.
-        Параметры lonMin/latMin/lonMax/latMax задаются только все вместе;
-        если задан не весь набор — фильтр по области игнорируется.
+
+
+        Параметры `lonMin`/`latMin`/`lonMax`/`latMax` задаются **только все
+        четыре вместе**. Если задан не весь набор, фильтр молча игнорируется
+        и вернётся весь мир — ошибки при этом не будет, но ответ окажется
+        на порядок тяжелее ожидаемого.
+
+
+        Значение вне карты (`NaN`, `Infinity`, широта больше 90°) — это 400.
+        А вот перевёрнутая рамка (`lonMin > lonMax` или `latMin > latMax`)
+        вернёт пустую выдачу, а не ошибку. Переход через антимеридиан (±180°)
+        не поддержан — такой bbox тоже даст пусто.
+
+
+        Один и тот же набор имён используют все ручки с картой; порядок
+        «долгота, потом широта» взят из продуктового контракта
+        `docs/openapi.yaml`, из которого фронтенд генерит типы.
       schema:
         type: number
         format: double
@@ -279,564 +470,330 @@ components:
         example: 52.0
 
   schemas:
-    Error:
+    Flight:
       type: object
-      properties:
-        message:
-          type: string
-      required: [message]
-
-    AirportRef:
-      type: object
-      description: "[OurAirports]"
-      properties:
-        icao:
-          type: string
-          description: "[OurAirports] airports.icao_code / ident"
-        iata:
-          type: string
-          nullable: true
-          description: "[OurAirports] airports.iata_code"
-        name:
-          type: string
-          description: "[OurAirports] airports.name"
-      required: [icao, iata, name]
-
-    EstimatedAirportRef:
-      allOf:
-        - $ref: "#/components/schemas/AirportRef"
-        - type: object
-          properties:
-            asOf:
-              type: integer
-              format: int64
-              description: unix ts батча /flights/*, из которого взята оценка
-            candidatesCount:
-              type: integer
-              description: >-
-                [OpenSky] departureAirportCandidatesCount /
-                arrivalAirportCandidatesCount — чем больше, тем менее
-                уверенная оценка
-          required: [asOf, candidatesCount]
-
-    LatLon:
-      type: object
-      properties:
-        lat:
-          type: number
-          format: double
-          description: градусы WGS-84
-        lon:
-          type: number
-          format: double
-      required: [lat, lon]
-
-    FlightPhase:
-      type: string
-      enum: [on_ground, climbing, descending, cruising]
       description: >-
-        on_ground: [OpenSky] on_ground = true;
-        climbing: [OpenSky] on_ground = false, vertical_rate > 0;
-        descending: [OpenSky] on_ground = false, vertical_rate < 0;
-        cruising: [OpenSky] on_ground = false, vertical_rate ≈ 0
+        Позиция борта из `positions_current`, обогащённая справочником ВС
+        по `icao24`.
 
-    AircraftPosition:
-      type: object
+
+        Все поля всегда присутствуют в JSON; необязательность выражена через
+        `nullable`, а не через отсутствие ключа.
+
+
+        Строка, в которой нет `icao24`, `timePosition`, `lat` или `lon`,
+        в выдачу не попадает вовсе: подставить туда ноль значило бы показать
+        борт в Гвинейском заливе. Поэтому бортов в ответе может оказаться
+        меньше, чем строк записал пайплайн, — расхождение видно в логе
+        сервиса. На `GET /flights/{icao24}` такая строка даёт 503, а не 404:
+        борт существует, негодны данные о нём.
       properties:
         icao24:
           type: string
-          description: "[OpenSky] states[i][0]"
+          description: ICAO24-адрес, 6 hex-символов в нижнем регистре. Ключ борта
+          example: "01023b"
+        callsign:
+          type: string
+          nullable: true
+          description: Позывной, уже обрезанный от пробелов
+          example: "MSC2932"
+        originCountry:
+          type: string
+          nullable: true
+          description: Страна регистрации борта
+          example: "Egypt"
+        timePosition:
+          type: integer
+          format: int64
+          description: Момент фиксации позиции, unix seconds
+          example: 1786841273
         lat:
           type: number
           format: double
-          description: "[OpenSky] states[i][6]"
+          description: Широта WGS-84, градусы
+          example: 45.41
         lon:
           type: number
           format: double
-          description: "[OpenSky] states[i][5]"
-        altitudeM:
+          description: Долгота WGS-84, градусы
+          example: 20.0
+        baroAltitude:
           type: number
+          format: double
           nullable: true
-          description: "[OpenSky] states[i][7] baro_altitude"
-        headingDeg:
-          type: number
-          nullable: true
-          description: "[OpenSky] states[i][10] true_track"
-        speedKmh:
-          type: number
-          nullable: true
-          description: "[OpenSky] states[i][9] velocity, м/с * 3.6"
-        verticalRateMs:
-          type: number
-          nullable: true
-          description: "[OpenSky] states[i][11]"
+          description: Барометрическая высота в **метрах**
+          example: 10957.5
         onGround:
           type: boolean
-          description: "[OpenSky] states[i][8]"
-        timestamp:
-          type: integer
-          format: int64
-          description: "unix ts, [OpenSky] states[i][4] last_contact"
+          description: Борт находится на земле
+        velocity:
+          type: number
+          format: double
+          nullable: true
+          description: Путевая скорость в **м/с**
+          example: 229.9
+        trueTrack:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Курс в градусах от севера по часовой стрелке. Задаёт поворот
+            иконки борта на карте
+          example: 324.75
+        manufacturername:
+          type: string
+          nullable: true
+          description: >-
+            Производитель из справочника ВС. Имя поля в одно слово и в нижнем
+            регистре — так колонка называется в схеме YT
+          example: "Airbus Industrie"
+        model:
+          type: string
+          nullable: true
+          description: Модель ВС из справочника
+          example: "A320-251N"
+        operator:
+          type: string
+          nullable: true
+          description: >-
+            Авиакомпания-эксплуатант. Борт, которого нет в справочнике ВС,
+            всё равно возвращается (FR4) — тогда `manufacturername`, `model`
+            и `operator` равны `null`
+          example: "Air Cairo"
       required:
         - icao24
+        - callsign
+        - originCountry
+        - timePosition
         - lat
         - lon
-        - altitudeM
-        - headingDeg
-        - speedKmh
-        - verticalRateMs
+        - baroAltitude
         - onGround
-        - timestamp
+        - velocity
+        - trueTrack
+        - manufacturername
+        - model
+        - operator
 
-    LiveFlightsResponse:
+    TrackPoint:
       type: object
+      description: Одна точка трека борта из `positions_history`
       properties:
-        generatedAt:
+        timePosition:
           type: integer
           format: int64
-          description: 'unix ts, [OpenSky] верхнеуровневое поле "time"'
-        flights:
-          type: array
-          items:
-            type: object
-            properties:
-              type:
-                type: string
-                enum: [solo, multie]
-                description: "Обозначение один самолет (solo) или кластер самолетов (multie)"
-              count:
-                type: integer
-                description: "Количество самолетов в кластере иначе 1"
-              icao24:
-                type: string
-                description: "[OpenSky]"
-              callsign:
-                type: string
-                nullable: true
-                description: "[OpenSky] states[i][1], trim"
-              airlineName:
-                type: string
-                nullable: true
-                description: "[OpenSky Aircraft DB] operator по icao24, если найден, иначе null"
-              position:
-                $ref: "#/components/schemas/AircraftPosition"
-              phase:
-                $ref: "#/components/schemas/FlightPhase"
-              origin:
-                allOf:
-                  - $ref: "#/components/schemas/EstimatedAirportRef"
-                nullable: true
-                description: "[OpenSky] estDepartureAirport из последнего доступного батча /flights/*"
-              destination:
-                allOf:
-                  - $ref: "#/components/schemas/EstimatedAirportRef"
-                nullable: true
-                description: "[OpenSky] estArrivalAirport, там же"
-              squawk:
-                type: integer
-                nullable: true
-                description: "[OpenSky] squawk, если есть"
-            required:
-              - type
-              - count
-              - icao24
-              - callsign
-              - airlineName
-              - position
-              - phase
-              - origin
-              - destination
-      required: [generatedAt, flights]
-
-    FlightTrackResponse:
-      type: object
-      properties:
-        icao24:
-          type: string
-          description: "[OpenSky]"
-        startTime:
-          type: integer
-          format: int64
-          description: "[OpenSky] tracks.startTime"
-        endTime:
-          type: integer
-          format: int64
-          description: "[OpenSky] tracks.endTime"
-        path:
-          type: array
-          items:
-            type: object
-            properties:
-              timestamp:
-                type: integer
-                format: int64
-                description: "[OpenSky] path[i][0]"
-              lat:
-                type: number
-                format: double
-                description: "[OpenSky] path[i][1]"
-              lon:
-                type: number
-                format: double
-                description: "[OpenSky] path[i][2]"
-              altitudeM:
-                type: number
-                nullable: true
-                description: "[OpenSky] path[i][3]"
-              headingDeg:
-                type: number
-                nullable: true
-                description: "[OpenSky] path[i][4]"
-              onGround:
-                type: boolean
-                description: "[OpenSky] path[i][5]"
-            required: [timestamp, lat, lon, altitudeM, headingDeg, onGround]
-      required: [icao24, startTime, endTime, path]
+          description: Момент фиксации позиции, unix seconds
+        lat:
+          type: number
+          format: double
+          description: Широта WGS-84
+        lon:
+          type: number
+          format: double
+          description: Долгота WGS-84
+        baroAltitude:
+          type: number
+          format: double
+          nullable: true
+          description: Барометрическая высота в метрах, позволяет красить трек по высоте
+      required: [timePosition, lat, lon, baroAltitude]
 
     AirportsListResponse:
       type: object
+      description: >-
+        Страница справочника аэропортов. Конверт, в отличие от `/flights/live`,
+        нужен: без `total` клиент не может нарисовать пагинацию.
       properties:
         asOf:
           type: integer
           format: int64
-          description: unix ts последнего батча, на котором посчитаны метрики
+          nullable: true
+          description: >-
+            Момент последней записи таблицы `ref_airports` (unix seconds) —
+            `modification_time` узла в Кипарисе, а не время ответа сервиса.
+            Справочник статический и сам по себе не пересчитывается, так что
+            это единственная осмысленная отметка свежести: она показывает,
+            когда пайплайн залил справочник, и не меняется от запроса
+            к запросу. `null` — атрибут не прочитался или не разобрался;
+            нулём это отдавать нельзя, клиент нарисовал бы 1970 год.
+          example: 1786793001
         items:
           type: array
+          description: Аэропорты текущей страницы
           items:
-            type: object
-            properties:
-              icao:
-                type: string
-                description: "[OurAirports] ident"
-              iata:
-                type: string
-                nullable: true
-                description: "[OurAirports]"
-              name:
-                type: string
-                description: "[OurAirports]"
-              city:
-                type: string
-                nullable: true
-                description: "[OurAirports] municipality"
-              country:
-                type: string
-                description: "[OurAirports] iso_country"
-              position:
-                $ref: "#/components/schemas/LatLon"
-              # totalFlights24h:
-              #   type: integer
-              #   description: >-
-              #     [OpenSky] count(/flights/departure + /flights/arrival) за
-              #     последние 24ч доступного батча
-              # trafficIndex:
-              #   type: number
-              #   format: double
-              #   description: >-
-              #     [Derived] totalFlights24h / историческая медиана для этого
-              #     аэропорта на тот же час/день недели; 1.0 = норма, >1 =
-              #     загруженнее обычного
-            required:
-              - icao
-              - iata
-              - name
-              - city
-              - country
-              - position
-              - totalFlights24h
-              - trafficIndex
+            $ref: "#/components/schemas/Airport"
         page:
           type: integer
+          description: >-
+            Номер отданной страницы. Совпадает с запрошенным (после
+            подтягивания значений < 1 к единице); в картовом режиме
+            с `limit` всегда 1
+          example: 1
         pageSize:
           type: integer
+          description: >-
+            Фактический размер страницы после зажатия в допустимый диапазон.
+            В картовом режиме равен фактическому `limit`
+          example: 50
         total:
           type: integer
+          description: >-
+            Сколько аэропортов подошло под фильтры — до пагинации и до `limit`,
+            но уже **после** отсева нeаэропортовых типов
+          example: 943
       required: [asOf, items, page, pageSize, total]
 
-    AirportFlightsResponse:
+    Airport:
       type: object
-      properties:
-        airport:
-          $ref: "#/components/schemas/AirportRef"
-        items:
-          type: array
-          items:
-            type: object
-            properties:
-              icao24:
-                type: string
-                description: "[OpenSky]"
-              callsign:
-                type: string
-                nullable: true
-                description: "[OpenSky]"
-              airlineName:
-                type: string
-                nullable: true
-                description: "[OpenSky Aircraft DB] operator, если найден"
-              direction:
-                type: string
-                enum: [arrival, departure]
-              otherAirport:
-                allOf:
-                  - $ref: "#/components/schemas/EstimatedAirportRef"
-                nullable: true
-                description: "[OpenSky] противоположный конец маршрута, оценка"
-              observedAt:
-                type: integer
-                format: int64
-                description: "[OpenSky] firstSeen (для departure) / lastSeen (для arrival)"
-            required:
-              - icao24
-              - callsign
-              - airlineName
-              - direction
-              - otherAirport
-              - observedAt
-      required: [airport, items]
+      description: >-
+        Запись справочника OurAirports. Полей `totalFlights24h`
+        и `trafficIndex` из `docs/openapi.yaml` здесь нет: рейсов
+        по аэропортам пайплайн не считает.
 
-    FlightDetailsResponse:
-      type: object
+
+        Запись без кода, названия или координат в справочник не попадает —
+        отрисовать и показать её всё равно нечем, а нули вместо координат
+        увели бы аэропорт в Атлантику.
       properties:
-        icao24:
+        icao:
           type: string
-          description: "[OpenSky]"
-        callsign:
-          type: string
-          nullable: true
-          description: "[OpenSky]"
-        registration:
-          type: string
-          nullable: true
-          description: "[OpenSky Aircraft DB] registration"
-        manufacturer:
+          description: >-
+            `icao_code` из OurAirports, а если он пуст — `ident`. Пустым
+            не бывает, но и настоящим ICAO-кодом является не всегда: у 88%
+            записей справочника `icao_code` не заполнен, и тогда сюда попадает
+            локальный идентификатор вида `00AA` или `RU-0796`
+          example: "UUEE"
+        iata:
           type: string
           nullable: true
-          description: "[OpenSky Aircraft DB] manufacturername"
-        model:
+          description: IATA-код. `null` у 89% записей справочника — это норма, а не сбой
+          example: "SVO"
+        name:
+          type: string
+          description: Название аэропорта, как в OurAirports
+          example: "Sheremetyevo International Airport"
+        city:
           type: string
           nullable: true
-          description: "[OpenSky Aircraft DB] model"
-        airlineName:
+          description: >-
+            `municipality` из OurAirports. `null` примерно у 5% записей —
+            населённый пункт в источнике не указан
+          example: "Moscow"
+        country:
           type: string
           nullable: true
-          description: "[OpenSky Aircraft DB] operator"
-        origin:
-          allOf:
-            - $ref: "#/components/schemas/EstimatedAirportRef"
-          nullable: true
-          description: "[OpenSky] estDepartureAirport, последний доступный батч"
-        destination:
-          allOf:
-            - $ref: "#/components/schemas/EstimatedAirportRef"
-          nullable: true
-          description: "[OpenSky] estArrivalAirport, там же"
+          description: >-
+            `iso_country`, код ISO 3166-1 alpha-2. По схеме таблицы поле
+            необязательное, поэтому объявлено nullable, хотя в текущей
+            выгрузке заполнено у всех строк
+          example: "RU"
         position:
-          $ref: "#/components/schemas/AircraftPosition"
-        phase:
-          $ref: "#/components/schemas/FlightPhase"
-        etaMinutes:
+          $ref: "#/components/schemas/LatLon"
+      required: [icao, iata, name, city, country, position]
+
+    LatLon:
+      type: object
+      description: Точка WGS-84
+      properties:
+        lat:
           type: number
+          format: double
+          example: 55.976858
+        lon:
+          type: number
+          format: double
+          example: 37.41121
+      required: [lat, lon]
+
+    PipelineStatus:
+      type: object
+      description: >-
+        Состояние пайплайна, собранное из таблицы `pipeline_job_state` —
+        watermark'ов джобов вида `(job_name, watermark_ts, updated_at)`.
+        Берётся джоб, отчитавшийся последним.
+
+
+        Источник знает только, докуда доехали данные, поэтому единственный
+        содержательный сигнал здесь — `stale`. Причину остановки он не
+        различает: паузу по лимиту кредитов OpenSky, недоступность источника
+        и упавший джоб внешне не отличить, `resumesAt` всегда `null`.
+        Двухступенчатый UX («обновление приостановлено до HH:MM», затем
+        «данные устарели») на этих данных не построить — для него нужен
+        отдельный хартбит `ingest_service`.
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - unknown
+          description: >-
+            Отчитывался ли пайплайн вообще:
+
+
+            * `ok` — в таблице есть строка джоба. Означает только это:
+            «джоб зарегистрировал своё состояние». Работает ли он **сейчас**,
+            показывает `stale`, а не этот код.
+
+
+            * `unknown` — в `pipeline_job_state` нет ни одной строки: джобы
+            ни разу не отчитывались либо таблицу пересоздали. Всегда приходит
+            вместе со `stale: true`.
+        lastSuccessAt:
+          type: integer
+          format: int64
           nullable: true
           description: >-
-            [Derived] great-circle(position, destination) / speedKmh; null,
-            если destination неизвестен или борт on_ground
-        startTime:
+            Watermark последнего отчитавшегося джоба, unix seconds — граница,
+            до которой данные обработаны. Считаем свежесть именно по нему,
+            а не по времени записи: если джоб крутится, а источник умер,
+            время записи растёт при стоящих данных. `null` — джоб
+            зарегистрировался, но ещё ничего не обработал
+        resumesAt:
           type: integer
           format: int64
-          description: "[OpenSky] tracks.startTime"
-        endTime:
-          type: integer
-          format: int64
-          description: "[OpenSky] tracks.endTime"
-        path:
-          type: array
-          items:
-            type: object
-            properties:
-              timestamp:
-                type: integer
-                format: int64
-                description: "[OpenSky] path[i][0]"
-              lat:
-                type: number
-                format: double
-                description: "[OpenSky] path[i][1]"
-              lon:
-                type: number
-                format: double
-                description: "[OpenSky] path[i][2]"
-              altitudeM:
-                type: number
-                nullable: true
-                description: "[OpenSky] path[i][3]"
-              headingDeg:
-                type: number
-                nullable: true
-                description: "[OpenSky] path[i][4]"
-              onGround:
-                type: boolean
-                description: "[OpenSky] path[i][5]"
-            required: [timestamp, lat, lon, altitudeM, headingDeg, onGround]
-      required:
-        - icao24
-        - callsign
-        - registration
-        - manufacturer
-        - model
-        - airlineName
-        - origin
-        - destination
-        - position
-        - phase
-        - etaMinutes
-        - startTime
-        - endTime
-        - path
-
-    TrafficHeatmapResponse:
-      type: object
-      properties:
-        from:
-          type: integer
-          format: int64
-        to:
-          type: integer
-          format: int64
-        resolution:
-          type: string
-          enum: [country, airport, cell]
-        cells:
-          type: array
-          items:
-            type: object
-            properties:
-              center:
-                allOf:
-                  - $ref: "#/components/schemas/LatLon"
-                description: >-
-                  [OpenSky] центр геоячейки по позициям states
-                  (resolution="cell"), либо [OurAirports] координаты
-                  аэропорта (resolution="airport"/"country")
-              label:
-                type: string
-                nullable: true
-                description: >-
-                  [OurAirports] название аэропорта/страны, null при
-                  resolution="cell"
-              flightCount:
-                type: integer
-                description: >-
-                  [OpenSky]/[Derived] количество бортов в ячейке (states)
-                  либо рейсов аэропорта (/flights/*) за окно
-            required: [center, label, flightCount]
-      required: [from, to, resolution, cells]
-
-    DashboardResponse:
-      type: object
-      properties:
-        from:
-          type: integer
-          format: int64
-        to:
-          type: integer
-          format: int64
-        totals:
-          type: object
-          properties:
-            activeFlights:
-              type: integer
-              description: "[OpenSky] count(states) с on_ground=false"
-            trackedAirports:
-              type: integer
-              description: "[OurAirports] count(airports)"
-            averageAltitudeM:
-              type: number
-              description: "[Derived] среднее по states.baro_altitude"
-            averageSpeedKmh:
-              type: number
-              description: "[Derived] среднее по states.velocity"
-          required:
-            - activeFlights
-            - trackedAirports
-            - averageAltitudeM
-            - averageSpeedKmh
-        flightsByPhase:
-          type: object
-          description: "[Derived] распределение states по phase"
-          properties:
-            on_ground:
-              type: integer
-            climbing:
-              type: integer
-            descending:
-              type: integer
-            cruising:
-              type: integer
-          required: [on_ground, climbing, descending, cruising]
-        topBusiestAirports:
-          type: array
-          items:
-            type: object
-            properties:
-              airport:
-                $ref: "#/components/schemas/AirportRef"
-              totalFlights:
-                type: integer
-                description: "[OpenSky] count(/flights/departure + /flights/arrival)"
-            required: [airport, totalFlights]
-        trafficTrend:
-          type: array
+          nullable: true
           description: >-
-            [Derived] тайм-серия по снапшотам, которые бэкенд обязан сам
-            сохранять
-          items:
-            type: object
-            properties:
-              timestamp:
-                type: integer
-                format: int64
-              activeFlights:
-                type: integer
-            required: [timestamp, activeFlights]
-        emergencyCount:
+            Момент, когда опрос возобновится, unix seconds. С текущим
+            источником **всегда `null`**: `pipeline_job_state` про паузы
+            ничего не знает
+        stale:
+          type: boolean
+          description: >-
+            Данные считаются устаревшими: watermark не продвигался дольше
+            `PIPELINE_STALE_AFTER_SECONDS` (по умолчанию 120 с).
+            При `lastSuccessAt: null` всегда `true`
+      required: [status, lastSuccessAt, resumesAt, stale]
+
+    ApiError:
+      type: object
+      description: >-
+        Единое тело ошибки сервиса: его формирует `ApiExceptionHandler` для
+        всех кодов, включая 5xx. На всех ручках `/api/**` поле `message`
+        есть всегда. Исключение одно: `406`, когда клиент просит формат,
+        которого у сервиса нет, — тело в этом случае пустое, потому что
+        сериализовать его не во что.
+
+
+        У доменных ошибок (404) и у отказа YTsaurus (503) `message` написан
+        по-русски и годится для показа пользователю. У ошибок самого Spring MVC
+        (400 на неразобранный параметр, 405) там техническое пояснение
+        по-английски — его лучше заменить своим текстом на клиенте.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Момент формирования ответа, ISO-8601
+          example: "2026-08-18T09:14:22.481Z"
+        status:
           type: integer
-          description: "количество случаев с squawk=7700 или squawk=7500"
-        # busiestRoutes:
-        #   type: array
-        #   items:
-        #     type: object
-        #     properties:
-        #       origin:
-        #         allOf:
-        #           - $ref: "#/components/schemas/AirportRef"
-        #         description: "[OpenSky] estDepartureAirport"
-        #       destination:
-        #         allOf:
-        #           - $ref: "#/components/schemas/AirportRef"
-        #         description: "[OpenSky] estArrivalAirport"
-        #       flightCount:
-        #         type: integer
-        #         description: >-
-        #           [Derived] подсчёт совпадений пар по /flights/all за период
-        #     required: [origin, destination, flightCount]
-        # aircraftByManufacturer:
-        #   type: array
-        #   items:
-        #     type: object
-        #     properties:
-        #       manufacturer:
-        #         type: string
-        #         description: "[OpenSky Aircraft DB] manufacturername"
-        #       count:
-        #         type: integer
-        #     required: [manufacturer, count]
-      required:
-        - from
-        - to
-        - totals
-        - flightsByPhase
-        - topBusiestAirports
-        - trafficTrend
-        - busiestRoutes
-        - aircraftByManufacturer
+          description: HTTP-код, дублирует статус ответа
+          example: 404
+        error:
+          type: string
+          description: Стандартное название HTTP-статуса
+          example: "Not Found"
+        message:
+          type: string
+          description: Причина ошибки; пустым не бывает
+          example: "Позиция для борта icao24=abc123 не найдена"
+      required: [timestamp, status, error, message]

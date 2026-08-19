@@ -23,13 +23,13 @@ import { AirportsLayer } from './AirportsLayer';
 import { FlightsLayer } from './FlightsLayer';
 import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
-import type { LiveFlight } from '@/entities/flight';
+import type { Flight } from '@/entities/flight';
 
 interface FlightMapProps {
     // Читается только при инициализации
     initialBounds: LngLatBounds;
     airports: Airport[];
-    flights: LiveFlight[];
+    flights: Flight[];
     theme?: 'light' | 'dark';
     onBoundsChange?: (params: MapBoundsParams) => void;
 }

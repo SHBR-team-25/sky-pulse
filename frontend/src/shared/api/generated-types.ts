@@ -12,13 +12,25 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Список бортов для отрисовки маркеров на карте
-         * @description Для получения обновлений "в реальном времени" клиент должен периодически повторять (поллинг) этот же запрос раз в N секунд; интервал ограничен квотой OpenSky (400–14400 кредитов/день).
+         * Борта для отрисовки маркеров на карте
+         * @description Основной запрос карты. Возвращает **плоский массив** позиций, без конверта и без метаданных о свежести — за свежестью идти в `GET /pipeline-status`.
+         *
+         *     Возвращаются **все** борта, попавшие в область, — искусственного потолка на размер ответа нет. Без bbox на мировом зуме это порядка 10–15 тысяч объектов, и прореживать их, если нужно, клиент решает сам.
+         *
+         *     Единственная отсечка — по свежести: борт, о котором не было позиции дольше `YT_MAX_POSITION_AGE_SECONDS` (по умолчанию 300 с), из выдачи пропадает. Она обязательна, потому что `positions_current` хранит последнюю позицию каждого `icao24` вечно, и без неё на карте навсегда зависают борта, севшие часы назад.
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description Западная граница видимой области карты. Параметры lonMin/latMin/lonMax/latMax задаются только все вместе; если задан не весь набор — фильтр по области игнорируется. */
+                    /**
+                     * @description Западная граница видимой области карты.
+                     *
+                     *     Параметры `lonMin`/`latMin`/`lonMax`/`latMax` задаются **только все четыре вместе**. Если задан не весь набор, фильтр молча игнорируется и вернётся весь мир — ошибки при этом не будет, но ответ окажется на порядок тяжелее ожидаемого.
+                     *
+                     *     Значение вне карты (`NaN`, `Infinity`, широта больше 90°) — это 400. А вот перевёрнутая рамка (`lonMin > lonMax` или `latMin > latMax`) вернёт пустую выдачу, а не ошибку. Переход через антимеридиан (±180°) не поддержан — такой bbox тоже даст пусто.
+                     *
+                     *     Один и тот же набор имён используют все ручки с картой; порядок «долгота, потом широта» взят из продуктового контракта `docs/openapi.yaml`, из которого фронтенд генерит типы.
+                     */
                     lonMin?: components['parameters']['LonMin'];
                     /** @description Южная граница видимой области карты */
                     latMin?: components['parameters']['LatMin'];
@@ -26,10 +38,6 @@ export interface paths {
                     lonMax?: components['parameters']['LonMax'];
                     /** @description Северная граница видимой области карты */
                     latMax?: components['parameters']['LatMax'];
-                    /** @description Текущий уровень зума карты */
-                    zoom?: number;
-                    /** @description Максимум бортов в ответе */
-                    limit?: number;
                 };
                 header?: never;
                 path?: never;
@@ -37,15 +45,26 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
+                /** @description Массив позиций. Пустой массив — валидный ответ и **не** признак ошибки: так же выглядит и пустой участок карты, и остановленный пайплайн. Различить их можно только через `GET /pipeline-status`. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        'application/json': components['schemas']['LiveFlightsResponse'];
+                        'application/json': components['schemas']['Flight'][];
                     };
                 };
+                /** @description Параметр не разобрался как число либо задан вне карты (`lonMin=NaN`, `latMax=200`). Осмысленные, но абсурдные значения (перевёрнутая рамка, неполный набор координат) под этот случай **не** подпадают — они обрабатываются молча. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
             };
         };
         put?: never;
@@ -64,16 +83,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Детали самолёта по клику на карте
-         * @description Ответ включает трек (path/startTime/endTime), чтобы при клике по борту не делать отдельный запрос к /flights/{icao24}/track; тот эндпоинт остаётся для точечного обновления/повторной подгрузки трека.
+         * Последняя известная позиция борта
+         * @description Карточка борта по клику на карте. Тело ответа — тот же объект, что и элемент массива в `GET /flights/live`.
+         *
+         *     Трек сюда **не входит**, за ним нужен отдельный запрос к `GET /flights/{icao24}/track`.
          */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description ICAO24-адрес */
-                    icao24: string;
+                    /** @description ICAO24-адрес борта: ровно 6 hex-символов. Регистр не важен, сервер приводит значение к нижнему. Всё, что не подходит под формат, — это 400 на любой ручке, а не «борт не найден». */
+                    icao24: components['parameters']['Icao24'];
                 };
                 cookie?: never;
             };
@@ -85,18 +106,91 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        'application/json': components['schemas']['FlightDetailsResponse'];
+                        'application/json': components['schemas']['Flight'];
                     };
                 };
-                /** @description Борта нет в текущем снапшоте state vectors */
+                /** @description `icao24` не прошёл проверку формата — это не 6 hex-символов. Поле `message` заполнено по-русски и пригодно для показа пользователю. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                /**
+                 * @description Формат кода верный, но борта нет в `positions_current` — он не наблюдался дольше окна свежести.
+                 *
+                 *     Поле `message` заполнено по-русски и пригодно для показа пользователю.
+                 */
                 404: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        'application/json': components['schemas']['Error'];
+                        'application/json': components['schemas']['ApiError'];
                     };
                 };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/flights/{icao24}/track': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Трек борта из накопленной истории
+         * @description Точки строятся по `positions_history` и приходят **уже в хронологическом порядке** — сортировать на клиенте не нужно.
+         *
+         *     Плотность точек — одна на опрос пайплайна, то есть примерно раз в 15 секунд (около 240 точек за час). В паузах пайплайна в треке будут разрывы, поэтому соединять прямой линией далеко разнесённые по времени точки не стоит.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Глубина окна назад от текущего момента, в секундах. Значение вне диапазона 1…86400 — это 400, а не молча усечённое окно: раньше отрицательное `sinceSeconds` снимало отсечку по времени и запрос выгребал историю борта целиком. */
+                    sinceSeconds?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description ICAO24-адрес борта: ровно 6 hex-символов. Регистр не важен, сервер приводит значение к нижнему. Всё, что не подходит под формат, — это 400 на любой ручке, а не «борт не найден». */
+                    icao24: components['parameters']['Icao24'];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Массив точек трека. Пустой массив означает, что за окно точек не накопилось: в отличие от карточки борта, отсутствие истории у существующего борта — это не 404. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['TrackPoint'][];
+                    };
+                };
+                /** @description `icao24` не прошёл проверку формата либо `sinceSeconds` вне диапазона 1…86400. Поле `message` заполнено по-русски. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
             };
         };
         put?: never;
@@ -115,20 +209,45 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Список аэропортов с индексом загруженности
-         * @description Индекс загруженности: во сколько раз текущий/сегодняшний трафик аэропорта отличается от его собственной исторической нормы. `search`/`country`/`sortBy`/`page`/`pageSize` — для табличного режима; `lonMin`/`latMin`/`lonMax`/`latMax`/`zoom`/`limit` — для отрисовки аэропортов на карте мира.
+         * Список аэропортов из справочника OurAirports
+         * @description Справочник `ref_airports` (OurAirports) с фильтрацией, сортировкой и пагинацией — FR12. Загруженности, числа рейсов и индекса трафика здесь **нет**: считать их не из чего, в пайплайне нет ни одной таблицы рейсов.
+         *
+         *     **Отдаются не все строки справочника.** В OurAirports 86 тысяч записей, из которых 23 тысячи вертодромов, 13 тысяч закрытых площадок, полторы тысячи гидроаэродромов и воздухоплавательных площадок. Наружу уходят только `large_airport`, `medium_airport` и `small_airport` — около 48 тысяч. Отключить этот фильтр параметром нельзя: вертодром на карте рейсов не принимает, а список аэропортов он засоряет. Из-за него же `total` меньше `row_count` таблицы.
+         *
+         *     **Первый запрос после старта сервиса занимает десятки секунд.** `ref_airports` — статическая таблица, `select_rows` по ней не работает («Table ... is not dynamic»), поэтому она читается целиком через `read_table`: ~20 МБ и порядка 40 секунд. Снапшот кладётся в память и живёт `YT_REF_AIRPORTS_CACHE_TTL_SECONDS` (сутки по умолчанию), так что последующие ответы — миллисекунды. Обратная сторона: перезалив справочника сервис заметит только после истечения TTL или рестарта.
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description Поиск по названию/городу/коду */
+                    /**
+                     * @description Подстрока без учёта регистра. Ищется по тем же полям, которые видны в ответе: `name`, `city`, `icao`, `iata`. Совпадение — именно подстрока, а не префикс: `sheremet` найдёт «Sheremetyevo International Airport».
+                     *
+                     *     Подстановочных символов нет. Значение сравнивается в памяти и в запрос к YTsaurus не попадает, поэтому кавычка и процент — обычные символы: они просто ничему не соответствуют и дают пустой список, а не ошибку. Длиннее 100 символов значение обрезается.
+                     *
+                     *     Поиск по коду аэропорта работает не для всех строк: `icao` — это `icao_code`, а если он пуст (88% записей OurAirports), то `ident`. У 785 записей заполнены оба и они различаются — такую строку найдёт `icao_code`, но не `ident`.
+                     */
                     search?: string;
-                    /** @description Фильтр по iso_country */
+                    /** @description Точное совпадение с `iso_country` — двухбуквенный код ISO 3166-1 alpha-2, регистр не важен. Не подстрока: `RU` не найдёт `RUS`. Неизвестный код — пустой список и `total: 0`, а не 400. */
                     country?: string;
-                    sortBy?: 'trafficIndex' | 'name' | 'totalFlights';
+                    /**
+                     * @description Единственное поддержанное значение — `name` (по названию, без учёта регистра, ничьи разрешаются по `icao`). Значения `trafficIndex` и `totalFlights` из `docs/openapi.yaml` не реализованы: этих метрик в ответе нет.
+                     *
+                     *     Без параметра порядок — как в таблице, то есть по `ident` по возрастанию; он детерминирован, поэтому пагинация без сортировки тоже не перемешивает страницы. Незнакомое значение молча игнорируется и даёт тот же табличный порядок.
+                     */
+                    sortBy?: 'name';
+                    /** @description Номер страницы, начиная с 1. Значения меньше 1 подтягиваются к 1, а не отвергаются. Страница за концом выборки — пустой `items` при неизменном `total` и с тем самым `page`, который запросили. */
                     page?: number;
+                    /** @description Размер страницы. Значение зажимается в диапазон 1…500, то есть `pageSize=100000` вернёт 500 записей и `pageSize: 500` в ответе — запросить весь справочник одним ответом нельзя. */
                     pageSize?: number;
-                    /** @description Западная граница видимой области карты. Параметры lonMin/latMin/lonMax/latMax задаются только все вместе; если задан не весь набор — фильтр по области игнорируется. */
+                    /**
+                     * @description Западная граница видимой области карты.
+                     *
+                     *     Параметры `lonMin`/`latMin`/`lonMax`/`latMax` задаются **только все четыре вместе**. Если задан не весь набор, фильтр молча игнорируется и вернётся весь мир — ошибки при этом не будет, но ответ окажется на порядок тяжелее ожидаемого.
+                     *
+                     *     Значение вне карты (`NaN`, `Infinity`, широта больше 90°) — это 400. А вот перевёрнутая рамка (`lonMin > lonMax` или `latMin > latMax`) вернёт пустую выдачу, а не ошибку. Переход через антимеридиан (±180°) не поддержан — такой bbox тоже даст пусто.
+                     *
+                     *     Один и тот же набор имён используют все ручки с картой; порядок «долгота, потом широта» взят из продуктового контракта `docs/openapi.yaml`, из которого фронтенд генерит типы.
+                     */
                     lonMin?: components['parameters']['LonMin'];
                     /** @description Южная граница видимой области карты */
                     latMin?: components['parameters']['LatMin'];
@@ -136,9 +255,7 @@ export interface paths {
                     lonMax?: components['parameters']['LonMax'];
                     /** @description Северная граница видимой области карты */
                     latMax?: components['parameters']['LatMax'];
-                    /** @description Текущий уровень зума карты (0–20); используется бэкендом для адаптивной плотности/агрегации отдаваемых аэропортов при мелком zoom */
-                    zoom?: number;
-                    /** @description Максимум аэропортов в ответе для map-режима (независимо от page/pageSize, которые применяются в табличном режиме) */
+                    /** @description Картовый режим: сколько аэропортов вернуть одним ответом. Заданный `limit` **отменяет** табличную пагинацию — `page` и `pageSize` в запросе игнорируются, а в ответе приходят `page: 1` и `pageSize`, равный фактическому лимиту. `total` при этом остаётся полным размером выборки после фильтров, так что по нему видно, сколько объектов не поместилось. Значение зажимается в диапазон 1…10000. */
                     limit?: number;
                 };
                 header?: never;
@@ -147,7 +264,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
+                /** @description Страница справочника. Пустой `items` — валидный ответ: так выглядят и слишком узкий фильтр, и страница за концом выборки. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -156,6 +273,25 @@ export interface paths {
                         'application/json': components['schemas']['AirportsListResponse'];
                     };
                 };
+                /** @description Параметр не разобрался как число (`page=abc`, `latMin=север`) либо координата задана вне карты (`lonMin=NaN`, `latMax=200`). Осмысленные, но абсурдные значения (`page=0`, `pageSize=100000`, перевёрнутый bbox) под этот случай **не** подпадают — они обрабатываются молча. У координат `message` русский, у ошибок разбора — техническое пояснение от Spring, по-английски. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                /** @description YTsaurus недоступен, вернул ошибку или таблицы `ref_airports` нет по настроенному пути — и при этом справочник ещё ни разу не читался. Если снапшот уже есть в памяти, ручка продолжает отвечать им, даже когда TTL истёк, а YTsaurus недоступен. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
             };
         };
         put?: never;
@@ -166,7 +302,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    '/airports/{icao}/flights': {
+    '/pipeline-status': {
         parameters: {
             query?: never;
             header?: never;
@@ -174,78 +310,33 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Лог рейсов аэропорта за период (вылеты + прилёты)
-         * @description Уже наблюдённых OpenSky рейсов, не борд предстоящих.
+         * Состояние поставщика позиций
+         * @description Отвечает на вопрос «почему на карте пусто». Без этого эндпоинта отличить остановленный пайплайн от честно пустого участка карты невозможно — оба случая выглядят как `200 []`.
+         *
+         *     Отвечает «едут ли данные вообще», но не «почему встали»: источник — таблица watermark'ов `pipeline_job_state`, причин остановки в ней нет.
+         *
+         *     Достаточно поллить раз в 30 секунд, отдельно от позиций.
          */
         get: {
             parameters: {
-                query?: {
-                    /** @description Фильтр направления */
-                    direction?: 'arrival' | 'departure' | 'all';
-                    /** @description Окно наблюдения, unix ts (проброс в /flights/departure) */
-                    from?: number;
-                    /** @description Окно наблюдения, unix ts (проброс в /flights/arrival) */
-                    to?: number;
-                };
-                header?: never;
-                path: {
-                    /** @description ICAO-код аэропорта */
-                    icao: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        'application/json': components['schemas']['AirportFlightsResponse'];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    '/stats/dashboard': {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Дашборд статистики */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description unix ts, окно агрегации, по умолчанию последние 24ч доступного батча */
-                    from?: number;
-                    /** @description unix ts, окно агрегации, по умолчанию последние 24ч доступного батча */
-                    to?: number;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
+                /** @description Текущее состояние. Отвечает всегда, даже если пайплайн ни разу не запускался — тогда `status: unknown` и `stale: true`. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        'application/json': components['schemas']['DashboardResponse'];
+                        'application/json': components['schemas']['PipelineStatus'];
                     };
                 };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
             };
         };
         put?: never;
@@ -260,291 +351,275 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Error: {
-            message: string;
-        };
-        /** @description [OurAirports] */
-        AirportRef: {
-            /** @description [OurAirports] airports.icao_code / ident */
-            icao: string;
-            /** @description [OurAirports] airports.iata_code */
-            iata: string | null;
-            /** @description [OurAirports] airports.name */
-            name: string;
-        };
-        EstimatedAirportRef: components['schemas']['AirportRef'] & {
-            /**
-             * Format: int64
-             * @description unix ts батча /flights/*, из которого взята оценка
-             */
-            asOf: number;
-            /** @description [OpenSky] departureAirportCandidatesCount / arrivalAirportCandidatesCount — чем больше, тем менее уверенная оценка */
-            candidatesCount: number;
-        };
-        LatLon: {
-            /**
-             * Format: double
-             * @description градусы WGS-84
-             */
-            lat: number;
-            /** Format: double */
-            lon: number;
-        };
         /**
-         * @description on_ground: [OpenSky] on_ground = true; climbing: [OpenSky] on_ground = false, vertical_rate > 0; descending: [OpenSky] on_ground = false, vertical_rate < 0; cruising: [OpenSky] on_ground = false, vertical_rate ≈ 0
-         * @enum {string}
+         * @description Позиция борта из `positions_current`, обогащённая справочником ВС по `icao24`.
+         *
+         *     Все поля всегда присутствуют в JSON; необязательность выражена через `nullable`, а не через отсутствие ключа.
+         *
+         *     Строка, в которой нет `icao24`, `timePosition`, `lat` или `lon`, в выдачу не попадает вовсе: подставить туда ноль значило бы показать борт в Гвинейском заливе. Поэтому бортов в ответе может оказаться меньше, чем строк записал пайплайн, — расхождение видно в логе сервиса. На `GET /flights/{icao24}` такая строка даёт 503, а не 404: борт существует, негодны данные о нём.
          */
-        FlightPhase: 'on_ground' | 'climbing' | 'descending' | 'cruising';
-        AircraftPosition: {
-            /** @description [OpenSky] states[i][0] */
+        Flight: {
+            /**
+             * @description ICAO24-адрес, 6 hex-символов в нижнем регистре. Ключ борта
+             * @example 01023b
+             */
             icao24: string;
             /**
+             * @description Позывной, уже обрезанный от пробелов
+             * @example MSC2932
+             */
+            callsign: string | null;
+            /**
+             * @description Страна регистрации борта
+             * @example Egypt
+             */
+            originCountry: string | null;
+            /**
+             * Format: int64
+             * @description Момент фиксации позиции, unix seconds
+             * @example 1786841273
+             */
+            timePosition: number;
+            /**
              * Format: double
-             * @description [OpenSky] states[i][6]
+             * @description Широта WGS-84, градусы
+             * @example 45.41
              */
             lat: number;
             /**
              * Format: double
-             * @description [OpenSky] states[i][5]
+             * @description Долгота WGS-84, градусы
+             * @example 20
              */
             lon: number;
-            /** @description [OpenSky] states[i][7] baro_altitude */
-            altitudeM: number | null;
-            /** @description [OpenSky] states[i][10] true_track */
-            headingDeg: number | null;
-            /** @description [OpenSky] states[i][9] velocity, м/с * 3.6 */
-            speedKmh: number | null;
-            /** @description [OpenSky] states[i][11] */
-            verticalRateMs: number | null;
-            /** @description [OpenSky] states[i][8] */
+            /**
+             * Format: double
+             * @description Барометрическая высота в **метрах**
+             * @example 10957.5
+             */
+            baroAltitude: number | null;
+            /** @description Борт находится на земле */
             onGround: boolean;
             /**
-             * Format: int64
-             * @description unix ts, [OpenSky] states[i][4] last_contact
+             * Format: double
+             * @description Путевая скорость в **м/с**
+             * @example 229.9
              */
-            timestamp: number;
+            velocity: number | null;
+            /**
+             * Format: double
+             * @description Курс в градусах от севера по часовой стрелке. Задаёт поворот иконки борта на карте
+             * @example 324.75
+             */
+            trueTrack: number | null;
+            /**
+             * @description Производитель из справочника ВС. Имя поля в одно слово и в нижнем регистре — так колонка называется в схеме YT
+             * @example Airbus Industrie
+             */
+            manufacturername: string | null;
+            /**
+             * @description Модель ВС из справочника
+             * @example A320-251N
+             */
+            model: string | null;
+            /**
+             * @description Авиакомпания-эксплуатант. Борт, которого нет в справочнике ВС, всё равно возвращается (FR4) — тогда `manufacturername`, `model` и `operator` равны `null`
+             * @example Air Cairo
+             */
+            operator: string | null;
         };
-        LiveFlightsResponse: {
+        /** @description Одна точка трека борта из `positions_history` */
+        TrackPoint: {
             /**
              * Format: int64
-             * @description unix ts, [OpenSky] верхнеуровневое поле "time"
+             * @description Момент фиксации позиции, unix seconds
              */
-            generatedAt: number;
-            flights: {
-                /**
-                 * @description Обозначение один самолет (solo) или кластер самолетов (multie)
-                 * @enum {string}
-                 */
-                type: 'solo' | 'multie';
-                /** @description Количество самолетов в кластере иначе 1 */
-                count: number;
-                /** @description [OpenSky] */
-                icao24: string;
-                /** @description [OpenSky] states[i][1], trim */
-                callsign: string | null;
-                /** @description [OpenSky Aircraft DB] operator по icao24, если найден, иначе null */
-                airlineName: string | null;
-                position: components['schemas']['AircraftPosition'];
-                phase: components['schemas']['FlightPhase'];
-                /** @description [OpenSky] estDepartureAirport из последнего доступного батча /flights/* */
-                origin: components['schemas']['EstimatedAirportRef'] | null;
-                /** @description [OpenSky] estArrivalAirport, там же */
-                destination: components['schemas']['EstimatedAirportRef'] | null;
-                /** @description [OpenSky] squawk, если есть */
-                squawk?: number | null;
-            }[];
-        };
-        FlightTrackResponse: {
-            /** @description [OpenSky] */
-            icao24: string;
+            timePosition: number;
             /**
-             * Format: int64
-             * @description [OpenSky] tracks.startTime
+             * Format: double
+             * @description Широта WGS-84
              */
-            startTime: number;
+            lat: number;
             /**
-             * Format: int64
-             * @description [OpenSky] tracks.endTime
+             * Format: double
+             * @description Долгота WGS-84
              */
-            endTime: number;
-            path: {
-                /**
-                 * Format: int64
-                 * @description [OpenSky] path[i][0]
-                 */
-                timestamp: number;
-                /**
-                 * Format: double
-                 * @description [OpenSky] path[i][1]
-                 */
-                lat: number;
-                /**
-                 * Format: double
-                 * @description [OpenSky] path[i][2]
-                 */
-                lon: number;
-                /** @description [OpenSky] path[i][3] */
-                altitudeM: number | null;
-                /** @description [OpenSky] path[i][4] */
-                headingDeg: number | null;
-                /** @description [OpenSky] path[i][5] */
-                onGround: boolean;
-            }[];
+            lon: number;
+            /**
+             * Format: double
+             * @description Барометрическая высота в метрах, позволяет красить трек по высоте
+             */
+            baroAltitude: number | null;
         };
+        /** @description Страница справочника аэропортов. Конверт, в отличие от `/flights/live`, нужен: без `total` клиент не может нарисовать пагинацию. */
         AirportsListResponse: {
             /**
              * Format: int64
-             * @description unix ts последнего батча, на котором посчитаны метрики
+             * @description Момент последней записи таблицы `ref_airports` (unix seconds) — `modification_time` узла в Кипарисе, а не время ответа сервиса. Справочник статический и сам по себе не пересчитывается, так что это единственная осмысленная отметка свежести: она показывает, когда пайплайн залил справочник, и не меняется от запроса к запросу. `null` — атрибут не прочитался или не разобрался; нулём это отдавать нельзя, клиент нарисовал бы 1970 год.
+             * @example 1786793001
              */
-            asOf: number;
-            items: {
-                /** @description [OurAirports] ident */
-                icao: string;
-                /** @description [OurAirports] */
-                iata: string | null;
-                /** @description [OurAirports] */
-                name: string;
-                /** @description [OurAirports] municipality */
-                city: string | null;
-                /** @description [OurAirports] iso_country */
-                country: string;
-                position: components['schemas']['LatLon'];
-            }[];
+            asOf: number | null;
+            /** @description Аэропорты текущей страницы */
+            items: components['schemas']['Airport'][];
+            /**
+             * @description Номер отданной страницы. Совпадает с запрошенным (после подтягивания значений < 1 к единице); в картовом режиме с `limit` всегда 1
+             * @example 1
+             */
             page: number;
+            /**
+             * @description Фактический размер страницы после зажатия в допустимый диапазон. В картовом режиме равен фактическому `limit`
+             * @example 50
+             */
             pageSize: number;
+            /**
+             * @description Сколько аэропортов подошло под фильтры — до пагинации и до `limit`, но уже **после** отсева нeаэропортовых типов
+             * @example 943
+             */
             total: number;
         };
-        AirportFlightsResponse: {
-            airport: components['schemas']['AirportRef'];
-            items: {
-                /** @description [OpenSky] */
-                icao24: string;
-                /** @description [OpenSky] */
-                callsign: string | null;
-                /** @description [OpenSky Aircraft DB] operator, если найден */
-                airlineName: string | null;
-                /** @enum {string} */
-                direction: 'arrival' | 'departure';
-                /** @description [OpenSky] противоположный конец маршрута, оценка */
-                otherAirport: components['schemas']['EstimatedAirportRef'] | null;
-                /**
-                 * Format: int64
-                 * @description [OpenSky] firstSeen (для departure) / lastSeen (для arrival)
-                 */
-                observedAt: number;
-            }[];
+        /**
+         * @description Запись справочника OurAirports. Полей `totalFlights24h` и `trafficIndex` из `docs/openapi.yaml` здесь нет: рейсов по аэропортам пайплайн не считает.
+         *
+         *     Запись без кода, названия или координат в справочник не попадает — отрисовать и показать её всё равно нечем, а нули вместо координат увели бы аэропорт в Атлантику.
+         */
+        Airport: {
+            /**
+             * @description `icao_code` из OurAirports, а если он пуст — `ident`. Пустым не бывает, но и настоящим ICAO-кодом является не всегда: у 88% записей справочника `icao_code` не заполнен, и тогда сюда попадает локальный идентификатор вида `00AA` или `RU-0796`
+             * @example UUEE
+             */
+            icao: string;
+            /**
+             * @description IATA-код. `null` у 89% записей справочника — это норма, а не сбой
+             * @example SVO
+             */
+            iata: string | null;
+            /**
+             * @description Название аэропорта, как в OurAirports
+             * @example Sheremetyevo International Airport
+             */
+            name: string;
+            /**
+             * @description `municipality` из OurAirports. `null` примерно у 5% записей — населённый пункт в источнике не указан
+             * @example Moscow
+             */
+            city: string | null;
+            /**
+             * @description `iso_country`, код ISO 3166-1 alpha-2. По схеме таблицы поле необязательное, поэтому объявлено nullable, хотя в текущей выгрузке заполнено у всех строк
+             * @example RU
+             */
+            country: string | null;
+            position: components['schemas']['LatLon'];
         };
-        FlightDetailsResponse: {
-            /** @description [OpenSky] */
-            icao24: string;
-            /** @description [OpenSky] */
-            callsign: string | null;
-            /** @description [OpenSky Aircraft DB] registration */
-            registration: string | null;
-            /** @description [OpenSky Aircraft DB] manufacturername */
-            manufacturer: string | null;
-            /** @description [OpenSky Aircraft DB] model */
-            model: string | null;
-            /** @description [OpenSky Aircraft DB] operator */
-            airlineName: string | null;
-            /** @description [OpenSky] estDepartureAirport, последний доступный батч */
-            origin: components['schemas']['EstimatedAirportRef'] | null;
-            /** @description [OpenSky] estArrivalAirport, там же */
-            destination: components['schemas']['EstimatedAirportRef'] | null;
-            position: components['schemas']['AircraftPosition'];
-            phase: components['schemas']['FlightPhase'];
-            /** @description [Derived] great-circle(position, destination) / speedKmh; null, если destination неизвестен или борт on_ground */
-            etaMinutes: number | null;
+        /** @description Точка WGS-84 */
+        LatLon: {
+            /**
+             * Format: double
+             * @example 55.976858
+             */
+            lat: number;
+            /**
+             * Format: double
+             * @example 37.41121
+             */
+            lon: number;
+        };
+        /**
+         * @description Состояние пайплайна, собранное из таблицы `pipeline_job_state` — watermark'ов джобов вида `(job_name, watermark_ts, updated_at)`. Берётся джоб, отчитавшийся последним.
+         *
+         *     Источник знает только, докуда доехали данные, поэтому единственный содержательный сигнал здесь — `stale`. Причину остановки он не различает: паузу по лимиту кредитов OpenSky, недоступность источника и упавший джоб внешне не отличить, `resumesAt` всегда `null`. Двухступенчатый UX («обновление приостановлено до HH:MM», затем «данные устарели») на этих данных не построить — для него нужен отдельный хартбит `ingest_service`.
+         */
+        PipelineStatus: {
+            /**
+             * @description Отчитывался ли пайплайн вообще:
+             *
+             *     * `ok` — в таблице есть строка джоба. Означает только это: «джоб зарегистрировал своё состояние». Работает ли он **сейчас**, показывает `stale`, а не этот код.
+             *
+             *     * `unknown` — в `pipeline_job_state` нет ни одной строки: джобы ни разу не отчитывались либо таблицу пересоздали. Всегда приходит вместе со `stale: true`.
+             * @enum {string}
+             */
+            status: 'ok' | 'unknown';
             /**
              * Format: int64
-             * @description [OpenSky] tracks.startTime
+             * @description Watermark последнего отчитавшегося джоба, unix seconds — граница, до которой данные обработаны. Считаем свежесть именно по нему, а не по времени записи: если джоб крутится, а источник умер, время записи растёт при стоящих данных. `null` — джоб зарегистрировался, но ещё ничего не обработал
              */
-            startTime: number;
+            lastSuccessAt: number | null;
             /**
              * Format: int64
-             * @description [OpenSky] tracks.endTime
+             * @description Момент, когда опрос возобновится, unix seconds. С текущим источником **всегда `null`**: `pipeline_job_state` про паузы ничего не знает
              */
-            endTime: number;
-            path: {
-                /**
-                 * Format: int64
-                 * @description [OpenSky] path[i][0]
-                 */
-                timestamp: number;
-                /**
-                 * Format: double
-                 * @description [OpenSky] path[i][1]
-                 */
-                lat: number;
-                /**
-                 * Format: double
-                 * @description [OpenSky] path[i][2]
-                 */
-                lon: number;
-                /** @description [OpenSky] path[i][3] */
-                altitudeM: number | null;
-                /** @description [OpenSky] path[i][4] */
-                headingDeg: number | null;
-                /** @description [OpenSky] path[i][5] */
-                onGround: boolean;
-            }[];
+            resumesAt: number | null;
+            /** @description Данные считаются устаревшими: watermark не продвигался дольше `PIPELINE_STALE_AFTER_SECONDS` (по умолчанию 120 с). При `lastSuccessAt: null` всегда `true` */
+            stale: boolean;
         };
-        TrafficHeatmapResponse: {
-            /** Format: int64 */
-            from: number;
-            /** Format: int64 */
-            to: number;
-            /** @enum {string} */
-            resolution: 'country' | 'airport' | 'cell';
-            cells: {
-                /** @description [OpenSky] центр геоячейки по позициям states (resolution="cell"), либо [OurAirports] координаты аэропорта (resolution="airport"/"country") */
-                center: components['schemas']['LatLon'];
-                /** @description [OurAirports] название аэропорта/страны, null при resolution="cell" */
-                label: string | null;
-                /** @description [OpenSky]/[Derived] количество бортов в ячейке (states) либо рейсов аэропорта (/flights/*) за окно */
-                flightCount: number;
-            }[];
-        };
-        DashboardResponse: {
-            /** Format: int64 */
-            from: number;
-            /** Format: int64 */
-            to: number;
-            totals: {
-                /** @description [OpenSky] count(states) с on_ground=false */
-                activeFlights: number;
-                /** @description [OurAirports] count(airports) */
-                trackedAirports: number;
-                /** @description [Derived] среднее по states.baro_altitude */
-                averageAltitudeM: number;
-                /** @description [Derived] среднее по states.velocity */
-                averageSpeedKmh: number;
-            };
-            /** @description [Derived] распределение states по phase */
-            flightsByPhase: {
-                on_ground: number;
-                climbing: number;
-                descending: number;
-                cruising: number;
-            };
-            topBusiestAirports: {
-                airport: components['schemas']['AirportRef'];
-                /** @description [OpenSky] count(/flights/departure + /flights/arrival) */
-                totalFlights: number;
-            }[];
-            /** @description [Derived] тайм-серия по снапшотам, которые бэкенд обязан сам сохранять */
-            trafficTrend: {
-                /** Format: int64 */
-                timestamp: number;
-                activeFlights: number;
-            }[];
-            /** @description количество случаев с squawk=7700 или squawk=7500 */
-            emergencyCount?: number;
+        /**
+         * @description Единое тело ошибки сервиса: его формирует `ApiExceptionHandler` для всех кодов, включая 5xx. На всех ручках `/api/**` поле `message` есть всегда. Исключение одно: `406`, когда клиент просит формат, которого у сервиса нет, — тело в этом случае пустое, потому что сериализовать его не во что.
+         *
+         *     У доменных ошибок (404) и у отказа YTsaurus (503) `message` написан по-русски и годится для показа пользователю. У ошибок самого Spring MVC (400 на неразобранный параметр, 405) там техническое пояснение по-английски — его лучше заменить своим текстом на клиенте.
+         */
+        ApiError: {
+            /**
+             * Format: date-time
+             * @description Момент формирования ответа, ISO-8601
+             * @example 2026-08-18T09:14:22.481Z
+             */
+            timestamp: string;
+            /**
+             * @description HTTP-код, дублирует статус ответа
+             * @example 404
+             */
+            status: number;
+            /**
+             * @description Стандартное название HTTP-статуса
+             * @example Not Found
+             */
+            error: string;
+            /**
+             * @description Причина ошибки; пустым не бывает
+             * @example Позиция для борта icao24=abc123 не найдена
+             */
+            message: string;
         };
     };
-    responses: never;
+    responses: {
+        /**
+         * @description Источник данных не ответил или ответил негодным: YTsaurus недоступен, вернул ошибку либо прислал тело, которое не разбирается как ответ. Сервис при этом исправен, поэтому повторить запрос осмысленно.
+         *
+         *     Поле `message` заполнено по-русски и пригодно для показа пользователю; подробности источника (trace_id, текст запроса) остаются в логе сервиса и наружу не выходят.
+         */
+        SourceUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                'application/json': components['schemas']['ApiError'];
+            };
+        };
+        /**
+         * @description Сбой самого сервиса. Сюда же попадает запрос, который **отклонил** YTsaurus, — неверный путь таблицы, протухший токен, негодный QL: это дефект сервиса или его конфигурации, и, в отличие от 503, повтор не поможет.
+         *
+         *     В `message` всегда «Внутренняя ошибка сервиса»: показывать клиенту внутренности нечего, диагностика — в логе.
+         */
+        InternalError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                'application/json': components['schemas']['ApiError'];
+            };
+        };
+    };
     parameters: {
-        /** @description Западная граница видимой области карты. Параметры lonMin/latMin/lonMax/latMax задаются только все вместе; если задан не весь набор — фильтр по области игнорируется. */
+        /** @description ICAO24-адрес борта: ровно 6 hex-символов. Регистр не важен, сервер приводит значение к нижнему. Всё, что не подходит под формат, — это 400 на любой ручке, а не «борт не найден». */
+        Icao24: string;
+        /**
+         * @description Западная граница видимой области карты.
+         *
+         *     Параметры `lonMin`/`latMin`/`lonMax`/`latMax` задаются **только все четыре вместе**. Если задан не весь набор, фильтр молча игнорируется и вернётся весь мир — ошибки при этом не будет, но ответ окажется на порядок тяжелее ожидаемого.
+         *
+         *     Значение вне карты (`NaN`, `Infinity`, широта больше 90°) — это 400. А вот перевёрнутая рамка (`lonMin > lonMax` или `latMin > latMax`) вернёт пустую выдачу, а не ошибку. Переход через антимеридиан (±180°) не поддержан — такой bbox тоже даст пусто.
+         *
+         *     Один и тот же набор имён используют все ручки с картой; порядок «долгота, потом широта» взят из продуктового контракта `docs/openapi.yaml`, из которого фронтенд генерит типы.
+         */
         LonMin: number;
         /** @description Южная граница видимой области карты */
         LatMin: number;

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from '@gravity-ui/uikit';
-import { airportsMock } from '@/entities/airport';
-// eslint-disable-next-line
+import { toAirportsMapQuery, useAirports } from '@/features/getAirports';
 import { useLiveFlights } from '@/features/getLiveFlights';
 import { FlightMap } from '@/widgets/flight-map';
 import {
@@ -15,7 +14,6 @@ import {
 } from '@/shared/contexts/map-view';
 import { useDebouncedValue } from '@/shared/lib/useDebouncedValue';
 import styles from './MapPage.module.css';
-import { flightsMock } from '@/entities/flight';
 import { useLocation, useSearchParams } from 'react-router';
 
 interface MapPageProps {
@@ -38,7 +36,6 @@ export function MapPage({ theme = 'light' }: MapPageProps) {
         }
     }, [restoredSearch, setSearchParams]);
 
-    // Пустой search не пишется, поэтому первый рендер с голым URL не затирает сохранённое
     useEffect(() => {
         writeStoredMapSearch(search);
     }, [search]);
@@ -67,28 +64,39 @@ export function MapPage({ theme = 'light' }: MapPageProps) {
         );
     }, [urlQuery, setSearchParams]);
 
-    // const { data, isError } = useLiveFlights(flightsQuery);
-    const data = flightsMock;
-    const isError = false;
+    const { data, isError } = useLiveFlights(flightsQuery);
+    const { data: airportsData, isError: isAirportsError } = useAirports(
+        toAirportsMapQuery(flightsQuery)
+    );
 
     return (
         <main className={styles.map} aria-label="Карта полётов и аэропортов">
             <FlightMap
                 initialBounds={initialView.bounds}
                 theme={theme}
-                airports={airportsMock.items}
-                flights={data?.flights ?? []}
+                airports={airportsData?.items ?? []}
+                flights={data ?? []}
                 onBoundsChange={handleBoundsChange}
             />
 
-            {isError && (
+            {(isError || isAirportsError) && (
                 <div className={styles.error} role="status">
-                    <Alert
-                        theme="danger"
-                        view="filled"
-                        title="Не удалось загрузить борта"
-                        message="Показаны последние полученные данные. Обновление продолжится автоматически."
-                    />
+                    {isError && (
+                        <Alert
+                            theme="danger"
+                            view="filled"
+                            title="Не удалось загрузить борта"
+                            message="Показаны последние полученные данные. Обновление продолжится автоматически."
+                        />
+                    )}
+                    {isAirportsError && (
+                        <Alert
+                            theme="danger"
+                            view="filled"
+                            title="Не удалось загрузить аэропорты"
+                            message="Карта работает без них."
+                        />
+                    )}
                 </div>
             )}
         </main>

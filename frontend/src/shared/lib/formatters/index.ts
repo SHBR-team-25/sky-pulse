@@ -1,3 +1,3 @@
 export { formatTime, formatUtcTime, timeFormatter, utcTimeFormatter } from './dateTime';
-export { formatEta, formatFlightNumber } from './flight';
+export { formatFlightNumber, formatSpeedKmh } from './flight';
 export { formatCoordinate, formatMapView, numberFormatter } from './number';
