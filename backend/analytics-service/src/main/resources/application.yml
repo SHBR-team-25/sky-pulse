@@ -1,0 +1,35 @@
+server:
+  port: ${PORT:8081}
+  error:
+    # Контейнерные ошибки уходят в /error мимо ApiExceptionHandler, и без этого
+    # тело приходит без message — единственного поля, которое можно показать.
+    include-message: always
+
+spring:
+  application:
+    name: analytics-service
+  config:
+    import: "optional:file:.env[.properties]"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+skypulse:
+  yt:
+    proxy: ${YT_PROXY:localhost:80}
+    token: ${YT_TOKEN:}
+    connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
+    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
+    positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
+    ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
+    stats-hourly-path: ${YT_STATS_HOURLY_PATH://home/skypulse/stats_hourly}
+  stats:
+    default-window-seconds: ${STATS_DEFAULT_WINDOW_SECONDS:86400}
