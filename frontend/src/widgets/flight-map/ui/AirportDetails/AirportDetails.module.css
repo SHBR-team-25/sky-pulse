@@ -1,5 +1,6 @@
 .sheet {
-    --g-color-sfx-veil: rgba(2, 6, 12, 0.56);
+    --g-color-sfx-veil: var(--sky-color-sheet-veil);
+    --g-sheet-background-color: var(--sky-color-surface-sheet);
 
     z-index: 2147483000;
 }
@@ -30,11 +31,11 @@
 
 .sheetContent,
 .sheetSwipeArea {
-    background: rgba(13, 20, 32, 0.96);
-    border: 1px solid oklch(78% 0.12 220deg / 0.35);
+    background: var(--sky-color-surface-sheet);
+    border: 1px solid var(--sky-color-sheet-border);
     box-shadow:
-        0 26px 60px -18px rgba(0, 0, 0, 0.9),
-        0 0 0 1px rgba(255, 255, 255, 0.04);
+        0 26px 60px -18px var(--sky-color-shadow-strong),
+        0 0 0 1px var(--sky-color-popup-outline);
     backdrop-filter: blur(22px);
 }
 
