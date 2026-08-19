@@ -47,7 +47,7 @@ export function AirportDetailsPopover({
         [airport.icao, onOpenChange]
     );
 
-    let content: ReactNode = null;
+    let content: ReactNode;
 
     if (isLoading) {
         content = (
@@ -58,6 +58,12 @@ export function AirportDetailsPopover({
         );
     } else if (details) {
         content = <AirportDetailsCard airport={airport} details={details} />;
+    } else {
+        content = (
+            <div className={styles.message} role="alert">
+                Не удалось загрузить данные
+            </div>
+        );
     }
 
     return (

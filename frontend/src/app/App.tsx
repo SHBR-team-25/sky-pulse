@@ -1,5 +1,4 @@
 import { RouterProvider } from 'react-router/dom';
-import { MapViewProvider } from '@/shared/contexts/map-view';
 import { AppThemeProvider } from '@/shared/contexts/theme';
 import styles from './App.module.css';
 import { QueryProvider } from './providers';
@@ -14,11 +13,9 @@ export function App() {
             <AppThemeProvider>
                 {/* Контект хранит значение зума и координаты центральной точки на карте */}
                 <ErrorBoundary FallbackComponent={RootErrorFallback}>
-                    <MapViewProvider>
-                        <div className={styles.app}>
-                            <RouterProvider router={router} />
-                        </div>
-                    </MapViewProvider>
+                    <div className={styles.app}>
+                        <RouterProvider router={router} />
+                    </div>
                 </ErrorBoundary>
             </AppThemeProvider>
         </QueryProvider>

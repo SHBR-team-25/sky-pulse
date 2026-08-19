@@ -1,5 +1,9 @@
 import { useCallback } from 'react';
-import type { MapEventUpdateHandler, YMapLocationRequest } from '@yandex/ymaps3-types';
+import type {
+    LngLatBounds,
+    MapEventUpdateHandler,
+    YMapLocationRequest,
+} from '@yandex/ymaps3-types';
 import {
     YMap,
     YMapControls,
@@ -9,42 +13,56 @@ import {
     YMapZoomControl,
     reactify,
 } from '@/shared/lib/ymaps3';
-import { INITIAL_MAP_VIEW, useSetMapView } from '@/shared/contexts/map-view';
+import {
+    MAP_ZOOM_RANGE,
+    toMapBoundsParams,
+    useSetMapView,
+    type MapBoundsParams,
+} from '@/shared/contexts/map-view';
 import { AirportsLayer } from './AirportsLayer';
 import { FlightsLayer } from './FlightsLayer';
 import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
 import type { LiveFlight } from '@/entities/flight';
 
-const FLIGHTS_LOCATION: YMapLocationRequest = {
-    center: INITIAL_MAP_VIEW.center,
-    zoom: INITIAL_MAP_VIEW.zoom,
-};
-
-const ZOOM_RANGE = { min: 3, max: 15 };
-
 interface FlightMapProps {
+    // Читается только при инициализации
+    initialBounds: LngLatBounds;
     airports: Airport[];
     flights: LiveFlight[];
     theme?: 'light' | 'dark';
+    onBoundsChange?: (params: MapBoundsParams) => void;
 }
 
-export function FlightMap({ airports, flights, theme = 'light' }: FlightMapProps) {
+export function FlightMap({
+    initialBounds,
+    airports,
+    flights,
+    theme = 'light',
+    onBoundsChange,
+}: FlightMapProps) {
     const setMapView = useSetMapView();
+
     const handleMapUpdate = useCallback<MapEventUpdateHandler>(
         ({ location }) => {
-            // обновляем в контексте для отображения в футере
             setMapView({ center: location.center, zoom: location.zoom });
+            onBoundsChange?.(toMapBoundsParams(location));
         },
-        [setMapView]
+        [setMapView, onBoundsChange]
+    );
+
+    const location = reactify.useDefault<YMapLocationRequest>(
+        { bounds: initialBounds, duration: 0 },
+        []
     );
 
     return (
         <div className={styles.map}>
             <YMap
                 theme={theme}
-                location={reactify.useDefault(FLIGHTS_LOCATION)}
-                zoomRange={ZOOM_RANGE}
+                location={location}
+                zoomRange={MAP_ZOOM_RANGE}
+                zoomRounding="smooth"
             >
                 <YMapDefaultSchemeLayer />
                 <YMapDefaultFeaturesLayer />

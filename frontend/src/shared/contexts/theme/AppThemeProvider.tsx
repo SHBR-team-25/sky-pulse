@@ -7,16 +7,16 @@ const THEME_STORAGE_KEY = 'sky-pulse-theme';
 
 function getInitialTheme(): AppTheme {
     try {
-        const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
 
         if (savedTheme === 'light' || savedTheme === 'dark') {
             return savedTheme;
         }
     } catch {
-        throw new Error('error'); // TODO:
+        throw new Error('Didnt manage to get theme from local storage');
     }
 
-    return 'light';
+    return 'dark'; // по дефолту темная тема, если не сохранена другая
 }
 
 interface AppThemeProviderProps {
@@ -28,9 +28,9 @@ export function AppThemeProvider({ children }: AppThemeProviderProps) {
 
     useEffect(() => {
         try {
-            window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+            localStorage.setItem(THEME_STORAGE_KEY, theme);
         } catch {
-            throw new Error('error'); // TODO:
+            throw new Error('Didnt manage to set theme in local storage');
         }
     }, [theme]);
 

@@ -6,6 +6,7 @@ import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
 
 // для имитации запроса
 const MOCK_REQUEST_DELAY_MS = 500;
+const REQUEST_TIMEOUT_MS = 5_000;
 
 async function getMockAirportFlights(icao: string): Promise<AirportFlightsResponse | null> {
     await new Promise<void>((resolve) => {
@@ -45,36 +46,52 @@ export function useMockAirportFlights() {
 
     useEffect(() => {
         let ignore = false;
+        let didTimeout = false;
+
+        const timeoutId = window.setTimeout(() => {
+            didTimeout = true;
+
+            if (!ignore) {
+                setSelectedAirport((currentAirport) =>
+                    currentAirport?.airportId === selectedAirportId
+                        ? { ...currentAirport, isLoading: false }
+                        : currentAirport
+                );
+            }
+        }, REQUEST_TIMEOUT_MS);
 
         async function loadAirportFlights() {
             if (!selectedAirportId) {
+                window.clearTimeout(timeoutId);
                 return;
             }
 
             try {
                 const details = await getMockAirportFlights(selectedAirportId);
 
-                if (!ignore) {
+                if (!ignore && !didTimeout) {
                     setSelectedAirport((currentAirport) => {
                         if (currentAirport?.airportId !== selectedAirportId) {
                             return currentAirport;
                         }
 
-                        return details
-                            ? {
-                                  ...currentAirport,
-                                  details,
-                                  isLoading: false,
-                              }
-                            : null;
+                        return {
+                            ...currentAirport,
+                            details,
+                            isLoading: false,
+                        };
                     });
                 }
             } catch {
-                if (!ignore) {
+                if (!ignore && !didTimeout) {
                     setSelectedAirport((currentAirport) =>
-                        currentAirport?.airportId === selectedAirportId ? null : currentAirport
+                        currentAirport?.airportId === selectedAirportId
+                            ? { ...currentAirport, isLoading: false }
+                            : currentAirport
                     );
                 }
+            } finally {
+                window.clearTimeout(timeoutId);
             }
         }
 
@@ -82,6 +99,7 @@ export function useMockAirportFlights() {
 
         return () => {
             ignore = true;
+            window.clearTimeout(timeoutId);
         };
     }, [selectedAirportId]);
 
