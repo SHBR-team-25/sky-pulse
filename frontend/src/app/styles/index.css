@@ -18,6 +18,7 @@
     --sky-color-surface-header: rgba(11, 17, 27, 0.82);
     --sky-color-surface-footer: rgba(11, 17, 27, 0.86);
     --sky-color-surface-popup: rgba(13, 20, 32, 0.92);
+    --sky-color-surface-sheet: rgba(13, 20, 32, 0.96);
     --sky-color-surface-control: rgba(255, 255, 255, 0.06);
     --sky-color-surface-selected: rgba(255, 255, 255, 0.1);
     --sky-color-surface-muted: rgba(255, 255, 255, 0.04);
@@ -25,7 +26,9 @@
     --sky-color-border-control: rgba(255, 255, 255, 0.09);
     --sky-color-border-strong: rgba(255, 255, 255, 0.12);
     --sky-color-popup-border: oklch(78% 0.12 220deg / 0.45);
+    --sky-color-sheet-border: oklch(78% 0.12 220deg / 0.35);
     --sky-color-popup-outline: rgba(255, 255, 255, 0.04);
+    --sky-color-sheet-veil: rgba(2, 6, 12, 0.56);
     --sky-color-divider-strong: rgba(255, 255, 255, 0.08);
     --sky-color-divider: rgba(255, 255, 255, 0.06);
     --sky-color-divider-subtle: rgba(255, 255, 255, 0.04);
@@ -88,6 +91,7 @@
     --sky-color-surface-header: rgba(255, 255, 255, 0.88);
     --sky-color-surface-footer: rgba(255, 255, 255, 0.92);
     --sky-color-surface-popup: rgba(255, 255, 255, 0.96);
+    --sky-color-surface-sheet: rgba(255, 255, 255, 0.98);
     --sky-color-surface-control: rgba(35, 66, 96, 0.06);
     --sky-color-surface-selected: rgba(16, 111, 170, 0.11);
     --sky-color-surface-muted: rgba(35, 66, 96, 0.045);
@@ -95,7 +99,9 @@
     --sky-color-border-control: rgba(35, 55, 78, 0.14);
     --sky-color-border-strong: rgba(35, 55, 78, 0.2);
     --sky-color-popup-border: rgba(35, 55, 78, 0.16);
+    --sky-color-sheet-border: rgba(35, 55, 78, 0.16);
     --sky-color-popup-outline: rgba(35, 55, 78, 0.08);
+    --sky-color-sheet-veil: rgba(25, 47, 70, 0.22);
     --sky-color-divider-strong: rgba(35, 55, 78, 0.12);
     --sky-color-divider: rgba(35, 55, 78, 0.1);
     --sky-color-divider-subtle: rgba(35, 55, 78, 0.07);

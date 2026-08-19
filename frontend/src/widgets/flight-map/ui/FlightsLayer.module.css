@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .flightMarker {
     position: relative;
     display: grid;
@@ -5,6 +7,7 @@
     height: 22px;
     padding: 0;
     color: var(--sky-color-text-primary);
+    appearance: none;
     background: var(--sky-color-surface-header);
     border: 2px solid var(--sky-color-accent-primary);
     border-radius: 50%;
@@ -67,6 +70,18 @@
     border: 1px solid rgba(141, 220, 255, 0.35);
     border-radius: 50%;
     content: '';
+}
+
+@media (--touch-device) {
+    .flightMarker {
+        width: 30px;
+        height: 30px;
+    }
+
+    .clusterMarker {
+        width: 34px;
+        height: 34px;
+    }
 }
 
 :global(.g-root_theme_light) .clusterMarker,
