@@ -20,6 +20,28 @@ CLUSTER_CONFIG = {
 SEGMENT_CONFIG = {
     'airport_radius_km': float(os.getenv('AIRPORT_RADIUS_KM', 15.0)),
     'flight_timeout_seconds': int(os.getenv('FLIGHT_TIMEOUT_SECONDS', 1800)),
+    'max_transition_gap_seconds': int(os.getenv('MAX_TRANSITION_GAP_SECONDS', 300)),
+    'ground_glitch_max_seconds': int(os.getenv('GROUND_GLITCH_MAX_SECONDS', 60)),
+    'allowed_lateness_seconds': int(os.getenv('ALLOWED_LATENESS_SECONDS', 120)),
+}
+
+STREAMING_CONFIG = {
+    'driver_memory': os.getenv('STREAMING_DRIVER_MEMORY', '2g'),
+    'driver_memory_overhead': os.getenv('STREAMING_DRIVER_MEMORY_OVERHEAD', '1g'),
+    'executor_memory': os.getenv('STREAMING_EXECUTOR_MEMORY', '4g'),
+    'executor_cores': int(os.getenv('STREAMING_EXECUTOR_CORES', 2)),
+    'num_executors': int(os.getenv('STREAMING_NUM_EXECUTORS', 2)),
+    'shuffle_partitions': int(os.getenv('STREAMING_SHUFFLE_PARTITIONS', 8)),
+    'trigger_seconds': int(os.getenv('STREAMING_TRIGGER_SECONDS', 30)),
+    'max_rows_per_partition': int(
+        os.getenv('STREAMING_MAX_ROWS_PER_PARTITION', 50_000)
+    ),
+}
+
+AGGREGATE_CONFIG = {
+    'window_seconds': int(os.getenv('DASHBOARD_WINDOW_SECONDS', 86400)),
+    'position_freshness_seconds': int(os.getenv('POSITION_FRESHNESS_SECONDS', 900)),
+    'interval_seconds': int(os.getenv('AGGREGATE_INTERVAL_SECONDS', 300)),
 }
 
 PATHS = {

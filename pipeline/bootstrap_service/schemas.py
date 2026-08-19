@@ -128,6 +128,9 @@ FLIGHTS_OPEN_SCHEMA: list[dict[str, Any]] = [
     {"name": "last_callsign", "type": "string"},
     {"name": "departure_icao", "type": "string"},
     {"name": "departure_confidence", "type": "double"},
+    {"name": "departure_distance_km", "type": "double"},
+    {"name": "point_count", "type": "int64"},
+    {"name": "max_altitude_m", "type": "double"},
 ]
 
 FLIGHTS_SEGMENTS_SCHEMA: list[dict[str, Any]] = [

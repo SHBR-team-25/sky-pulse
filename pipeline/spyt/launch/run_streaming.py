@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from pipeline.spyt.config.spark_config import CLUSTER_CONFIG, PATHS
+from pipeline.spyt.config.spark_config import CLUSTER_CONFIG, PATHS, STREAMING_CONFIG
 
 LOCAL_JOB_PATH = Path(__file__).parent.parent / "jobs" / "streaming_job.py"
 
@@ -30,7 +30,15 @@ def upload_job_file(proxy, token, job_path, local_path=LOCAL_JOB_PATH):
 def run_streaming_job(proxy=None, token=None, job_path=None,
                       positions_raw=None, positions_raw_consumer=None, ref_aircraft=None,
                       positions_current=None, positions_history=None,
-                      checkpoint_path=None, num_executors=1,
+                      checkpoint_path=None,
+                      num_executors=STREAMING_CONFIG['num_executors'],
+                      driver_memory=STREAMING_CONFIG['driver_memory'],
+                      driver_memory_overhead=STREAMING_CONFIG['driver_memory_overhead'],
+                      executor_memory=STREAMING_CONFIG['executor_memory'],
+                      executor_cores=STREAMING_CONFIG['executor_cores'],
+                      shuffle_partitions=STREAMING_CONFIG['shuffle_partitions'],
+                      trigger_seconds=STREAMING_CONFIG['trigger_seconds'],
+                      max_rows_per_partition=STREAMING_CONFIG['max_rows_per_partition'],
                       py_files=DEFAULT_PY_FILES,
                       pyspark_python=DEFAULT_PYSPARK_PYTHON, skip_upload=False):
     proxy = (proxy or os.getenv('YT_PROXY', CLUSTER_CONFIG['proxy'])).rstrip('/')
@@ -67,6 +75,20 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         "--master", f"ytsaurus://{proxy}",
         "--deploy-mode", "cluster",
         "--num-executors", str(num_executors),
+        "--driver-memory", driver_memory,
+        "--executor-memory", executor_memory,
+        "--executor-cores", str(executor_cores),
+        "--conf", f"spark.driver.memoryOverhead={driver_memory_overhead}",
+        "--conf", f"spark.sql.shuffle.partitions={shuffle_partitions}",
+        # This demo cluster does not support the signature generation required
+        # by YTsaurus Shuffle (StartShuffle fails in GenerateSignature). Its
+        # node-local external Spark shuffle and Spark's host-local read cannot
+        # see index files inside isolated executor sandboxes. Keep shuffle
+        # ownership in the fixed executors and fetch blocks over the network
+        # from their BlockManagers instead.
+        "--conf", "spark.ytsaurus.shuffle.enabled=false",
+        "--conf", "spark.shuffle.service.enabled=false",
+        "--conf", "spark.shuffle.readHostLocalDisk=false",
         "--conf", f"spark.pyspark.python={pyspark_python}",
         "--py-files", py_files,
         f"yt://{job_path}",
@@ -76,6 +98,8 @@ def run_streaming_job(proxy=None, token=None, job_path=None,
         "--positions-current", positions_current,
         "--positions-history", positions_history,
         "--checkpoint", checkpoint_path,
+        "--trigger-seconds", str(trigger_seconds),
+        "--max-rows-per-partition", str(max_rows_per_partition),
     ]
 
     try:
@@ -97,7 +121,25 @@ if __name__ == "__main__":
     parser.add_argument('--positions-current', help='positions_current table path')
     parser.add_argument('--positions-history', help='positions_history table path')
     parser.add_argument('--checkpoint', help='Checkpoint path')
-    parser.add_argument('--num-executors', type=int, default=1, help='Number of Spark executors')
+    parser.add_argument('--num-executors', type=int, default=STREAMING_CONFIG['num_executors'])
+    parser.add_argument('--driver-memory', default=STREAMING_CONFIG['driver_memory'])
+    parser.add_argument(
+        '--driver-memory-overhead',
+        default=STREAMING_CONFIG['driver_memory_overhead'],
+    )
+    parser.add_argument('--executor-memory', default=STREAMING_CONFIG['executor_memory'])
+    parser.add_argument('--executor-cores', type=int, default=STREAMING_CONFIG['executor_cores'])
+    parser.add_argument(
+        '--shuffle-partitions',
+        type=int,
+        default=STREAMING_CONFIG['shuffle_partitions'],
+    )
+    parser.add_argument('--trigger-seconds', type=int, default=STREAMING_CONFIG['trigger_seconds'])
+    parser.add_argument(
+        '--max-rows-per-partition',
+        type=int,
+        default=STREAMING_CONFIG['max_rows_per_partition'],
+    )
     parser.add_argument('--py-files', default=DEFAULT_PY_FILES,
                        help='yt:// path to SPYT dependencies zip')
     parser.add_argument('--pyspark-python', default=DEFAULT_PYSPARK_PYTHON,
@@ -117,6 +159,13 @@ if __name__ == "__main__":
         positions_history=args.positions_history,
         checkpoint_path=args.checkpoint,
         num_executors=args.num_executors,
+        driver_memory=args.driver_memory,
+        driver_memory_overhead=args.driver_memory_overhead,
+        executor_memory=args.executor_memory,
+        executor_cores=args.executor_cores,
+        shuffle_partitions=args.shuffle_partitions,
+        trigger_seconds=args.trigger_seconds,
+        max_rows_per_partition=args.max_rows_per_partition,
         py_files=args.py_files,
         pyspark_python=args.pyspark_python,
         skip_upload=args.skip_upload,

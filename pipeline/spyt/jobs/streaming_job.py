@@ -15,6 +15,8 @@ def parse_arguments():
     parser.add_argument('--positions-current', required=True, help='Output: positions_current table path in YT')
     parser.add_argument('--positions-history', required=True, help='Output: positions_history table path in YT')
     parser.add_argument('--checkpoint', required=True, help='Checkpoint path')
+    parser.add_argument('--trigger-seconds', type=int, default=30)
+    parser.add_argument('--max-rows-per-partition', type=int, default=50_000)
     return parser.parse_args()
 
 
@@ -36,6 +38,11 @@ def enrich(raw_df, ref_aircraft_df):
 def main():
     args = parse_arguments()
 
+    if args.trigger_seconds <= 0:
+        raise ValueError("trigger_seconds must be positive")
+    if args.max_rows_per_partition <= 0:
+        raise ValueError("max_rows_per_partition must be positive")
+
     spark = create_streaming_session()
 
     print("Starting job_enrich:")
@@ -55,6 +62,7 @@ def main():
         .option("path", args.positions_raw) \
         .option("queue", args.positions_raw) \
         .option("consumer_path", args.positions_raw_consumer) \
+        .option("max_rows_per_partition", args.max_rows_per_partition) \
         .option("cluster", "https://http-proxy-hackathon.demo.ytsaurus.tech") \
         .load()
 
@@ -66,31 +74,35 @@ def main():
 
         # positions_history: ключ (icao24, time_position) уникален для каждой позиции,
         # запись в сортированную dynamic-таблицу по этому ключу — обычный append.
-        enriched_df.write.format("yt") \
-            .option("path", args.positions_history) \
-            .option("inconsistent_dynamic_write", "true") \
-            .mode("append") \
-            .save()
+        try:
+            enriched_df.write.format("yt") \
+                .option("path", args.positions_history) \
+                .option("inconsistent_dynamic_write", "true") \
+                .mode("append") \
+                .save()
 
-        # positions_current: ключ icao24 один на борт, поэтому из микробатча
-        # берём только самую свежую позицию на каждый борт перед записью.
-        latest_window = Window.partitionBy("icao24").orderBy(col("time_position").desc())
-        latest_df = enriched_df \
-            .withColumn("rn", row_number().over(latest_window)) \
-            .filter(col("rn") == 1) \
-            .drop("rn")
-        latest_df.write.format("yt") \
-            .option("path", args.positions_current) \
-            .option("inconsistent_dynamic_write", "true") \
-            .mode("append") \
-            .save()
-
-        enriched_df.unpersist()
+            # positions_current: ключ icao24 один на борт, поэтому из микробатча
+            # берём только самую свежую позицию на каждый борт перед записью.
+            latest_window = Window.partitionBy("icao24").orderBy(
+                col("time_position").desc()
+            )
+            latest_df = enriched_df \
+                .withColumn("rn", row_number().over(latest_window)) \
+                .filter(col("rn") == 1) \
+                .drop("rn")
+            latest_df.write.format("yt") \
+                .option("path", args.positions_current) \
+                .option("inconsistent_dynamic_write", "true") \
+                .mode("append") \
+                .save()
+        finally:
+            # foreachBatch должен снять cache и при ошибке одной из записей.
+            enriched_df.unpersist()
 
     query = raw_stream.writeStream \
         .foreachBatch(process_batch) \
         .option("checkpointLocation", args.checkpoint) \
-        .trigger(processingTime="10 seconds") \
+        .trigger(processingTime=f"{args.trigger_seconds} seconds") \
         .start()
 
     query.awaitTermination()

@@ -8,7 +8,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from pipeline.spyt.config.spark_config import CLUSTER_CONFIG, PATHS, SEGMENT_CONFIG
 from pipeline.spyt.launch.batch_common import (
-    DEFAULT_PYSPARK_PYTHON, DEFAULT_PY_FILES, submit, upload_job_file,
+    DEFAULT_PYSPARK_PYTHON,
+    DEFAULT_PY_FILES,
+    submit,
+    upload_job_file,
 )
 
 LOCAL_JOB_PATH = Path(__file__).parent.parent / "jobs" / "job_segment.py"
@@ -34,9 +37,19 @@ def run_job(args):
         "--proxy", proxy,
         "--airport-radius-km", str(args.airport_radius_km),
         "--timeout-seconds", str(args.timeout_seconds),
+        "--max-transition-gap-seconds", str(args.max_transition_gap_seconds),
+        "--ground-glitch-max-seconds", str(args.ground_glitch_max_seconds),
+        "--allowed-lateness-seconds", str(args.allowed_lateness_seconds),
     ]
     
-    return submit(proxy, job_path, arguments, args.num_executors, args.py_files, args.pyspark_python)
+    return submit(
+        proxy,
+        job_path,
+        arguments,
+        args.num_executors,
+        args.py_files,
+        args.pyspark_python,
+    )
 
 
 def main():
@@ -45,15 +58,45 @@ def main():
     parser.add_argument("--token")
     parser.add_argument("--job-path")
     parser.add_argument("--num-executors", type=int, default=1)
-    parser.add_argument("--airport-radius-km", type=float, default=SEGMENT_CONFIG["airport_radius_km"])
-    parser.add_argument("--timeout-seconds", type=int, default=SEGMENT_CONFIG["flight_timeout_seconds"])
+    parser.add_argument(
+        "--airport-radius-km",
+        type=float,
+        default=SEGMENT_CONFIG["airport_radius_km"],
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=SEGMENT_CONFIG["flight_timeout_seconds"],
+    )
+    parser.add_argument(
+        "--max-transition-gap-seconds",
+        type=int,
+        default=SEGMENT_CONFIG["max_transition_gap_seconds"],
+    )
+    parser.add_argument(
+        "--ground-glitch-max-seconds",
+        type=int,
+        default=SEGMENT_CONFIG["ground_glitch_max_seconds"],
+    )
+    parser.add_argument(
+        "--allowed-lateness-seconds",
+        type=int,
+        default=SEGMENT_CONFIG["allowed_lateness_seconds"],
+    )
     parser.add_argument("--py-files", default=DEFAULT_PY_FILES)
     parser.add_argument("--pyspark-python", default=DEFAULT_PYSPARK_PYTHON)
     parser.add_argument("--skip-upload", action="store_true")
-    parser.add_argument("--interval", type=int, default=900, 
-                        help="Interval between runs in seconds (default: 900 = 15 minutes)")
-    parser.add_argument("--once", action="store_true",
-                        help="Run once and exit (for manual testing)")
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=900,
+        help="Interval between runs in seconds (default: 900 = 15 minutes)",
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run once and exit (for manual testing)",
+    )
     args = parser.parse_args()
 
     if args.once:
@@ -61,7 +104,10 @@ def main():
         success = run_job(args)
         raise SystemExit(0 if success else 1)
     
-    print(f"Starting job_segment scheduler. Interval: {args.interval} seconds ({args.interval//60} minutes)")
+    print(
+        "Starting job_segment scheduler. "
+        f"Interval: {args.interval} seconds ({args.interval // 60} minutes)"
+    )
     print("Press Ctrl+C to stop")
     
     while True:
