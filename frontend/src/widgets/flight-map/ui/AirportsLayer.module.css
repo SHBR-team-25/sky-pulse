@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .airportMarker {
     position: relative;
     display: grid;
@@ -51,7 +53,7 @@
     letter-spacing: 0.06em;
 }
 
-@media (max-width: 768px) {
+@media (--touch-device) {
     .airportMarker {
         width: 28px;
         height: 28px;

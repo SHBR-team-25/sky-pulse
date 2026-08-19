@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .flightsBadge {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
@@ -47,7 +49,7 @@
     color: var(--sky-color-text-primary);
 }
 
-@media (max-width: 600px) {
+@media (--mobile) {
     .flightsBadge {
         grid-template-columns: minmax(0, 1fr);
         gap: 8px;

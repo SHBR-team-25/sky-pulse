@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .footer {
     z-index: 1;
     display: flex;
@@ -61,7 +63,7 @@
     white-space: nowrap;
 }
 
-@media (max-width: 768px) {
+@media (--touch-device) {
     .footer {
         height: 36px;
         padding-inline: 12px;

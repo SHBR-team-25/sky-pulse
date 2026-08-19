@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .dashboard {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
@@ -45,7 +47,7 @@
     margin-block-start: 16px;
 }
 
-@media (max-width: 960px) {
+@media (--tablet) {
     .dashboard {
         grid-template-columns: minmax(0, 1fr);
         gap: 20px;
@@ -56,7 +58,7 @@
     }
 }
 
-@media (max-width: 600px) {
+@media (--mobile) {
     .dashboard {
         gap: 12px;
         padding: 0 12px 12px;

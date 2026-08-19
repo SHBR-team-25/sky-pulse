@@ -111,6 +111,7 @@
 
     "shared": "переиспользуемый код без привязки к домену",
     "shared/config": "общие конфигурационные значения интерфейса",
+    "shared/config/breakpoints.css": "переиспользуемые custom media брейкпоинты адаптивных CSS-стилей",
     "shared/config/breakpoints.ts": "брейкпоинты compact mobile, mobile и desktop и их media queries",
     "shared/config/index.ts": "публичный API конфигурации интерфейса",
     "shared/api": "транспортный слой",

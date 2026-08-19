@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .graph {
     width: 100%;
     max-width: 100%;
@@ -11,13 +13,13 @@
     color: var(--sky-color-text-secondary);
 }
 
-@media (max-width: 960px) {
+@media (--tablet) {
     .graph {
         width: calc(100% - 24px);
     }
 }
 
-@media (max-width: 600px) {
+@media (--mobile) {
     .graph {
         min-height: 260px;
     }

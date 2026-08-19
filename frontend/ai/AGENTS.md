@@ -9,15 +9,15 @@
 
 ### Технологический стек
 
-| Категория | Технология |
-| --- | --- |
-| Язык | TypeScript |
-| State-менеджер | Zustand |
-| Стили | CSS Modules |
-| Роутинг | react-router-dom |
-| Работа с API | TanStack Query |
-| UI-компоненты | GravityUI |
-| Карта | JS API яндекс карт |
+| Категория        | Технология            |
+| ---------------- | --------------------- |
+| Язык             | TypeScript            |
+| State-менеджер   | Zustand               |
+| Стили            | CSS Modules           |
+| Роутинг          | react-router-dom      |
+| Работа с API     | TanStack Query        |
+| UI-компоненты    | GravityUI             |
+| Карта            | JS API яндекс карт    |
 | Доставка статики | Yandex Object Storage |
 
 ### Тестирование
@@ -200,6 +200,7 @@
 │   │           vite.svg                             # логотип Vite / favicon
 │   │
 │   ├───config                                       # общие конфигурационные значения интерфейса
+│   │       breakpoints.css                          # переиспользуемые custom media брейкпоинты адаптивных CSS-стилей
 │   │       breakpoints.ts                           # брейкпоинты compact mobile, mobile и desktop и их media queries
 │   │       index.ts                                 # публичный API конфигурации интерфейса
 │   │

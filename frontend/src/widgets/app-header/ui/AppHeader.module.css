@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .header {
     z-index: 1;
     display: flex;
@@ -219,7 +221,7 @@
     color: inherit;
 }
 
-@media (max-width: 768px) {
+@media (--touch-device) {
     .header {
         height: 56px;
         padding-inline: 14px;

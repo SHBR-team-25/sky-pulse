@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .flightMarker {
     position: relative;
     display: grid;
@@ -70,7 +72,7 @@
     content: '';
 }
 
-@media (max-width: 768px) {
+@media (--touch-device) {
     .flightMarker {
         width: 30px;
         height: 30px;
