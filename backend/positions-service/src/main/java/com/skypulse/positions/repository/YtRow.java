@@ -1,16 +1,16 @@
 package com.skypulse.positions.repository;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.skypulse.positions.repository.exception.MalformedRowException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
 /**
- * Чтение полей строки YT. Jackson на отсутствующем, null-овом и нечисловом
- * поле молча отдаёт ноль или пустую строку, поэтому обязательные поля читаются
- * отдельными методами: пропущенная координата должна быть ошибкой, а не
- * самолётом в точке (0, 0).
+ * Чтение полей строки YT. Jackson на пустом и нечисловом поле молча отдаёт ноль,
+ * поэтому обязательные поля читаются отдельными методами: пропущенная координата
+ * должна быть ошибкой, а не самолётом в точке (0, 0).
  */
 final class YtRow {
 

@@ -25,8 +25,7 @@ public class PipelineStatusService {
         return new PipelineHealth(status, isStale(status));
     }
 
-    // Пустой список бортов неотличим от честно пустого bbox, поэтому «данные
-    // не обновляются» приходится сообщать отдельным флагом.
+    // Пустой список бортов неотличим от пустого bbox, поэтому нужен отдельный флаг.
     private boolean isStale(PipelineStatus status) {
         if (status.lastSuccessAt() == null) {
             return true;

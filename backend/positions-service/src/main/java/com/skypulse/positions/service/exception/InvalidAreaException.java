@@ -1,4 +1,4 @@
-package com.skypulse.positions.service;
+package com.skypulse.positions.service.exception;
 
 public class InvalidAreaException extends InvalidRequestException {
 

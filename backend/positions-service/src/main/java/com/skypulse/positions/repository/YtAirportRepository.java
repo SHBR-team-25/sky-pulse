@@ -3,6 +3,9 @@ package com.skypulse.positions.repository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.skypulse.positions.model.Airport;
 import com.skypulse.positions.model.AirportDirectory;
+import com.skypulse.positions.repository.exception.DataSourceRejectedException;
+import com.skypulse.positions.repository.exception.DataSourceUnavailableException;
+import com.skypulse.positions.repository.exception.MalformedRowException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -11,15 +14,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-/**
- * Держит ref_airports целиком в памяти.
- */
+/** Держит ref_airports целиком в памяти. */
 @Repository
 public class YtAirportRepository implements AirportRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(YtAirportRepository.class);
 
-    // Через сколько пробовать снова, если перечитать таблицу не удалось.
     // Без паузы каждый запрос клиента ломился бы в упавший YT заново.
     private static final long RETRY_AFTER_FAILURE_SECONDS = 60L;
 
@@ -43,7 +43,7 @@ public class YtAirportRepository implements AirportRepository {
         if (isFresh(cached)) {
             return cached.directory();
         }
-        // synchronized, чтобы параллельные запросы не запустили несколько чтений таблицы одновременно.
+        // Чтобы параллельные запросы не запустили несколько чтений таблицы разом.
         synchronized (this) {
             CachedDirectory current = cache.get();
             return isFresh(current) ? current.directory() : reload(current);
@@ -64,8 +64,7 @@ public class YtAirportRepository implements AirportRepository {
             if (stale == null) {
                 throw e;
             }
-            // Справочник статический и устаревает месяцами: вчерашний снапшот
-            // клиенту полезнее, чем 503 на всю ручку из-за минутной недоступности YT.
+            // Справочник устаревает месяцами: вчерашний снапшот полезнее, чем 503.
             LOG.warn("Справочник аэропортов не перечитан, отдаём прежний снапшот", e);
             cache.set(new CachedDirectory(stale.directory(), now + RETRY_AFTER_FAILURE_SECONDS));
             return stale.directory();
@@ -101,7 +100,6 @@ public class YtAirportRepository implements AirportRepository {
             return new Airport(
                     icaoCode != null ? icaoCode : YtRow.requiredText(row, "ident"),
                     YtRow.text(row, "iata_code"),
-                    // Без названия аэропорт нечего показать и не с чем сравнить при сортировке.
                     YtRow.requiredText(row, "name"),
                     YtRow.text(row, "type"),
                     YtRow.text(row, "municipality"),

@@ -1,9 +1,5 @@
-package com.skypulse.positions.repository;
+package com.skypulse.positions.repository.exception;
 
-/**
- * Источник данных не ответил или ответил негодным: сам сервис исправен,
- * повторить запрос имеет смысл.
- */
 public class DataSourceUnavailableException extends RuntimeException {
 
     public DataSourceUnavailableException(String message) {

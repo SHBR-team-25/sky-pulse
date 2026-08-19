@@ -1,12 +1,9 @@
 package com.skypulse.positions.service;
 
 import com.skypulse.positions.model.BoundingBox;
+import com.skypulse.positions.service.exception.InvalidAreaException;
 
-/**
- * Собирает область карты из четырёх параметров запроса. Правило «заданы либо
- * все четыре, либо ни одного» — продуктовое, поэтому живёт в одном месте,
- * а не отдельной копией в каждом контроллере.
- */
+/** Область карты из четырёх параметров: либо заданы все, либо область не задана. */
 public final class MapArea {
 
     private static final double MAX_LON = 180.0;
@@ -26,8 +23,7 @@ public final class MapArea {
         return new BoundingBox(lonMin, latMin, lonMax, latMax);
     }
 
-    // Spring разбирает "NaN" и "Infinity" как обычные Double, и такое значение
-    // доезжало до QL-запроса, а оттуда возвращалось клиенту как отказ YTsaurus.
+    // Spring разбирает "NaN" и "Infinity" как обычные Double, а YT такой QL не принимает.
     private static void requireOnMap(String parameter, Double value, double limit) {
         if (value != null && (!Double.isFinite(value) || Math.abs(value) > limit)) {
             throw new InvalidAreaException(parameter, value, limit);

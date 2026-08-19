@@ -1,9 +1,9 @@
 package com.skypulse.positions.api;
 
-import com.skypulse.positions.repository.DataSourceRejectedException;
-import com.skypulse.positions.repository.DataSourceUnavailableException;
-import com.skypulse.positions.service.InvalidRequestException;
-import com.skypulse.positions.service.PositionNotFoundException;
+import com.skypulse.positions.repository.exception.DataSourceRejectedException;
+import com.skypulse.positions.repository.exception.DataSourceUnavailableException;
+import com.skypulse.positions.service.exception.InvalidRequestException;
+import com.skypulse.positions.service.exception.PositionNotFoundException;
 import java.time.Instant;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -19,17 +19,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-/**
- * Единое тело ошибки с полем `message` для всех кодов. Наследуемся от
- * ResponseEntityExceptionHandler, иначе перехват Exception превратил бы
- * ошибки самого Spring MVC (кривой тип параметра, неподдерживаемый метод) в 500.
- */
+/** Наследование нужно, иначе перехват Exception превратил бы ошибки Spring MVC в 500. */
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
-    // Виноват клиент, а не источник: такое не должно выглядеть как отказ YTsaurus.
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
@@ -40,14 +35,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(HttpStatus.NOT_FOUND, ex.getMessage()));
     }
 
-    /**
-     * Отказ источника, а не баг сервиса, поэтому 503: по коду фронт отличает
-     * «данные временно не отдаются» от «сервис сломан». Сюда же попадает
-     * негодный ответ YT — повторить запрос осмысленно и в этом случае.
-     */
     @ExceptionHandler(DataSourceUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleSourceUnavailable(DataSourceUnavailableException ex) {
-        // Подробности источника — trace_id, текст QL-запроса, пути таблиц — остаются в логе.
         LOG.error("Источник данных недоступен", ex);
         Map<String, Object> body = errorBody(
                 HttpStatus.SERVICE_UNAVAILABLE,
@@ -55,7 +44,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 
-    // Источник отклонил наш запрос: повтор не поможет, чинить нужно сервис.
+    // Повтор не поможет: чинить нужно сам сервис, поэтому 500, а не 503.
     @ExceptionHandler(DataSourceRejectedException.class)
     public ResponseEntity<Map<String, Object>> handleSourceRejected(DataSourceRejectedException ex) {
         LOG.error("YTsaurus отклонил запрос сервиса", ex);
@@ -77,8 +66,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode status,
             WebRequest request) {
-        // Штатные обработчики Spring отдают сюда body == null и ждут, что тело
-        // соберут из самой ошибки.
+        // Штатные обработчики Spring отдают body == null и ждут тело из самой ошибки.
         Object resolved = body == null && ex instanceof ErrorResponse springError ? springError.getBody() : body;
         String message = resolved instanceof ProblemDetail problem ? problem.getDetail() : null;
         return new ResponseEntity<>(errorBody(status, message), headers, status);

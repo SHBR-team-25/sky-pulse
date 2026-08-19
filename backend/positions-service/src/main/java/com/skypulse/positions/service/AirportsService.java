@@ -15,9 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AirportsService {
 
-    // OurAirports — это не только аэропорты: из 86 тысяч строк 23 тысячи
-    // вертодромов, 13 тысяч закрытых площадок, гидроаэродромы и воздухоплавательные
-    // площадки. FR12 — про аэропорты, поэтому наружу отдаём только эти три типа.
+    // В OurAirports кроме аэропортов ещё вертодромы, закрытые и водные площадки.
     private static final Set<String> SERVED_TYPES =
             Set.of("large_airport", "medium_airport", "small_airport");
 
@@ -26,7 +24,7 @@ public class AirportsService {
     static final int MAX_PAGE_SIZE = 500;
     static final int MAX_LIMIT = 10_000;
 
-    // Самое длинное искомое значение среди отдаваемых аэропортов 
+    // Самое длинное искомое значение среди отдаваемых аэропортов.
     private static final int MAX_SEARCH_LENGTH = 120;
 
     private static final Comparator<Airport> BY_NAME =
@@ -56,7 +54,7 @@ public class AirportsService {
 
         int pageSize = effectivePageSize(query);
         int page = query.limit() != null ? 1 : Math.max(1, query.page() == null ? 1 : query.page());
-        // long, потому что page приходит от клиента и (page - 1) * pageSize переполняет int.
+        // long: page приходит от клиента, и (page - 1) * pageSize переполняет int.
         long from = Math.min((long) (page - 1) * pageSize, matched.size());
         long to = Math.min(from + pageSize, matched.size());
 
@@ -75,8 +73,7 @@ public class AirportsService {
         return Math.min(Math.max(value, 1), max);
     }
 
-    // search сравнивается в памяти и в запрос к YT не попадает, поэтому кавычка
-    // и процент — обычные символы, а не подстановочные и не средство инъекции.
+    // Сравнение идёт в памяти: в QL-запрос search не попадает и экранирования не требует.
     private static boolean matchesSearch(Airport airport, String search) {
         if (search == null) {
             return true;

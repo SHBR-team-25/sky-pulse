@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.skypulse.positions.api.AirportsController;
 import com.skypulse.positions.api.PipelineStatusController;
 import com.skypulse.positions.repository.AirportRepository;
-import com.skypulse.positions.repository.DataSourceUnavailableException;
 import com.skypulse.positions.repository.PipelineStatusRepository;
+import com.skypulse.positions.repository.exception.DataSourceUnavailableException;
 import com.skypulse.positions.service.AirportsService;
 import com.skypulse.positions.service.PipelineStatusService;
 import org.junit.jupiter.api.Test;

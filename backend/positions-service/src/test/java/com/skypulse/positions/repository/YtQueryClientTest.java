@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skypulse.positions.repository.exception.DataSourceUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 

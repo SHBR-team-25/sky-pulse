@@ -4,6 +4,9 @@ import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
 import com.skypulse.positions.model.TrackPoint;
 import com.skypulse.positions.repository.PositionRepository;
+import com.skypulse.positions.service.exception.InvalidIcao24Exception;
+import com.skypulse.positions.service.exception.InvalidTrackWindowException;
+import com.skypulse.positions.service.exception.PositionNotFoundException;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -34,8 +37,7 @@ public class PositionsService {
 
     public List<TrackPoint> track(String icao24, long sinceSeconds) {
         String code = requireIcao24(icao24);
-        // Отрицательное окно переполняло вычитание и снимало отсечку по времени:
-        // один запрос выгребал всю историю борта целиком.
+        // Отрицательное окно снимало отсечку по времени и выгребало всю историю борта.
         if (sinceSeconds < 1 || sinceSeconds > MAX_TRACK_WINDOW_SECONDS) {
             throw new InvalidTrackWindowException(sinceSeconds, MAX_TRACK_WINDOW_SECONDS);
         }

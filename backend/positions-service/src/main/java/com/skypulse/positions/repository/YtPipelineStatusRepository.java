@@ -9,10 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 /**
- * Единственный след пайплайна в YT — `pipeline_job_state`, таблица watermark'ов
- * джобов: `(job_name, watermark_ts, updated_at)`. Ни статуса, ни причины паузы,
- * ни времени возобновления в ней нет, поэтому наружу отдаётся только факт
- * «пайплайн отчитывался и довёл данные до такого-то момента».
+ * В `pipeline_job_state` есть только watermark'и джобов: ни статуса, ни причины паузы,
+ * ни времени возобновления, поэтому наружу отдаётся только «докуда доведены данные».
  */
 @Repository
 public class YtPipelineStatusRepository implements PipelineStatusRepository {
@@ -34,8 +32,7 @@ public class YtPipelineStatusRepository implements PipelineStatusRepository {
         return latestOf(ytQueryClient.selectRows("* from [%s]".formatted(jobStatePath)));
     }
 
-    // В таблице по строке на джоб; про пайплайн в целом говорит тот,
-    // кто отчитался последним.
+    // В таблице по строке на джоб; про пайплайн в целом говорит последний отчитавшийся.
     static Optional<PipelineStatus> latestOf(List<JsonNode> rows) {
         return rows.stream()
                 .max(Comparator.comparingLong(row -> row.path("updated_at").asLong()))
@@ -43,9 +40,7 @@ public class YtPipelineStatusRepository implements PipelineStatusRepository {
     }
 
     static PipelineStatus toStatus(JsonNode row) {
-        // Свежесть данных считаем по watermark_ts, а не по updated_at: если джоб
-        // крутится, а источник умер, updated_at продолжает расти, и по нему
-        // пайплайн выглядел бы живым при стоящих данных.
+        // Свежесть — по watermark_ts: updated_at растёт даже когда данные стоят.
         return new PipelineStatus(
                 STATUS_REPORTING,
                 YtRow.nullableLong(row, "watermark_ts"),

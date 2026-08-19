@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skypulse.positions.model.Airport;
 import com.skypulse.positions.model.AirportDirectory;
+import com.skypulse.positions.repository.exception.DataSourceUnavailableException;
+import com.skypulse.positions.repository.exception.MalformedRowException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;

@@ -3,6 +3,8 @@ package com.skypulse.positions.repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skypulse.positions.repository.exception.DataSourceRejectedException;
+import com.skypulse.positions.repository.exception.DataSourceUnavailableException;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
@@ -16,15 +18,11 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-/**
- * Ходит в YTsaurus через HTTP-прокси, а не через RPC-клиент
- * tech.ytsaurus:ytsaurus-client — так не нужен DNS-хак для RPC-proxy.
- */
+/** Ходит в YTsaurus через HTTP-прокси: RPC-клиент потребовал бы DNS-хака. */
 @Component
 public class YtQueryClient {
 
-    // При поломке источника вместо NDJSON приходит целая HTML-страница от прокси,
-    // поэтому в сообщение об ошибке кладём только начало ответа.
+    // На поломке прокси вместо NDJSON приходит целая HTML-страница.
     private static final int MAX_REPORTED_LENGTH = 200;
 
     private final RestClient restClient;
@@ -58,10 +56,7 @@ public class YtQueryClient {
                 .body(String.class)));
     }
 
-    /**
-     * Читает статическую таблицу целиком: `select_rows` умеет только динамические
-     * таблицы и на `ref_airports` отвечает «Table ... is not dynamic».
-     */
+    // Для статических таблиц: select_rows умеет только динамические.
     public List<JsonNode> readTable(String path) {
         return parseNdjson(execute("read_table " + path, () -> restClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/v4/read_table")
@@ -73,7 +68,6 @@ public class YtQueryClient {
                 .body(String.class)));
     }
 
-    /** Значение атрибута узла Кипариса, например `modification_time`. */
     public JsonNode getAttribute(String path, String attribute) {
         String body = execute("get " + path + "/@" + attribute, () -> restClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/v4/get")
@@ -96,7 +90,7 @@ public class YtQueryClient {
         }
     }
 
-    // select_rows и read_table с Accept: application/json отдают NDJSON, а не JSON-массив.
+    // YT отдаёт NDJSON, а не JSON-массив.
     List<JsonNode> parseNdjson(String body) {
         if (body == null || body.isBlank()) {
             return List.of();
@@ -111,7 +105,6 @@ public class YtQueryClient {
         try {
             return objectMapper.readTree(line);
         } catch (JsonProcessingException e) {
-            // Не 500: сервис исправен, негодный ответ пришёл от источника.
             throw new DataSourceUnavailableException(
                     "YTsaurus вернул неразбираемый ответ: " + shorten(line), e);
         }

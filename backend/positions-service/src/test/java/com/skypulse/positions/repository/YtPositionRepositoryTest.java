@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
+import com.skypulse.positions.repository.exception.MalformedRowException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
