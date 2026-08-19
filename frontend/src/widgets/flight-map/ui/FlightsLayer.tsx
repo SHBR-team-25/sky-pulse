@@ -6,6 +6,7 @@ import { YMapFeature, YMapMarker } from '@/shared/lib/ymaps3';
 
 import { FlightDetailsPopover } from './FlightDetailsPopover';
 import styles from './FlightsLayer.module.css';
+import { getFlightIconRotation } from '../model/flightIconRotation';
 import { useFlightDetails } from '../model/useFlightDetails';
 import type { Flight } from '@/entities/flight';
 
@@ -18,10 +19,6 @@ interface FlightsLayerProps {
     flights: Flight[];
 }
 
-/**
- * Борта рисуются поштучно: от перегрузки карты спасает срез `MAX_RENDERED_FLIGHTS`
- * в `useLiveFlights`. Заготовка на замену срезу лежит в `FlightsClusterLayer`.
- */
 export function FlightsLayer({ flights }: FlightsLayerProps) {
     const { selectedFlight, handleDetailsOpenChange } = useFlightDetails();
 
@@ -56,7 +53,7 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                         <span
                             className={styles.flightMarkerIcon}
                             style={{
-                                transform: `rotate(${(flight.trueTrack ?? 0) + 180}deg)`,
+                                transform: getFlightIconRotation(flight.trueTrack),
                             }}
                             aria-hidden="true"
                         >

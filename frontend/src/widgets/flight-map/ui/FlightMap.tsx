@@ -19,11 +19,11 @@ import {
     useSetMapView,
     type MapBoundsParams,
 } from '@/shared/contexts/map-view';
-import { AirportsLayer } from './AirportsLayer';
-import { FlightsLayer } from './FlightsLayer';
+import { AirportsClusterLayer } from './AirportsClusterLayer';
 import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
 import type { Flight } from '@/entities/flight';
+import { FlightsClusterLayer } from './FlightsClusterLayer';
 
 interface FlightMapProps {
     // Читается только при инициализации
@@ -67,8 +67,8 @@ export function FlightMap({
                 <YMapDefaultSchemeLayer />
                 <YMapDefaultFeaturesLayer />
                 <YMapListener onUpdate={handleMapUpdate} />
-                <AirportsLayer airports={airports} />
-                <FlightsLayer flights={flights} />
+                <AirportsClusterLayer airports={airports} />
+                <FlightsClusterLayer flights={flights} />
 
                 <YMapControls position="right">
                     <YMapZoomControl />

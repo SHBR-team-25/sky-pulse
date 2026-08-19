@@ -144,7 +144,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 15 с и срезом до 20 бортов
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с дебаунсом параметров и поллингом раз в 15 с
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -274,6 +274,7 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
+        │       flightIconRotation.ts                # поворот иконки самолёта по trueTrack с поправкой на наклон 45°
         │       useFlightDetails.ts                  # выбор борта на карте поверх useTargetFlight: позиция плюс трек
         │       useMockAirportFlights.ts             # мок-запрос рейсов аэропорта с задержкой 500 мс и таймаутом 5 с
         │
@@ -283,16 +284,17 @@
                 AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой, ошибкой и кнопкой закрытия
                 AirportFlightsList.tsx               # виртуальный список рейсов с загрузкой по 10 строк
                 AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
-                AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
-                AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
+                AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 64 px до zoom 8
+                AirportsLayer.module.css             # стили маркеров, кластеров и подсказок аэропортов
+                AirportsLayer.tsx                    # некластерный слой маркеров аэропортов с кодами, сейчас не подключён
                 FlightDetailsCard.tsx                # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
                 FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
                 FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
                 FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта по initialBounds, zoom 3–15, отдаёт наверх вид и bbox
-                FlightsClusterLayer.tsx              # законсервированная клиентская кластеризация бортов, пока не используется
+                FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
+                FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
                 FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
-                FlightsLayer.tsx                     # слой бортов с поповерами деталей и линией трека выбранного борта
+                FlightsLayer.tsx                     # некластерный слой бортов с поповерами и треком, сейчас не подключён
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера
                 MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
 ```

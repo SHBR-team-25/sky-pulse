@@ -50,3 +50,29 @@
     color: var(--sky-color-status-warning);
     letter-spacing: 0.06em;
 }
+
+.airportClusterMarker {
+    position: relative;
+    display: grid;
+    width: 29px;
+    height: 29px;
+    color: var(--sky-color-bg-canvas-deep);
+    font-size: 12px;
+    font-weight: 800;
+    background: var(--sky-color-status-warning);
+    border: 2.5px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow:
+        0 7px 22px rgba(0, 0, 0, 0.4),
+        0 0 0 6px rgba(255, 190, 70, 0.18);
+    transform: translate(-50%, -50%);
+    place-items: center;
+}
+
+.airportClusterMarker::after {
+    position: absolute;
+    inset: -9px;
+    border: 1px solid rgba(255, 190, 70, 0.35);
+    border-radius: 50%;
+    content: '';
+}

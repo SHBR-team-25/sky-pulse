@@ -5,16 +5,6 @@ import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
 
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 
-/**
- * Предохранитель на размер выдачи: сервер потолка не ставит, а без bbox на мировом зуме
- * приходит порядка 10–15 тысяч бортов, которые FlightsLayer рисует поштучно.
- *
- * Срез даёт «первые N в порядке ответа сервера», а не «N ближайших к центру», поэтому
- * при панорамировании набор бортов заметно скачет. Временный компромисс — снимается
- * вместе с включением FlightsClusterLayer.
- */
-const MAX_RENDERED_FLIGHTS = 20;
-
 export const liveFlightsQueryKeys = {
     all: ['live-flights'] as const,
     list: (params: LiveFlightsQuery) => [...liveFlightsQueryKeys.all, 'list', params] as const,
@@ -29,7 +19,7 @@ export function liveFlightsQueryOptions(params: LiveFlightsQuery = {}) {
                 signal,
             });
 
-            return flights.slice(0, MAX_RENDERED_FLIGHTS);
+            return flights;
         },
         staleTime: DEFAULT_POLL_INTERVAL_MS,
     });

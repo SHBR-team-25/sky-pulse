@@ -1,21 +1,3 @@
-/**
- * Клиентская кластеризация бортов.
- *
- * Пока не используется: `FlightsLayer` рисует борта поштучно, а от перегрузки карты
- * спасает срез `MAX_RENDERED_FLIGHTS` в `useLiveFlights`. Это заготовка ему на замену —
- * `GET /flights/live` отдаёт без bbox 10–15 тысяч бортов, и рано или поздно их придётся
- * схлопывать на клиенте.
- *
- * По возможностям слой уже повторяет `FlightsLayer`: тултип, попап с деталями рейса,
- * трек выбранного борта и подсветка выбранного маркера. Не хватает только реакции на
- * клик по кластеру — он намеренно ничего не делает, зум к границам кластера потребует
- * управляемого `location` у `FlightMap` и вынесен в отдельную задачу.
- *
- * Серверных кластеров (`type: solo/multie`, `count`) в контракте больше нет, поэтому
- * одиночная фича здесь — всегда ровно один борт, а число в бейдже даёт только
- * `clusterByGrid`, схлопнувший несколько фич в одну.
- */
-
 import { useCallback, useMemo } from 'react';
 import { PlaneFill } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
@@ -32,6 +14,7 @@ import {
 
 import { FlightDetailsPopover } from './FlightDetailsPopover';
 import styles from './FlightsLayer.module.css';
+import { getFlightIconRotation } from '../model/flightIconRotation';
 import { useFlightDetails } from '../model/useFlightDetails';
 import type { Flight } from '@/entities/flight';
 
@@ -95,7 +78,7 @@ export function FlightsClusterLayer({ flights }: FlightsClusterLayerProps) {
                 >
                     <span
                         className={styles.flightMarkerIcon}
-                        style={{ transform: `rotate(${(flight?.trueTrack ?? 0) + 180}deg)` }}
+                        style={{ transform: getFlightIconRotation(flight?.trueTrack) }}
                         aria-hidden="true"
                     >
                         <Icon data={PlaneFill} size={14} />
@@ -121,7 +104,7 @@ export function FlightsClusterLayer({ flights }: FlightsClusterLayerProps) {
         [flightsById, selectedFlight, handleDetailsOpenChange]
     );
 
-    /** Схлопнутая группа бортов. Клик по ней пока ничего не делает. */
+    /** Схлопнутая группа бортов. */
     const renderCluster = useCallback((coordinates: LngLat, clusteredFeatures: Feature[]) => {
         const count = clusteredFeatures.length;
 
