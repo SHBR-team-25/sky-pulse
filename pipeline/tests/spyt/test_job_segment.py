@@ -283,6 +283,51 @@ def test_recent_ground_to_air_transition_gets_departure_airport():
     assert state["max_altitude_m"] == 1_000.0
 
 
+def test_short_ground_air_ground_transition_at_same_airport_is_discarded():
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=point(90, on_ground=True),
+        points=[
+            point(100, on_ground=False),
+            point(110, on_ground=True),
+            point(120, on_ground=True),
+        ],
+        airports=AIRPORTS,
+        until_ts=120,
+        timeout_seconds=50,
+        max_transition_gap_seconds=30,
+        ground_glitch_max_seconds=15,
+        airport_radius_km=15.0,
+    )
+
+    assert state is None
+    assert closed == []
+
+
+def test_same_airport_flight_longer_than_glitch_window_is_kept():
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=point(90, on_ground=True),
+        points=[
+            point(100, on_ground=False),
+            point(120, on_ground=False),
+            point(130, on_ground=True),
+            point(140, on_ground=True),
+        ],
+        airports=AIRPORTS,
+        until_ts=140,
+        timeout_seconds=50,
+        max_transition_gap_seconds=30,
+        ground_glitch_max_seconds=15,
+        airport_radius_km=15.0,
+    )
+
+    assert state is None
+    assert len(closed) == 1
+    assert closed[0]["departure_icao"] == "UUEE"
+    assert closed[0]["arrival_icao"] == "UUEE"
+
+
 def test_departure_uses_last_ground_position_not_first_airborne_position():
     state, closed = process_aircraft_points(
         state=None,
@@ -351,9 +396,9 @@ def test_multiple_flights_in_one_batch_have_unique_ids_and_ordered_bounds():
         previous_point=point(90, on_ground=True),
         points=[
             point(100, on_ground=False),
-            point(110, on_ground=True),
             point(120, on_ground=True),
-            point(130, on_ground=False, callsign="AFL200"),
+            point(130, on_ground=True),
+            point(140, on_ground=False, callsign="AFL200"),
             point(200, on_ground=False, callsign="AFL300"),
         ],
         airports=AIRPORTS,
@@ -365,7 +410,7 @@ def test_multiple_flights_in_one_batch_have_unique_ids_and_ordered_bounds():
     )
 
     closed_ids = [segment["flight_id"] for segment in closed]
-    assert closed_ids == [flight_id(ICAO24, 100), flight_id(ICAO24, 130)]
+    assert closed_ids == [flight_id(ICAO24, 100), flight_id(ICAO24, 140)]
     assert len(closed_ids) == len(set(closed_ids))
     assert all(segment["start_ts"] <= segment["end_ts"] for segment in closed)
     assert state["flight_id"] == flight_id(ICAO24, 200)

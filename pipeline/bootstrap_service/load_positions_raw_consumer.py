@@ -1,4 +1,5 @@
 import logging
+import os
 
 from bootstrap_service.schemas import CONSUMER_SCHEMA
 from bootstrap_service.table_writer import ensure_table, ensure_consumer_registration
@@ -11,7 +12,10 @@ logger = logging.getLogger(__name__)
 def load(overwrite: bool = False) -> None:
     config = load_yt_config()
     client = make_client(config)
-    consumer_path = f"{config.base_path}/positions_raw_consumer_second_job"
+    consumer_path = os.getenv(
+        "YT_POSITIONS_RAW_CONSUMER_PATH",
+        f"{config.base_path}/positions_raw_consumer",
+    )
     queue_path = f"{config.base_path}/positions_raw"
 
     if not ensure_table(
@@ -24,7 +28,7 @@ def load(overwrite: bool = False) -> None:
     ):
         logger.info("positions_raw_consumer already exists at %s", consumer_path)
     logger.info("positions_raw_consumer created at %s", consumer_path)
-    
+
     if not ensure_consumer_registration(
         client,
         queue_path=queue_path,
@@ -36,4 +40,3 @@ def load(overwrite: bool = False) -> None:
 
     client.mount_table(consumer_path, sync=True)
     logger.info("positions_raw_consumer mounted at %s", consumer_path)
-    

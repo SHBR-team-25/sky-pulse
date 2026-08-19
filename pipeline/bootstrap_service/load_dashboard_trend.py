@@ -13,7 +13,10 @@ def load(overwrite: bool = False) -> None:
     client = make_client(config)
     table_path = f"{config.base_path}/dashboard_trend"
 
-    if not ensure_table(client, table_path, DASHBOARD_TREND_SCHEMA, overwrite, dynamic=True):
+    if not ensure_table(
+        client, table_path, DASHBOARD_TREND_SCHEMA, overwrite, dynamic=True,
+        max_data_ttl_ms=config.data_retention_seconds * 1000,
+    ):
         logger.info("dashboard_trend already exists at %s, skipping", table_path)
         return
 

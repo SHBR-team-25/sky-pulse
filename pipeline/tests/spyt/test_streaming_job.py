@@ -13,6 +13,8 @@ streaming_job = importlib.util.module_from_spec(MODULE_SPEC)
 MODULE_SPEC.loader.exec_module(streaming_job)
 
 enrich = streaming_job.enrich
+latest_per_aircraft = streaming_job.latest_per_aircraft
+newer_than_current = streaming_job.newer_than_current
 parse_arguments = streaming_job.parse_arguments
 
 
@@ -88,6 +90,21 @@ def test_enrich_preserves_raw_position_fields(spark):
     assert row["on_ground"] is False
     assert row["manufacturername"] == "Boeing"
     assert row["enriched_at"] is not None
+
+
+def test_current_position_never_moves_backwards(spark):
+    batch = spark.createDataFrame(
+        [("abc123", 100, "old"), ("abc123", 300, "new"), ("def456", 200, "first")],
+        "icao24 string, time_position long, callsign string",
+    )
+    current = spark.createDataFrame(
+        [("abc123", 400), ("def456", 150)],
+        "icao24 string, time_position long",
+    )
+
+    rows = newer_than_current(latest_per_aircraft(batch), current).collect()
+
+    assert [(row["icao24"], row["time_position"]) for row in rows] == [("def456", 200)]
 
 
 def test_parse_arguments_returns_all_paths(monkeypatch):

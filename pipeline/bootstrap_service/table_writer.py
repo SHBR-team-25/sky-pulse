@@ -10,6 +10,8 @@ def ensure_table(
     overwrite: bool,
     dynamic: bool = False,
     is_consumer: bool = False,
+    max_data_ttl_ms: int | None = None,
+    auto_trim_config: dict[str, Any] | None = None,
 ) -> bool:
     if client.exists(path) and not overwrite:
         return False
@@ -20,6 +22,11 @@ def ensure_table(
         attributes["primary_medium"] = "default"
     if is_consumer:
         attributes["treat_as_queue_consumer"] = True
+    if max_data_ttl_ms is not None:
+        attributes["max_data_ttl"] = max_data_ttl_ms
+        attributes["min_data_versions"] = 0
+    if auto_trim_config is not None:
+        attributes["auto_trim_config"] = auto_trim_config
 
     client.create("table", path, attributes=attributes, recursive=True, force=True)
     return True

@@ -13,7 +13,10 @@ def load(overwrite: bool = False) -> None:
     client = make_client(config)
     table_path = f"{config.base_path}/positions_history"
 
-    if not ensure_table(client, table_path, POSITIONS_HISTORY_SCHEMA, overwrite, dynamic=True):
+    if not ensure_table(
+        client, table_path, POSITIONS_HISTORY_SCHEMA, overwrite, dynamic=True,
+        max_data_ttl_ms=config.data_retention_seconds * 1000,
+    ):
         logger.info("positions_history already exists at %s, skipping", table_path)
         return
 

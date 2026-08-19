@@ -13,7 +13,13 @@ def load(overwrite: bool = False) -> None:
     client = make_client(config)
     table_path = f"{config.base_path}/positions_raw"
 
-    if not ensure_table(client, table_path, POSITIONS_RAW_SCHEMA, overwrite, dynamic=True):
+    if not ensure_table(
+        client, table_path, POSITIONS_RAW_SCHEMA, overwrite, dynamic=True,
+        auto_trim_config={
+            "enable": True,
+            "retained_lifetime_duration": config.queue_retained_lifetime_seconds * 1000,
+        },
+    ):
         logger.info("positions_raw already exists at %s, skipping", table_path)
         return
 

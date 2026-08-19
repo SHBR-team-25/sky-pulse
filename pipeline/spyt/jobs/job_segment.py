@@ -254,6 +254,27 @@ def close_flight(state, end_ts, reason, arrival):
     }
 
 
+def is_short_same_airport_glitch(state, end_ts, arrival, max_duration_seconds):
+    """Return true for an implausibly short ground-air-ground transition."""
+    arrival_icao = arrival[0]
+    return (
+        max_duration_seconds > 0
+        and state["departure_icao"] is not None
+        and state["departure_icao"] == arrival_icao
+        and end_ts - state["start_ts"] <= max_duration_seconds
+    )
+
+
+def append_landing(closed, state, end_ts, arrival, ground_glitch_max_seconds):
+    if not is_short_same_airport_glitch(
+        state,
+        end_ts,
+        arrival,
+        ground_glitch_max_seconds,
+    ):
+        closed.append(close_flight(state, end_ts, "landing", arrival))
+
+
 def event(segment, direction):
     departure = direction == "departure"
     airport = segment["departure_icao"] if departure else segment["arrival_icao"]
@@ -378,14 +399,16 @@ def process_aircraft_points(
             else:
                 arrival = (None, None, None)
                 reason = "timeout"
-            closed.append(
-                close_flight(
+            if reason == "landing":
+                append_landing(
+                    closed,
                     state,
                     state["last_ts"],
-                    reason,
                     arrival,
+                    ground_glitch_max_seconds,
                 )
-            )
+            else:
+                closed.append(close_flight(state, state["last_ts"], reason, arrival))
             state = None
 
         if state:
@@ -396,13 +419,12 @@ def process_aircraft_points(
                     airports,
                     airport_radius_km,
                 )
-                closed.append(
-                    close_flight(
-                        state,
-                        state["last_ts"],
-                        "landing",
-                        arrival,
-                    )
+                append_landing(
+                    closed,
+                    state,
+                    state["last_ts"],
+                    arrival,
+                    ground_glitch_max_seconds,
                 )
                 state = None
             elif point["on_ground"]:
@@ -418,13 +440,12 @@ def process_aircraft_points(
                     airports,
                     airport_radius_km,
                 )
-                closed.append(
-                    close_flight(
-                        state,
-                        state["last_ts"],
-                        "landing",
-                        arrival,
-                    )
+                append_landing(
+                    closed,
+                    state,
+                    state["last_ts"],
+                    arrival,
+                    ground_glitch_max_seconds,
                 )
                 state = None
             else:
@@ -463,14 +484,16 @@ def process_aircraft_points(
         else:
             arrival = (None, None, None)
             reason = "timeout"
-        closed.append(
-            close_flight(
+        if reason == "landing":
+            append_landing(
+                closed,
                 state,
                 state["last_ts"],
-                reason,
                 arrival,
+                ground_glitch_max_seconds,
             )
-        )
+        else:
+            closed.append(close_flight(state, state["last_ts"], reason, arrival))
         state = None
 
     return state, closed
@@ -495,9 +518,13 @@ def run(args, spark):
         raise ValueError(f"until_ts ({until_ts}) must not be less than watermark ({watermark})")
 
     history = spark.read.format("yt").option("path", args.positions_history).load()
+    # The cursor follows when streaming made a row visible, not its OpenSky event
+    # time. Otherwise a delayed row can arrive after an event-time watermark and
+    # be skipped forever.
     new_rows = history.filter(
-        (col("time_position") > watermark)
-        & (col("time_position") <= until_ts)
+        col("enriched_at").isNotNull()
+        & (col("enriched_at") > watermark)
+        & (col("enriched_at") <= until_ts)
         & col("icao24").isNotNull()
         & col("on_ground").isNotNull()
         & col("lat").isNotNull()
@@ -510,10 +537,7 @@ def run(args, spark):
 
     previous_window = Window.partitionBy("icao24").orderBy(col("time_position").desc())
     previous = (
-        history.filter(
-            (col("time_position") <= watermark)
-            & (col("time_position") >= watermark - args.max_transition_gap_seconds)
-        )
+        history.filter(col("enriched_at").isNotNull() & (col("enriched_at") <= watermark))
         .withColumn("rn", row_number().over(previous_window))
         .filter(col("rn") == 1)
         .drop("rn")

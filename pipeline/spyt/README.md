@@ -44,14 +44,17 @@ BlockManager. Dynamic allocation с такой конфигурацией вкл
 |python pipeline/spyt/launch/run_aggregate.py|Пересчитывать витрины дашборда каждые 5 минут|
 
 Расписание задаётся внешним оркестратором. `job_segment` хранит watermark последнего
-успешного запуска в `pipeline_job_state`. Радиус поиска аэропорта, таймаут рейса,
-максимальный разрыв между ground/airborne-точками и задержка event-time настраиваются
+успешного запуска в `pipeline_job_state`; это курсор по `enriched_at`, поэтому поздно
+записанные позиции не теряются из-за более старого `time_position`. Радиус поиска
+аэропорта, таймаут рейса, максимальный разрыв между ground/airborne-точками и задержка настраиваются
 через `AIRPORT_RADIUS_KM`, `FLIGHT_TIMEOUT_SECONDS`, `MAX_TRANSITION_GAP_SECONDS`,
 `GROUND_GLITCH_MAX_SECONDS` и `ALLOWED_LATENESS_SECONDS`.
 
 `job_segment` считает посадку подтверждённой после двух последовательных ground-точек
 либо после ground-точки и достаточно долгой стоянки. Короткий переход
-`airborne → ground → airborne` считается шумом источника. Смена callsign обновляет
+`airborne → ground → airborne` считается шумом источника. Переход
+`ground → airborne → ground` также отбрасывается, когда он короче glitch-окна и
+аэропорты вылета и прилёта совпадают. Смена callsign обновляет
 метаданные рейса, но сама по себе не является его границей. Аэропорт вылета определяется
 только по свежему переходу `ground → airborne`; у борта, впервые замеченного в воздухе,
 он остаётся неизвестным.

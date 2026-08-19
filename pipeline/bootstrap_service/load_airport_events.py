@@ -13,7 +13,10 @@ def load(overwrite: bool = False) -> None:
     client = make_client(config)
     table_path = f"{config.base_path}/airport_events"
 
-    if not ensure_table(client, table_path, AIRPORT_EVENTS_SCHEMA, overwrite, dynamic=True):
+    if not ensure_table(
+        client, table_path, AIRPORT_EVENTS_SCHEMA, overwrite, dynamic=True,
+        max_data_ttl_ms=config.data_retention_seconds * 1000,
+    ):
         logger.info("airport_events already exists at %s, skipping", table_path)
         return
 

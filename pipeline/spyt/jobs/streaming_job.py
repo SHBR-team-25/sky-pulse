@@ -35,6 +35,25 @@ def enrich(raw_df, ref_aircraft_df):
         .withColumn("enriched_at", unix_timestamp(current_timestamp()))
 
 
+def latest_per_aircraft(positions_df):
+    latest_window = Window.partitionBy("icao24").orderBy(col("time_position").desc())
+    return positions_df \
+        .withColumn("rn", row_number().over(latest_window)) \
+        .filter(col("rn") == 1) \
+        .drop("rn")
+
+
+def newer_than_current(latest_df, current_df):
+    candidate = latest_df.alias("candidate")
+    current_times = current_df.select("icao24", "time_position").alias("current")
+    return candidate.join(current_times, on="icao24", how="left") \
+        .filter(
+            col("current.time_position").isNull()
+            | (col("candidate.time_position") > col("current.time_position"))
+        ) \
+        .select("candidate.*")
+
+
 def main():
     args = parse_arguments()
 
@@ -83,14 +102,9 @@ def main():
 
             # positions_current: ключ icao24 один на борт, поэтому из микробатча
             # берём только самую свежую позицию на каждый борт перед записью.
-            latest_window = Window.partitionBy("icao24").orderBy(
-                col("time_position").desc()
-            )
-            latest_df = enriched_df \
-                .withColumn("rn", row_number().over(latest_window)) \
-                .filter(col("rn") == 1) \
-                .drop("rn")
-            latest_df.write.format("yt") \
+            latest_df = latest_per_aircraft(enriched_df)
+            current_df = spark.read.format("yt").option("path", args.positions_current).load()
+            newer_than_current(latest_df, current_df).write.format("yt") \
                 .option("path", args.positions_current) \
                 .option("inconsistent_dynamic_write", "true") \
                 .mode("append") \

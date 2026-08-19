@@ -47,3 +47,19 @@ ruff format .
 mypy .
 pytest
 ```
+# Retention
+
+Bootstrap создаёт `positions_history`, `flights_segments`, `airport_events` и
+`dashboard_trend` с TTL `DATA_RETENTION_SECONDS` (по умолчанию 7 дней) и
+`min_data_versions=0`. Значение должно быть больше `DASHBOARD_WINDOW_SECONDS`.
+`positions_raw` очищается Queue Agent по offset vital consumer, сохраняя прочитанные
+строки ещё на `QUEUE_RETAINED_LIFETIME_SECONDS`.
+
+Bootstrap не меняет уже существующие таблицы. Для однократного применения настроек
+с remount исторических таблиц выполните из каталога `pipeline`:
+
+```bash
+python -m bootstrap_service.apply_retention
+```
+
+Перед запуском проверьте registrations и lag: забытый vital consumer блокирует trim.
