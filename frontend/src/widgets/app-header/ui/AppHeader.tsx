@@ -1,11 +1,16 @@
 // import { Magnifier } from '@gravity-ui/icons';
-import { Button } from '@gravity-ui/uikit';
+import { Moon, Sun } from '@gravity-ui/icons';
+import { Button, Icon, Switch } from '@gravity-ui/uikit';
 import { NavLink } from 'react-router';
 import { useUtcTime } from '@/shared/hooks';
+import { useAppTheme } from '@/shared/contexts/theme';
 import styles from './AppHeader.module.css';
 
 export function AppHeader() {
     const { utcTime, utcDateTime } = useUtcTime();
+    const { theme, toggleTheme } = useAppTheme();
+    const isDarkTheme = theme === 'dark';
+    const nextThemeLabel = isDarkTheme ? 'Включить светлую тему' : 'Включить тёмную тему';
 
     return (
         <header className={styles.header}>
@@ -54,6 +59,23 @@ export function AppHeader() {
                     <span className={styles.liveDot} aria-hidden="true" />
                     <span>{headerMock.liveLabel}</span>
                 </div> */}
+                <Switch
+                    className={styles.themeToggle}
+                    size="l"
+                    checked={isDarkTheme}
+                    title={nextThemeLabel}
+                    controlProps={{ 'aria-label': nextThemeLabel }}
+                    onUpdate={toggleTheme}
+                >
+                    <span className={styles.themeToggleIcons} aria-hidden="true">
+                        <span className={`${styles.themeToggleIcon} ${styles.themeToggleSun}`}>
+                            <Icon data={Sun} size={14} />
+                        </span>
+                        <span className={`${styles.themeToggleIcon} ${styles.themeToggleMoon}`}>
+                            <Icon data={Moon} size={14} />
+                        </span>
+                    </span>
+                </Switch>
                 <time className={styles.utcTime} dateTime={utcDateTime}>
                     {utcTime}
                 </time>

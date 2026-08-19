@@ -61,7 +61,7 @@ export function AirportDetailsPopover({
     } else {
         content = (
             <div className={styles.message} role="alert">
-                No details found
+                Не удалось загрузить данные
             </div>
         );
     }

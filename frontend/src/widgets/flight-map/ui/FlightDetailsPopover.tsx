@@ -70,7 +70,7 @@ export function FlightDetailsPopover({
                         <FlightDetailsCard details={details} />
                     ) : (
                         <div className={styles.message} role="alert">
-                            No details found
+                            Не удалось загрузить данные
                         </div>
                     )}
                 </div>

@@ -20,7 +20,7 @@ import type { LiveFlight } from '@/entities/flight';
 const CLUSTER_SOURCE = 'clustered-flights';
 const FLIGHT_PATH_STYLE: DrawingStyle = {
     zIndex: 100,
-    stroke: [{ color: 'var(--sky-color-status-warning)', width: 4 }],
+    stroke: [{ color: 'var(--sky-color-map-flight-path)', width: 4 }],
 };
 
 interface FlightsLayerProps {
