@@ -1,0 +1,1 @@
+export { AirportDetails } from './AirportDetails';

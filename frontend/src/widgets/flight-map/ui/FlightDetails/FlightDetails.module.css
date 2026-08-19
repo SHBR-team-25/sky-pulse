@@ -1,4 +1,4 @@
-.drawer {
+.sheet {
     --g-color-sfx-veil: rgba(2, 6, 12, 0.56);
 
     z-index: 2147483000;
@@ -20,20 +20,48 @@
     backdrop-filter: blur(22px);
 }
 
-.drawerContent {
+.sheetContent {
     --flight-details-content-height: 217px;
 
-    max-height: calc(100dvh - 48px);
     color: var(--sky-color-text-primary);
     overflow: hidden;
+}
+
+.sheetContent,
+.sheetSwipeArea {
     background: rgba(13, 20, 32, 0.96);
     border: 1px solid oklch(78% 0.12 220deg / 0.35);
-    border-bottom: 0;
-    border-radius: 18px 18px 0 0;
     box-shadow:
         0 26px 60px -18px rgba(0, 0, 0, 0.9),
         0 0 0 1px rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(22px);
+}
+
+.sheetSwipeArea {
+    inset-block-start: -12px;
+    height: 32px;
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+}
+
+.sheetSwipeArea::after {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 40px;
+    height: 4px;
+    background: var(--sky-color-text-muted);
+    border-radius: 999px;
+    opacity: 0.7;
+    transform: translate(-50%, -50%);
+    content: '';
+    pointer-events: none;
+}
+
+.sheetContentBottom {
+    max-height: calc(100dvh - 48px);
+    border-top: 0;
+    border-bottom: 0;
 }
 
 .card {
@@ -48,14 +76,9 @@
     width: 100%;
 }
 
-.drawerBody {
+.sheetBody {
     width: 100%;
     padding: 20px 24px calc(72px + env(safe-area-inset-bottom));
-}
-
-.drawerBody .closeButton {
-    top: 28px;
-    right: 28px;
 }
 
 .closeButton {
@@ -264,66 +287,60 @@
     border-radius: 0 0 13px 13px;
 }
 
-@media (max-width: 640px) {
-    .drawerContent {
-        max-height: calc(100dvh - 24px);
-        border-radius: 14px 14px 0 0;
-    }
-
-    .drawerBody {
-        padding: 14px 14px calc(80px + env(safe-area-inset-bottom));
-    }
-
-    .drawerBody .closeButton {
-        top: 20px;
-        right: 18px;
-    }
-
-    .header {
-        align-items: flex-start;
-        padding: 14px 44px 12px 14px;
-    }
-
-    .status {
-        margin-top: 1px;
-    }
-
-    .route {
-        gap: 8px;
-        padding-inline: 14px;
-    }
-
-    .airport {
-        width: min(23vw, 78px);
-    }
-
-    .metric {
-        padding: 10px 12px;
-    }
-
-    .metric dd {
-        font-size: 14px;
-    }
+.sheetMobile .sheetContentBottom {
+    max-height: calc(100dvh - 24px);
 }
 
-@media (max-width: 380px) {
-    .header {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-    }
+.sheetMobile .sheetSwipeArea {
+    border-radius: 14px 14px 0 0;
+}
 
-    .status {
-        justify-self: start;
-    }
+.sheetMobile .sheetBody {
+    padding: 14px 14px calc(20px + env(safe-area-inset-bottom));
+}
 
-    .metrics {
-        grid-template-columns: repeat(2, 1fr);
-    }
+.sheetMobile .header {
+    align-items: flex-start;
+    padding: 14px 14px 12px;
+}
 
-    .metric:nth-child(3) {
-        grid-column: 1 / -1;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
+.sheetMobile .status {
+    margin-top: 1px;
+}
+
+.sheetMobile .route {
+    gap: 8px;
+    padding-inline: 14px;
+}
+
+.sheetMobile .airport {
+    width: min(23vw, 78px);
+}
+
+.sheetMobile .metric {
+    padding: 10px 12px;
+}
+
+.sheetMobile .metric dd {
+    font-size: 14px;
+}
+
+.sheetCompactMobile .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.sheetCompactMobile .status {
+    justify-self: start;
+}
+
+.sheetCompactMobile .metrics {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.sheetCompactMobile .metric:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .eta {

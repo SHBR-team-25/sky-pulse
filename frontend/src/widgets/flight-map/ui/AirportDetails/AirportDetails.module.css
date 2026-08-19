@@ -1,14 +1,35 @@
-.drawer {
+.sheet {
     --g-color-sfx-veil: rgba(2, 6, 12, 0.56);
 
     z-index: 2147483000;
 }
 
-.drawerContent {
+.popover {
+    --g-popup-background-color: rgba(13, 20, 32, 0.92);
+    --g-popup-border-color: oklch(78% 0.12 220deg / 0.45);
+    --g-popup-border-radius: 13px;
+    --g-popup-border-width: 1px;
+    --airport-details-content-height: 332px;
+
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    color: var(--sky-color-text-primary);
+    overflow: visible;
+    box-shadow:
+        0 26px 60px -18px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(22px);
+}
+
+.sheetContent {
     --airport-details-content-height: 332px;
 
     color: var(--sky-color-text-primary);
     overflow: hidden;
+}
+
+.sheetContent,
+.sheetSwipeArea {
     background: rgba(13, 20, 32, 0.96);
     border: 1px solid oklch(78% 0.12 220deg / 0.35);
     box-shadow:
@@ -17,16 +38,31 @@
     backdrop-filter: blur(22px);
 }
 
-.drawerContentSide {
-    max-height: none;
-    border-left: 0;
-    border-radius: 0 18px 18px 0;
-}
-
-.drawerContentBottom {
-    max-height: calc(100dvh - 48px);
+.sheetSwipeArea {
+    inset-block-start: -12px;
+    height: 32px;
     border-bottom: 0;
     border-radius: 18px 18px 0 0;
+}
+
+.sheetSwipeArea::after {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 40px;
+    height: 4px;
+    background: var(--sky-color-text-muted);
+    border-radius: 999px;
+    opacity: 0.7;
+    transform: translate(-50%, -50%);
+    content: '';
+    pointer-events: none;
+}
+
+.sheetContentBottom {
+    max-height: calc(100dvh - 48px);
+    border-top: 0;
+    border-bottom: 0;
 }
 
 .card {
@@ -39,7 +75,6 @@
 .content {
     position: relative;
     width: 100%;
-    padding: 20px 24px calc(72px + env(safe-area-inset-bottom));
 }
 
 .content .closeButton {
@@ -267,60 +302,54 @@
     text-align: center;
 }
 
-@media (max-width: 640px) {
-    .drawerContentBottom {
-        max-height: calc(100dvh - 24px);
-        border-radius: 14px 14px 0 0;
-    }
-
-    .content {
-        padding: 14px 14px calc(80px + env(safe-area-inset-bottom));
-    }
-
-    .content .closeButton {
-        top: 20px;
-        right: 18px;
-    }
-
-    .header {
-        padding: 14px 44px 12px 14px;
-    }
-
-    .tabs {
-        justify-content: space-between;
-        gap: 8px;
-        padding-inline: 14px;
-    }
-
-    .tableHeader,
-    .flightRow {
-        grid-template-columns: 40px 60px minmax(72px, 1fr) 52px;
-        column-gap: 7px;
-    }
-
-    .tableHeader {
-        padding-inline: 14px calc(14px + var(--sky-scrollbar-size));
-    }
-
-    .flightRow {
-        padding-inline: 14px;
-    }
-
-    .flightList {
-        height: clamp(220px, 42dvh, 282px);
-        max-height: 42dvh;
-    }
+.sheetMobile .sheetContentBottom {
+    max-height: calc(100dvh - 24px);
 }
 
-@media (max-width: 380px) {
-    .tableHeader,
-    .flightRow {
-        grid-template-columns: 38px 58px minmax(65px, 1fr) 10px;
-        column-gap: 6px;
-    }
+.sheetMobile .sheetSwipeArea {
+    border-radius: 14px 14px 0 0;
+}
 
-    .direction {
-        overflow: hidden;
-        font-size: 0;
-    }
+.sheetMobile .content {
+    padding: 14px 14px calc(20px + env(safe-area-inset-bottom));
+}
+
+.sheetMobile .header {
+    padding: 14px 14px 12px;
+}
+
+.sheetMobile .tabs {
+    justify-content: space-between;
+    gap: 8px;
+    padding-inline: 14px;
+}
+
+.sheetMobile .tableHeader,
+.sheetMobile .flightRow {
+    grid-template-columns: 40px 60px minmax(72px, 1fr) 52px;
+    column-gap: 7px;
+}
+
+.sheetMobile .tableHeader {
+    padding-inline: 14px calc(14px + var(--sky-scrollbar-size));
+}
+
+.sheetMobile .flightRow {
+    padding-inline: 14px;
+}
+
+.sheetMobile .flightList {
+    height: clamp(220px, 42dvh, 282px);
+    max-height: 42dvh;
+}
+
+.sheetCompactMobile .tableHeader,
+.sheetCompactMobile .flightRow {
+    grid-template-columns: 38px 58px minmax(65px, 1fr) 10px;
+    column-gap: 6px;
+}
+
+.sheetCompactMobile .direction {
+    overflow: hidden;
+    font-size: 0;
 }

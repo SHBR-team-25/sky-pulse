@@ -5,6 +5,7 @@
     height: 22px;
     padding: 0;
     color: var(--sky-color-text-primary);
+    appearance: none;
     background: var(--sky-color-surface-header);
     border: 2px solid var(--sky-color-accent-primary);
     border-radius: 50%;

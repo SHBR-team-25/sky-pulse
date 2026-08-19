@@ -95,7 +95,7 @@
 │   │       │       FlightsBadge.tsx                 # активные рейсы и их разбивка по фазам полёта
 │   │       │
 │   │       └───TrafficTrendGraph
-│   │               TrafficTrendGraph.module.css     # стили контейнера графика тренда трафика
+│   │               TrafficTrendGraph.module.css     # адаптивные стили контейнера графика тренда трафика
 │   │               TrafficTrendGraph.tsx            # линейный Chart тренда трафика, заглушка при пустых данных
 │   │
 │   └───flight                                       # сущность «рейс»
@@ -199,6 +199,10 @@
 │   │           react.svg                            # логотип React
 │   │           vite.svg                             # логотип Vite / favicon
 │   │
+│   ├───config                                       # общие конфигурационные значения интерфейса
+│   │       breakpoints.ts                           # брейкпоинты compact mobile, mobile и desktop и их media queries
+│   │       index.ts                                 # публичный API конфигурации интерфейса
+│   │
 │   ├───contexts                                     # React-контексты общего состояния
 │   │   └───map-view                                 # состояние центра и масштаба карты
 │   │       │   context.ts                           # контексты текущего представления карты и его обновления
@@ -275,22 +279,34 @@
         │       useMockFlightDetails.ts              # мок-запрос деталей рейса с задержкой 500 мс и таймаутом 5 с
         │
         └───ui
-                AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов
-                AirportDetailsPopover.module.css     # стили поповера, карточки и виртуального списка рейсов аэропорта
-                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой, ошибкой и кнопкой закрытия
-                AirportFlightsList.tsx               # виртуальный список рейсов с загрузкой по 10 строк
-                AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
-                AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
-                AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
-                FlightDetailsCard.tsx                # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
-                FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
-                FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
-                FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта с начальным центром в Лондоне, zoom 3–15 и синхронизацией вида
-                FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
-                FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
-                MarkerTooltip.module.css             # стили всплывающей подсказки маркера
-                MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
+            │   AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
+            │   AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
+            │   FlightMap.module.css                 # стили контейнера карты рейсов
+            │   FlightMap.tsx                        # карта с начальным центром в Лондоне, zoom 3–15 и синхронизацией вида
+            │   FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
+            │   FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
+            │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера
+            │   MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
+            │
+            ├───AirportDetails                       # адаптивные детали аэропорта в поповере или нижнем Sheet
+            │       AirportDetails.module.css        # стили деталей аэропорта, поповера и Sheet
+            │       AirportDetails.tsx               # переключает детали аэропорта между desktop-поповером и mobile-Sheet
+            │       AirportDetailsCard.tsx           # карточка аэропорта с метаданными и секцией рейсов
+            │       AirportDetailsContent.tsx        # контент деталей аэропорта со состояниями загрузки и ошибки
+            │       AirportDetailsPopover.tsx        # desktop-поповер деталей аэропорта с подсказкой маркера
+            │       AirportDetailsSheet.tsx          # mobile-Sheet деталей аэропорта с адаптивными отступами
+            │       AirportFlightsList.tsx           # виртуальный список рейсов с постраничной загрузкой по 10 строк
+            │       AirportFlightsSection.tsx        # сортирует рейсы и фильтрует их вкладками по направлению
+            │       index.ts                         # публичный API деталей аэропорта
+            │
+            └───FlightDetails                        # адаптивные детали рейса в поповере или нижнем Sheet
+                    FlightDetails.module.css         # стили деталей рейса, поповера и Sheet
+                    FlightDetails.tsx                # переключает детали рейса между desktop-поповером и mobile-Sheet
+                    FlightDetailsCard.tsx            # карточка маршрута, статуса, параметров и ETA с подсказками аэропортов
+                    FlightDetailsContent.tsx         # контент деталей рейса со состояниями загрузки и ошибки
+                    FlightDetailsPopover.tsx         # desktop-поповер деталей рейса с подсказкой маркера
+                    FlightDetailsSheet.tsx           # mobile-Sheet деталей рейса с адаптивными отступами
+                    index.ts                         # публичный API деталей рейса
 ```
 
 <!-- TREE:END -->
