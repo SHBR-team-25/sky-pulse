@@ -84,6 +84,8 @@ def process(state, previous_point, points, until_ts):
         max_transition_gap_seconds=30,
         ground_glitch_max_seconds=15,
         airport_radius_km=15.0,
+        bbox=(40.0, 0.0, 60.0, 40.0),
+        bbox_exit_margin_km=25.0,
     )
 
 
@@ -96,7 +98,7 @@ def test_timeout_closes_old_flight_and_starts_a_new_one():
     )
 
     assert [segment["flight_id"] for segment in closed] == ["existing-flight"]
-    assert closed[0]["closed_reason"] == "timeout"
+    assert closed[0]["closed_reason"] == "observation_lost"
     assert state["flight_id"] == flight_id(ICAO24, 200)
     assert state["flight_id"] != "existing-flight"
     assert state["departure_icao"] is None
@@ -237,6 +239,69 @@ def test_first_airborne_observation_has_unknown_departure():
     assert closed == []
     assert state["departure_icao"] is None
     assert state["departure_confidence"] is None
+
+
+def test_single_airborne_candidate_is_discarded_on_timeout():
+    state, closed = process(
+        state=None,
+        previous_point=None,
+        points=[point(100, on_ground=False)],
+        until_ts=200,
+    )
+
+    assert state is None
+    assert closed == []
+
+
+def test_single_false_takeoff_flag_is_discarded_on_timeout():
+    state, closed = process(
+        state=None,
+        previous_point=point(90, on_ground=True, baro_altitude=None),
+        points=[point(100, on_ground=False, baro_altitude=205.0)],
+        until_ts=200,
+    )
+
+    assert state is None
+    assert closed == []
+
+
+def test_confirmed_track_near_bbox_edge_is_closed_as_bbox_exit():
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=None,
+        points=[
+            point(100, on_ground=False, lat=50.0, lon=24.9),
+            point(110, on_ground=False, lat=50.0, lon=24.95),
+        ],
+        airports=[],
+        until_ts=200,
+        timeout_seconds=50,
+        max_transition_gap_seconds=30,
+        ground_glitch_max_seconds=15,
+        airport_radius_km=15.0,
+        bbox=(45.0, 5.0, 55.0, 25.0),
+        bbox_exit_margin_km=25.0,
+    )
+
+    assert state is None
+    assert len(closed) == 1
+    assert closed[0]["closed_reason"] == "bbox_exit"
+
+
+def test_confirmed_track_inside_bbox_is_closed_as_observation_lost():
+    state, closed = process(
+        state=None,
+        previous_point=None,
+        points=[
+            point(100, on_ground=False),
+            point(110, on_ground=False),
+        ],
+        until_ts=200,
+    )
+
+    assert state is None
+    assert len(closed) == 1
+    assert closed[0]["closed_reason"] == "observation_lost"
 
 
 def test_unknown_departure_stays_unknown_when_flight_lands_near_airport():
@@ -410,7 +475,7 @@ def test_multiple_flights_in_one_batch_have_unique_ids_and_ordered_bounds():
     )
 
     closed_ids = [segment["flight_id"] for segment in closed]
-    assert closed_ids == [flight_id(ICAO24, 100), flight_id(ICAO24, 140)]
+    assert closed_ids == [flight_id(ICAO24, 100)]
     assert len(closed_ids) == len(set(closed_ids))
     assert all(segment["start_ts"] <= segment["end_ts"] for segment in closed)
     assert state["flight_id"] == flight_id(ICAO24, 200)

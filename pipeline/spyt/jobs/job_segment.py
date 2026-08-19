@@ -23,6 +23,11 @@ def parse_arguments():
     parser.add_argument("--max-transition-gap-seconds", type=int, default=300)
     parser.add_argument("--ground-glitch-max-seconds", type=int, default=60)
     parser.add_argument("--allowed-lateness-seconds", type=int, default=120)
+    parser.add_argument("--bbox-lamin", type=float, default=45.0)
+    parser.add_argument("--bbox-lomin", type=float, default=5.0)
+    parser.add_argument("--bbox-lamax", type=float, default=55.0)
+    parser.add_argument("--bbox-lomax", type=float, default=25.0)
+    parser.add_argument("--bbox-exit-margin-km", type=float, default=25.0)
     parser.add_argument("--until-ts", type=int)
     return parser.parse_args()
 
@@ -56,6 +61,8 @@ def validate_parameters(
     max_transition_gap_seconds,
     ground_glitch_max_seconds,
     allowed_lateness_seconds,
+    bbox=None,
+    bbox_exit_margin_km=25.0,
 ):
     if not math.isfinite(airport_radius_km) or airport_radius_km <= 0:
         raise ValueError("airport_radius_km must be a positive finite number")
@@ -73,6 +80,16 @@ def validate_parameters(
         )
     if allowed_lateness_seconds < 0:
         raise ValueError("allowed_lateness_seconds must not be negative")
+    if bbox is not None:
+        lamin, lomin, lamax, lomax = bbox
+        if not all(math.isfinite(value) for value in bbox):
+            raise ValueError("bbox coordinates must be finite")
+        if not (-90.0 <= lamin < lamax <= 90.0):
+            raise ValueError("bbox latitude bounds are invalid")
+        if not (-180.0 <= lomin < lomax <= 180.0):
+            raise ValueError("bbox longitude bounds are invalid")
+    if not math.isfinite(bbox_exit_margin_km) or bbox_exit_margin_km < 0:
+        raise ValueError("bbox_exit_margin_km must be non-negative and finite")
 
 
 def flight_id(icao24, start_ts):
@@ -275,6 +292,32 @@ def append_landing(closed, state, end_ts, arrival, ground_glitch_max_seconds):
         closed.append(close_flight(state, end_ts, "landing", arrival))
 
 
+def timeout_reason(state, bbox, bbox_exit_margin_km):
+    """Classify why an airborne observed track disappeared."""
+    lat = state["last_lat"]
+    lon = state["last_lon"]
+    lamin, lomin, lamax, lomax = bbox
+    latitude_km = min(abs(lat - lamin), abs(lamax - lat)) * 110.574
+    longitude_km = (
+        min(abs(lon - lomin), abs(lomax - lon))
+        * 111.320
+        * abs(math.cos(math.radians(lat)))
+    )
+    outside = not (lamin <= lat <= lamax and lomin <= lon <= lomax)
+    if outside or min(latitude_km, longitude_km) <= bbox_exit_margin_km:
+        return "bbox_exit"
+    return "observation_lost"
+
+
+def append_timed_out(closed, state, bbox, bbox_exit_margin_km):
+    # A single airborne flag is only a provisional candidate. Without a second
+    # observation it is not strong enough evidence for a flight segment.
+    if state["point_count"] < 2:
+        return
+    reason = timeout_reason(state, bbox, bbox_exit_margin_km)
+    closed.append(close_flight(state, state["last_ts"], reason, (None, None, None)))
+
+
 def event(segment, direction):
     departure = direction == "departure"
     airport = segment["departure_icao"] if departure else segment["arrival_icao"]
@@ -377,6 +420,8 @@ def process_aircraft_points(
     max_transition_gap_seconds,
     ground_glitch_max_seconds,
     airport_radius_km,
+    bbox=(45.0, 5.0, 55.0, 25.0),
+    bbox_exit_margin_km=25.0,
 ):
     closed = []
     if state:
@@ -398,7 +443,7 @@ def process_aircraft_points(
                 reason = "landing"
             else:
                 arrival = (None, None, None)
-                reason = "timeout"
+                reason = timeout_reason(state, bbox, bbox_exit_margin_km)
             if reason == "landing":
                 append_landing(
                     closed,
@@ -408,7 +453,7 @@ def process_aircraft_points(
                     ground_glitch_max_seconds,
                 )
             else:
-                closed.append(close_flight(state, state["last_ts"], reason, arrival))
+                append_timed_out(closed, state, bbox, bbox_exit_margin_km)
             state = None
 
         if state:
@@ -483,7 +528,7 @@ def process_aircraft_points(
             reason = "landing"
         else:
             arrival = (None, None, None)
-            reason = "timeout"
+            reason = timeout_reason(state, bbox, bbox_exit_margin_km)
         if reason == "landing":
             append_landing(
                 closed,
@@ -493,7 +538,7 @@ def process_aircraft_points(
                 ground_glitch_max_seconds,
             )
         else:
-            closed.append(close_flight(state, state["last_ts"], reason, arrival))
+            append_timed_out(closed, state, bbox, bbox_exit_margin_km)
         state = None
 
     return state, closed
@@ -506,6 +551,8 @@ def run(args, spark):
         max_transition_gap_seconds=args.max_transition_gap_seconds,
         ground_glitch_max_seconds=args.ground_glitch_max_seconds,
         allowed_lateness_seconds=args.allowed_lateness_seconds,
+        bbox=(args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax),
+        bbox_exit_margin_km=args.bbox_exit_margin_km,
     )
     until_ts = (
         args.until_ts
@@ -586,6 +633,8 @@ def run(args, spark):
             max_transition_gap_seconds=args.max_transition_gap_seconds,
             ground_glitch_max_seconds=args.ground_glitch_max_seconds,
             airport_radius_km=args.airport_radius_km,
+            bbox=(args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax),
+            bbox_exit_margin_km=args.bbox_exit_margin_km,
         )
         closed.extend(newly_closed)
 

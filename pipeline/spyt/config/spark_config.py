@@ -18,11 +18,17 @@ CLUSTER_CONFIG = {
 }
 
 SEGMENT_CONFIG = {
+    'interval_seconds': int(os.getenv('SEGMENT_INTERVAL_SECONDS', 900)),
     'airport_radius_km': float(os.getenv('AIRPORT_RADIUS_KM', 15.0)),
     'flight_timeout_seconds': int(os.getenv('FLIGHT_TIMEOUT_SECONDS', 1800)),
     'max_transition_gap_seconds': int(os.getenv('MAX_TRANSITION_GAP_SECONDS', 300)),
     'ground_glitch_max_seconds': int(os.getenv('GROUND_GLITCH_MAX_SECONDS', 60)),
     'allowed_lateness_seconds': int(os.getenv('ALLOWED_LATENESS_SECONDS', 120)),
+    'bbox_lamin': float(os.getenv('OPENSKY_BBOX_LAMIN', 45.0)),
+    'bbox_lomin': float(os.getenv('OPENSKY_BBOX_LOMIN', 5.0)),
+    'bbox_lamax': float(os.getenv('OPENSKY_BBOX_LAMAX', 55.0)),
+    'bbox_lomax': float(os.getenv('OPENSKY_BBOX_LOMAX', 25.0)),
+    'bbox_exit_margin_km': float(os.getenv('BBOX_EXIT_MARGIN_KM', 25.0)),
 }
 
 STREAMING_CONFIG = {

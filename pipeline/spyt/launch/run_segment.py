@@ -40,6 +40,11 @@ def run_job(args):
         "--max-transition-gap-seconds", str(args.max_transition_gap_seconds),
         "--ground-glitch-max-seconds", str(args.ground_glitch_max_seconds),
         "--allowed-lateness-seconds", str(args.allowed_lateness_seconds),
+        "--bbox-lamin", str(args.bbox_lamin),
+        "--bbox-lomin", str(args.bbox_lomin),
+        "--bbox-lamax", str(args.bbox_lamax),
+        "--bbox-lomax", str(args.bbox_lomax),
+        "--bbox-exit-margin-km", str(args.bbox_exit_margin_km),
     ]
     
     return submit(
@@ -83,14 +88,23 @@ def main():
         type=int,
         default=SEGMENT_CONFIG["allowed_lateness_seconds"],
     )
+    parser.add_argument("--bbox-lamin", type=float, default=SEGMENT_CONFIG["bbox_lamin"])
+    parser.add_argument("--bbox-lomin", type=float, default=SEGMENT_CONFIG["bbox_lomin"])
+    parser.add_argument("--bbox-lamax", type=float, default=SEGMENT_CONFIG["bbox_lamax"])
+    parser.add_argument("--bbox-lomax", type=float, default=SEGMENT_CONFIG["bbox_lomax"])
+    parser.add_argument(
+        "--bbox-exit-margin-km",
+        type=float,
+        default=SEGMENT_CONFIG["bbox_exit_margin_km"],
+    )
     parser.add_argument("--py-files", default=DEFAULT_PY_FILES)
     parser.add_argument("--pyspark-python", default=DEFAULT_PYSPARK_PYTHON)
     parser.add_argument("--skip-upload", action="store_true")
     parser.add_argument(
         "--interval",
         type=int,
-        default=900,
-        help="Interval between runs in seconds (default: 900 = 15 minutes)",
+        default=SEGMENT_CONFIG["interval_seconds"],
+        help="Interval between runs in seconds",
     )
     parser.add_argument(
         "--once",

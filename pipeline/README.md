@@ -1,6 +1,9 @@
 # pipeline
 
-Python-часть пайплайна: `bootstrap_service` (разовая загрузка `ref_aircraft`/`ref_airports` в YT), `ingest_service` (пока не реализован).
+Python-часть пайплайна: `bootstrap_service` (разовая загрузка `ref_aircraft`/`ref_airports` в YT) и
+`ingest_service` (поллинг OpenSky и запись в `positions_raw`). Ingest берёт
+остаток credits из `X-Rate-Limit-Remaining`, а при HTTP 429 ждёт указанное OpenSky
+время `X-Rate-Limit-Retry-After-Seconds`.
 
 ## Требования
 

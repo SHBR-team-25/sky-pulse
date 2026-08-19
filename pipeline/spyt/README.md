@@ -48,7 +48,8 @@ BlockManager. Dynamic allocation с такой конфигурацией вкл
 записанные позиции не теряются из-за более старого `time_position`. Радиус поиска
 аэропорта, таймаут рейса, максимальный разрыв между ground/airborne-точками и задержка настраиваются
 через `AIRPORT_RADIUS_KM`, `FLIGHT_TIMEOUT_SECONDS`, `MAX_TRANSITION_GAP_SECONDS`,
-`GROUND_GLITCH_MAX_SECONDS` и `ALLOWED_LATENESS_SECONDS`.
+`GROUND_GLITCH_MAX_SECONDS`, `ALLOWED_LATENESS_SECONDS` и `BBOX_EXIT_MARGIN_KM`.
+Границы области берутся из тех же `OPENSKY_BBOX_*`, что и ingest service.
 
 `job_segment` считает посадку подтверждённой после двух последовательных ground-точек
 либо после ground-точки и достаточно долгой стоянки. Короткий переход
@@ -58,6 +59,10 @@ BlockManager. Dynamic allocation с такой конфигурацией вкл
 метаданные рейса, но сама по себе не является его границей. Аэропорт вылета определяется
 только по свежему переходу `ground → airborne`; у борта, впервые замеченного в воздухе,
 он остаётся неизвестным.
+Одиночная airborne-точка остаётся provisional-состоянием и не публикуется, если
+не получила продолжения до таймаута. Подтверждённый трек, исчезнувший у границы
+BBOX, закрывается как `bbox_exit`, а исчезнувший внутри области — как
+`observation_lost`.
 
 `job_aggregate` строит snapshot бортов по `positions_current`: учитывает только
 позиции не старше `POSITION_FRESHNESS_SECONDS`
