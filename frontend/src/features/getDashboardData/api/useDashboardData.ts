@@ -12,9 +12,6 @@ export function dashboardDataQueryOptions(params: DashboardQuery = {}) {
     return queryOptions({
         queryKey: dashboardDataQueryKeys.stats(params),
         queryFn: ({ signal }) => fetchJson<DashboardData>('/stats/dashboard', { params, signal }),
-        // placeholderData несовместим с useSuspenseQuery. Он здесь и не нужен: смена диапазона
-        // идёт через setSearchParams, а React Router с v7 оборачивает свои обновления состояния
-        // в startTransition, поэтому при смене queryKey старый UI остаётся вместо фолбэка.
     });
 }
 
