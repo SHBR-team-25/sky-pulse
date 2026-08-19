@@ -43,7 +43,7 @@
 │
 ├───app                                              # слой приложения: композиция провайдеров и layout
 │   │   App.module.css                               # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary, MapViewProvider и RouterProvider
+│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary и RouterProvider
 │   │   index.ts                                     # публичный API слоя app
 │   │
 │   ├───providers                                    # глобальные провайдеры приложения
@@ -51,7 +51,7 @@
 │   │       QueryProvider.tsx                        # оборачивает дерево в QueryClientProvider с общим queryClient
 │   │
 │   ├───router                                       # конфигурация маршрутов приложения
-│   │       routes.tsx                               # createBrowserRouter: редирект на /map, /map и /dashboard через route.lazy, prefetch в loader дашборда, HydrateFallback, catch-all 404, ErrorBoundary на маршрутах
+│   │       routes.tsx                               # маршруты с lazy-страницами, ErrorBoundary и prefetch карты по параметрам bounds
 │   │
 │   └───styles                                       # глобальные стили
 │           index.css                                # CSS-переменные, reset, базовая типографика
@@ -72,7 +72,7 @@
 │   │   │   index.ts                                 # публичный API сущности
 │   │   │
 │   │   ├───lib
-│   │   │       formatTrafficTrendData.ts            # тренд трафика в ChartData: линия по времени в мс и активным рейсам
+│   │   │       formatTrafficTrendData.ts            # ChartData тренда с форматом оси времени для дня или диапазона дат
 │   │   │
 │   │   ├───model
 │   │   │       mock-data.ts                         # моки дашборда: полный, пустой и генератор по диапазону дат
@@ -96,7 +96,7 @@
 │   │       │
 │   │       └───TrafficTrendGraph
 │   │               TrafficTrendGraph.module.css     # адаптивные стили контейнера графика тренда трафика
-│   │               TrafficTrendGraph.tsx            # линейный Chart тренда трафика, заглушка при пустых данных
+│   │               TrafficTrendGraph.tsx            # линейный Chart тренда с форматом времени для дня или диапазона дат и заглушкой пустых данных
 │   │
 │   └───flight                                       # сущность «рейс»
 │       │   index.ts                                 # публичный API сущности
@@ -110,7 +110,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   │       useAirports.ts                       # хук и queryOptions GET /airports с дебаунсом параметров
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /airports
@@ -140,7 +140,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 2 с
+│   │   │       useLiveFlights.ts                    # хук и queryOptions GET /flights/live с поллингом и кэшем 15 с
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -166,14 +166,14 @@
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader и подвал
+│   │           Layout.tsx                           # MapViewProvider, шапка, Outlet под Suspense с PageLoader и подвал
 │   │
 │   ├───map                                          # страница карты полётов
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
 │   │           MapPage.module.css                   # стили контейнера карты
-│   │           MapPage.tsx                          # YMap со схемой и слоем фич, тема light/dark
+│   │           MapPage.tsx                          # карта с bounds в URL и localStorage, debounce 300 мс и состоянием ошибки рейсов
 │   │
 │   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
@@ -187,7 +187,7 @@
 │
 ├───shared                                           # переиспользуемый код без привязки к домену
 │   ├───api                                          # транспортный слой
-│   │       constants.ts                             # API_BASE_URL из переменных окружения
+│   │       constants.ts                             # API_BASE_URL и общий интервал поллинга 2 с
 │   │       fetchJson.ts                             # обёртка fetch: buildUrl, парсинг JSON, класс ApiError
 │   │       generated-types.ts                       # типы, сгенерированные из OpenAPI-спеки (правится только генератором)
 │   │       index.ts                                 # публичный API shared/api
@@ -204,17 +204,24 @@
 │   │       index.ts                                 # публичный API конфигурации интерфейса
 │   │
 │   ├───contexts                                     # React-контексты общего состояния
-│   │   └───map-view                                 # состояние центра и масштаба карты
-│   │       │   context.ts                           # контексты текущего представления карты и его обновления
-│   │       │   index.ts                             # публичный API контекста представления карты
-│   │       │   MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
-│   │       │   types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
-│   │       │   useMapView.ts                        # хуки для чтения и обновления представления карты
-│   │       │
-│   │       └───lib
-│   │               mapViewParams.ts                 # разбирает и нормализует bounds и zoom карты для query-параметров
-│   │               mapViewStorage.ts                # читает и сохраняет поисковую строку карты в localStorage
-│   │               resolveMapSearch.ts              # восстанавливает валидные параметры карты из localStorage
+│   │   ├───map-view                                 # состояние вида карты, bounds в URL и сохранение поисковой строки
+│   │   │   │   context.ts                           # контексты текущего представления карты и его обновления
+│   │   │   │   index.ts                             # публичный API состояния вида, bounds и синхронизации карты
+│   │   │   │   MapViewProvider.tsx                  # провайдер текущих центра и масштаба с защитой от одинаковых обновлений
+│   │   │   │   types.ts                             # типы вида и bounds карты, начальные границы и диапазон zoom 3–15
+│   │   │   │   useMapView.ts                        # хуки для чтения и обновления представления карты
+│   │   │   │
+│   │   │   └───lib
+│   │   │           mapViewParams.ts                 # разбирает и нормализует bounds и zoom карты для query-параметров
+│   │   │           mapViewStorage.ts                # читает и сохраняет поисковую строку карты в localStorage
+│   │   │           resolveMapSearch.ts              # восстанавливает валидные параметры карты из localStorage
+│   │   │
+│   │   └───theme                                    # состояние и переключение цветовой темы приложения
+│   │           AppThemeProvider.tsx                 # провайдер светлой и тёмной тем с сохранением выбора и тёмной темой по умолчанию
+│   │           context.ts                           # React-контекст активной темы и функции переключения
+│   │           index.ts                             # публичный API контекста темы
+│   │           types.ts                             # типы темы и значения контекста
+│   │           useAppTheme.ts                       # хук доступа к активной теме и её переключению
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
@@ -237,7 +244,7 @@
 │       │
 │       ├───PageLoader
 │       │       PageLoader.module.css                # стили контейнера лоадера страницы
-│       │       PageLoader.tsx                       # фолбэк для Suspense: Loader размера l с role=status
+│       │       PageLoader.tsx                       # фолбэк для Suspense: Spin размера l с role=status
 │       │
 │       ├───RootErrorFallback
 │       │       RootErrorFallback.tsx                # фолбэк корневого ErrorBoundary с кнопкой перезагрузки страницы
@@ -269,7 +276,7 @@
     │   │
     │   └───ui
     │           Dashboard.module.css                 # стили сетки дашборда, бейджей и графика
-    │           Dashboard.tsx                        # диапазон дат в query-параметрах, бейджи и график тренда (пока на моках)
+    │           Dashboard.tsx                        # диапазон дат в query-параметрах, моки, бейджи и адаптивный график тренда
     │
     └───flight-map                                   # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                                 # публичный API виджета
@@ -280,9 +287,9 @@
         │
         └───ui
             │   AirportsLayer.module.css             # стили маркеров и подсказок аэропортов
-            │   AirportsLayer.tsx                    # слой маркеров аэропортов с кодами и подсказками
+            │   AirportsLayer.tsx                    # слой маркеров аэропортов с кодами, адаптивными деталями мок-рейсов и подсказками
             │   FlightMap.module.css                 # стили контейнера карты рейсов
-            │   FlightMap.tsx                        # карта с начальным центром в Лондоне, zoom 3–15 и синхронизацией вида
+            │   FlightMap.tsx                        # карта с начальными bounds, zoom 3–15 и передачей границ наружу
             │   FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
             │   FlightsLayer.tsx                     # слой одиночных рейсов и серверных кластеров с поповерами деталей
             │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера

@@ -3,7 +3,7 @@
     --g-tooltip-background-color: var(--sky-color-surface-header);
     --g-tooltip-padding: 5px 8px;
     --g-tooltip-border-radius: 6px;
-    --g-tooltip-box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    --g-tooltip-box-shadow: 0 6px 18px var(--sky-color-shadow);
 
     z-index: 2147483647;
     max-width: 320px;

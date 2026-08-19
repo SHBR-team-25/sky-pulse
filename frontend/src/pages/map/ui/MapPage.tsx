@@ -4,6 +4,7 @@ import { airportsMock } from '@/entities/airport';
 // eslint-disable-next-line
 import { useLiveFlights } from '@/features/getLiveFlights';
 import { FlightMap } from '@/widgets/flight-map';
+import { useAppTheme } from '@/shared/contexts/theme';
 import {
     isSameMapBoundsParams,
     MAP_VIEW_SYNC_DELAY_MS,
@@ -18,11 +19,9 @@ import styles from './MapPage.module.css';
 import { flightsMock } from '@/entities/flight';
 import { useLocation, useSearchParams } from 'react-router';
 
-interface MapPageProps {
-    theme?: 'light' | 'dark';
-}
+export function MapPage() {
+    const { theme } = useAppTheme();
 
-export function MapPage({ theme = 'light' }: MapPageProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const { search } = useLocation();
 

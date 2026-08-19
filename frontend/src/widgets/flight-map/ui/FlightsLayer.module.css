@@ -11,8 +11,8 @@
     border-radius: 50%;
     outline: none;
     box-shadow:
-        0 7px 22px rgba(0, 0, 0, 0.35),
-        0 0 14px rgba(68, 192, 255, 0.25);
+        0 7px 22px var(--sky-color-shadow),
+        0 0 14px var(--sky-color-accent-glow-soft);
     transform: translate(-50%, -50%);
     backdrop-filter: blur(8px);
     place-items: center;
@@ -21,16 +21,16 @@
 
 .flightMarker:focus-visible {
     box-shadow:
-        0 7px 22px rgba(0, 0, 0, 0.35),
-        0 0 0 3px rgba(255, 255, 255, 0.8),
-        0 0 16px rgba(68, 192, 255, 0.45);
+        0 7px 22px var(--sky-color-shadow),
+        0 0 0 3px var(--sky-color-focus-ring),
+        0 0 16px var(--sky-color-accent-glow-focus);
 }
 
 .flightMarker[aria-expanded='true'] {
-    color: #fff;
-    border-color: #fff;
+    color: var(--sky-color-on-accent);
+    border-color: var(--sky-color-on-accent);
     box-shadow:
-        0 7px 22px rgba(0, 0, 0, 0.4),
+        0 7px 22px var(--sky-color-shadow-strong),
         0 0 0 7px rgba(255, 255, 255, 0.14),
         0 0 18px rgba(68, 192, 255, 0.4);
 }
@@ -53,10 +53,10 @@
     font-size: 12px;
     font-weight: 800;
     background: var(--sky-color-accent-primary);
-    border: 2.5px solid rgba(255, 255, 255, 0.9);
+    border: 2.5px solid var(--sky-color-focus-ring);
     border-radius: 50%;
     box-shadow:
-        0 7px 22px rgba(0, 0, 0, 0.4),
+        0 7px 22px var(--sky-color-shadow-strong),
         0 0 0 6px rgba(68, 192, 255, 0.18);
     transform: translate(-50%, -50%);
     place-items: center;
@@ -80,4 +80,19 @@
         width: 34px;
         height: 34px;
     }
+}
+
+:global(.g-root_theme_light) .clusterMarker,
+:global(.g-root_theme_light-hc) .clusterMarker {
+    color: var(--sky-color-accent-secondary);
+    background: var(--sky-color-surface-header);
+    border-color: var(--sky-color-accent-primary);
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow),
+        0 0 14px var(--sky-color-accent-glow-soft);
+}
+
+:global(.g-root_theme_light) .clusterMarker::after,
+:global(.g-root_theme_light-hc) .clusterMarker::after {
+    border-color: var(--sky-color-border-control);
 }

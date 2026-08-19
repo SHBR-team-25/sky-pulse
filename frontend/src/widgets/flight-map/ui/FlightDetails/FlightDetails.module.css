@@ -5,8 +5,8 @@
 }
 
 .popover {
-    --g-popup-background-color: rgba(13, 20, 32, 0.92);
-    --g-popup-border-color: oklch(78% 0.12 220deg / 0.45);
+    --g-popup-background-color: var(--sky-color-surface-popup);
+    --g-popup-border-color: var(--sky-color-popup-border);
     --g-popup-border-radius: 13px;
     --g-popup-border-width: 1px;
     --flight-details-content-height: 217px;
@@ -15,8 +15,8 @@
     color: var(--sky-color-text-primary);
     overflow: visible;
     box-shadow:
-        0 26px 60px -18px rgba(0, 0, 0, 0.9),
-        0 0 0 1px rgba(255, 255, 255, 0.04);
+        0 26px 60px -18px var(--sky-color-shadow-strong),
+        0 0 0 1px var(--sky-color-popup-outline);
     backdrop-filter: blur(22px);
 }
 
@@ -105,7 +105,7 @@
     align-items: center;
     gap: 11px;
     padding: 13px 44px 13px 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--sky-color-divider-strong);
 }
 
 .heading {
@@ -217,7 +217,7 @@
 
 .routeTrack {
     right: 0;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--sky-color-border-strong);
 }
 
 .routeTrackComplete {
@@ -241,7 +241,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     margin: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--sky-color-divider-strong);
 }
 
 .metric {
@@ -250,7 +250,7 @@
 }
 
 .metric:not(:last-child) {
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid var(--sky-color-divider-strong);
 }
 
 .metric dt {
@@ -282,8 +282,8 @@
     padding: 10px 15px;
     color: var(--sky-color-text-muted);
     font-size: 11px;
-    background: rgba(255, 255, 255, 0.04);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--sky-color-surface-muted);
+    border-top: 1px solid var(--sky-color-divider-strong);
     border-radius: 0 0 13px 13px;
 }
 
