@@ -5,8 +5,8 @@ import com.skypulse.analytics.model.Totals;
 public record TotalsDto(
         int activeFlights,
         int trackedAirports,
-        double averageAltitudeM,
-        double averageSpeedKmh
+        Double averageAltitudeM,
+        Double averageSpeedMps
 ) {
 
     public static TotalsDto from(Totals totals) {
@@ -14,6 +14,6 @@ public record TotalsDto(
                 totals.activeFlights(),
                 totals.trackedAirports(),
                 totals.averageAltitudeM(),
-                totals.averageSpeedKmh());
+                totals.averageSpeedMps());
     }
 }

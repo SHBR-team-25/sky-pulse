@@ -1,8 +1,9 @@
 package com.skypulse.analytics.model;
 
 public record AirportTraffic(
-        String icao,
-        String name,
+        AirportRef airport,
+        int departures,
+        int arrivals,
         int totalFlights
 ) {
 }

@@ -27,11 +27,20 @@ docker compose up --build
 
 | Метод | Путь | Назначение |
 | --- | --- | --- |
-| `GET` | `/api/stats/dashboard?from=&to=` | агрегаты дашборда за окно; без границ — последние сутки |
+| `GET` | `/api/stats/dashboard` | последний посчитанный снапшот агрегатов |
 | `GET` | `/swagger-ui.html` | Swagger UI — дёргать ручки без фронта |
 | `GET` | `/actuator/health` | health-check |
 
-Форма ответа — `DashboardResponse` из `docs/openapi.yaml`.
+Форма ответа — `DashboardResponse` из [openapi.yaml](openapi.yaml); он описан
+по фактическим таблицам YTsaurus, продуктовый `docs/openapi.yaml` приведён
+к нему же.
+
+Окна агрегации у ручки нет намеренно. Таблицы `dashboard_totals`,
+`dashboard_top_airports`, `dashboard_routes` и `dashboard_manufacturers`
+SPYT-джоба перезаписывает целиком, и единственная временная отметка в них —
+`computed_at`. Границ окна, за которое посчитаны агрегаты, в YTsaurus нет,
+поэтому `from`/`to` спросить не у чего, а в ответе отдаётся `computedAt`.
+Тайм-серия одна — `trafficTrend` из `dashboard_trend`.
 
 Любая ошибка приходит одним телом с полями `timestamp/status/error/message`:
 `400` — плохой запрос клиента, `503` — YTsaurus недоступен, `500` — ошибка сервиса.

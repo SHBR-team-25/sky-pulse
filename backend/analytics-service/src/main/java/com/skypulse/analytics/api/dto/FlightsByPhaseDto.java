@@ -1,20 +1,19 @@
 package com.skypulse.analytics.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.skypulse.analytics.model.FlightsByPhase;
 
 public record FlightsByPhaseDto(
-        @JsonProperty("on_ground") int onGround,
+        int onGround,
+        int airborne,
         int climbing,
-        int descending,
-        int cruising
+        int descending
 ) {
 
     public static FlightsByPhaseDto from(FlightsByPhase phase) {
         return new FlightsByPhaseDto(
                 phase.onGround(),
+                phase.airborne(),
                 phase.climbing(),
-                phase.descending(),
-                phase.cruising());
+                phase.descending());
     }
 }

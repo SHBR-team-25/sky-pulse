@@ -3,7 +3,8 @@ package com.skypulse.analytics.model;
 public record Totals(
         int activeFlights,
         int trackedAirports,
-        double averageAltitudeM,
-        double averageSpeedKmh
+        // avg_altitude_m и avg_velocity_mps в YT nullable: ноль означал бы полёт на уровне моря.
+        Double averageAltitudeM,
+        Double averageSpeedMps
 ) {
 }

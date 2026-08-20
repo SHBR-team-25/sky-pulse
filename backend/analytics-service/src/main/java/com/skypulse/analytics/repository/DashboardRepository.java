@@ -1,10 +1,9 @@
 package com.skypulse.analytics.repository;
 
 import com.skypulse.analytics.model.DashboardSnapshot;
-import com.skypulse.analytics.model.StatsWindow;
 
-/** Порт к посчитанной пайплайном аналитике; YT-реализации ещё нет. */
+/** Порт к посчитанным джобой таблицам dashboard_*; YT-реализации ещё нет. */
 public interface DashboardRepository {
 
-    DashboardSnapshot load(StatsWindow window);
+    DashboardSnapshot latest();
 }

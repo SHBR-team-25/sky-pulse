@@ -1,0 +1,318 @@
+openapi: 3.0.3
+info:
+  title: skyPulse analytics-service API
+  description: >-
+    Контракт того, что `analytics-service` **сможет отдать поверх сегодняшнего
+    YTsaurus**. Источник правды — таблицы `dashboard_*`, которые считает
+    SPYT-джоба; всё, чего в них нет, из контракта убрано, а не описано
+    «на будущее».
+
+
+    Главное следствие устройства этих таблиц: **произвольного окна агрегации
+    нет**. `dashboard_totals`, `dashboard_top_airports`, `dashboard_routes`
+    и `dashboard_manufacturers` — статические таблицы, которые джоба
+    перезаписывает целиком, и единственная временная отметка в них —
+    `computed_at`, момент пересчёта. Границы окна, за которое посчитаны
+    агрегаты, нигде не хранятся, поэтому ручка не принимает `from`/`to`
+    и возвращает один снапшот с полем `computedAt`. Единственная тайм-серия —
+    `trafficTrend` из `dashboard_trend`.
+
+
+    Единицы: время — unix seconds в UTC, высота — метры, скорость — м/с
+    (как в OpenSky `states.velocity`, без пересчёта в км/ч).
+  version: 0.1.0
+
+servers:
+  - url: /api
+
+tags:
+  - name: stats
+    description: Агрегаты дашборда поверх истории полётов
+
+paths:
+  /stats/dashboard:
+    get:
+      tags: [stats]
+      summary: Снапшот статистики для дашборда
+      description: >-
+        Единственный запрос дашборда: отдаёт последний посчитанный снапшот
+        целиком — счётчики, распределение по фазам, топ аэропортов, топ
+        маршрутов, разбивку по производителям и тренд.
+
+
+        Параметров нет намеренно. Клиент не может попросить период: в YT лежит
+        ровно один снапшот, и `computedAt` в ответе — единственное, что о его
+        актуальности известно. Насколько снапшот свежий, клиент решает сам,
+        сравнив `computedAt` с текущим временем; по NFR2 джоба обязана
+        пересчитывать агрегаты не реже раза в час.
+      responses:
+        "200":
+          description: >-
+            Снапшот целиком. Нулевые счётчики — валидный ответ: так выглядит
+            и пересчёт по пустому окну, и остановленный ингест. Отличить одно
+            от другого по этой ручке нельзя.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
+components:
+  responses:
+    SourceUnavailable:
+      description: >-
+        Источник данных не ответил или ответил негодным: YTsaurus недоступен,
+        вернул ошибку либо прислал тело, которое не разбирается как ответ.
+        Сервис при этом исправен, поэтому повторить запрос осмысленно.
+
+
+        Поле `message` заполнено по-русски и пригодно для показа
+        пользователю; подробности источника остаются в логе сервиса.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    InternalError:
+      description: >-
+        Сбой самого сервиса. Сюда же попадает запрос, который **отклонил**
+        YTsaurus, — неверный путь таблицы, протухший токен, негодный QL:
+        это дефект сервиса или его конфигурации, и, в отличие от 503,
+        повтор не поможет.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  schemas:
+    ApiError:
+      type: object
+      description: >-
+        Единое тело ошибки сервиса: его формирует `ApiExceptionHandler` для
+        всех кодов, включая 5xx. Поле `message` у отказа YTsaurus написано
+        по-русски и годится для показа пользователю.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-19T09:34:07.722Z"
+        status:
+          type: integer
+          example: 503
+        error:
+          type: string
+          example: "Service Unavailable"
+        message:
+          type: string
+          example: "Источник данных YTsaurus недоступен, попробуйте повторить запрос позже"
+      required: [timestamp, status, error, message]
+
+    AirportRef:
+      type: object
+      description: >-
+        Аэропорт в выдаче агрегатов. В `dashboard_*` лежит только ICAO —
+        `iata` и `name` сервис добирает джойном с `ref_airports`
+        (`icao_code`/`iata_code`/`name`). Если аэропорта в справочнике нет,
+        оба поля приходят `null`, а сам аэропорт из выдачи не пропадает.
+      properties:
+        icao:
+          type: string
+          description: "[Derived] dashboard_top_airports.airport_icao"
+          example: "EDDK"
+        iata:
+          type: string
+          nullable: true
+          description: "[OurAirports] ref_airports.iata_code"
+          example: "CGN"
+        name:
+          type: string
+          nullable: true
+          description: "[OurAirports] ref_airports.name"
+          example: "Cologne Bonn Airport"
+      required: [icao, iata, name]
+
+    Totals:
+      type: object
+      description: "Строка `dashboard_totals`, одна на весь снапшот."
+      properties:
+        activeFlights:
+          type: integer
+          description: "[OpenSky] dashboard_totals.active_flights"
+          example: 917
+        trackedAirports:
+          type: integer
+          description: "[OurAirports] dashboard_totals.tracked_airports"
+          example: 38
+        averageAltitudeM:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            [Derived] `dashboard_totals.avg_altitude_m`, среднее по
+            `states.baro_altitude`, метры. **Бывает `null`**: если в окне
+            пересчёта не оказалось ни одного борта с высотой, джоба пишет
+            `null`, а не 0 — ноль означал бы «летели на уровне моря».
+          example: 9412.5
+        averageSpeedMps:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            [Derived] `dashboard_totals.avg_velocity_mps`, среднее по
+            `states.velocity`, **метры в секунду**. Единицы OpenSky
+            сохраняются как есть; пересчёт в км/ч — дело клиента.
+          example: 221.4
+      required: [activeFlights, trackedAirports, averageAltitudeM, averageSpeedMps]
+
+    FlightsByPhase:
+      type: object
+      description: >-
+        Распределение бортов по фазам из `dashboard_totals`. Это **не** enum
+        `FlightPhase` карты: в YT считается `airborne` — все борта не на земле,
+        а не `cruising` в узком смысле. Порога «вертикальная скорость ≈ 0»
+        джоба не применяет, поэтому `airborne` включает и `climbing`,
+        и `descending`, и горизонтальный полёт — сумма по полям
+        не равна `activeFlights`.
+      properties:
+        onGround:
+          type: integer
+          description: "[OpenSky] dashboard_totals.on_ground"
+        airborne:
+          type: integer
+          description: "[OpenSky] dashboard_totals.airborne"
+        climbing:
+          type: integer
+          description: "[OpenSky] dashboard_totals.climbing, vertical_rate > 0"
+        descending:
+          type: integer
+          description: "[OpenSky] dashboard_totals.descending, vertical_rate < 0"
+      required: [onGround, airborne, climbing, descending]
+
+    BusiestAirport:
+      type: object
+      description: "Строка `dashboard_top_airports`, отсортировано по `rank`."
+      properties:
+        airport:
+          $ref: "#/components/schemas/AirportRef"
+        departures:
+          type: integer
+          description: "[Derived] dashboard_top_airports.departures"
+          example: 12
+        arrivals:
+          type: integer
+          description: "[Derived] dashboard_top_airports.arrivals"
+          example: 64
+        totalFlights:
+          type: integer
+          description: >-
+            [Derived] `dashboard_top_airports.total_flights` — вылеты плюс
+            прилёты, по нему же и отсортирована выдача.
+          example: 74
+      required: [airport, departures, arrivals, totalFlights]
+
+    BusiestRoute:
+      type: object
+      description: >-
+        Строка `dashboard_routes`. Пара строится по `flights_segments`,
+        где аэропорты вылета и прилёта — **оценка** по ближайшей точке трека,
+        поэтому в выдаче попадаются вырожденные пары вида `LIMC → LIMC`:
+        борт взлетел и сел в одном аэропорту либо оценка не разошлась.
+        Фильтровать их сервис не берётся — это забота джобы.
+      properties:
+        origin:
+          $ref: "#/components/schemas/AirportRef"
+        destination:
+          $ref: "#/components/schemas/AirportRef"
+        flightCount:
+          type: integer
+          description: "[Derived] dashboard_routes.flight_count"
+          example: 5
+      required: [origin, destination, flightCount]
+
+    ManufacturerShare:
+      type: object
+      description: "Строка `dashboard_manufacturers`."
+      properties:
+        manufacturer:
+          type: string
+          description: >-
+            [OpenSky Aircraft DB] `dashboard_manufacturers.manufacturer`.
+            Борта, которых нет в справочнике, сведены в отдельную категорию
+            `Unknown` — она обычно и самая крупная, и её стоит показывать
+            отдельно от настоящих производителей.
+          example: "Boeing"
+        flightCount:
+          type: integer
+          description: "[Derived] dashboard_manufacturers.flight_count"
+          example: 232
+      required: [manufacturer, flightCount]
+
+    TrafficTrendPoint:
+      type: object
+      description: >-
+        Точка `dashboard_trend`. Шаг между точками **неравномерный**: строка
+        пишется на каждый пересчёт, а он идёт не по расписанию — в истории
+        встречаются и две точки подряд с разницей в пару минут, и разрыв
+        в несколько часов. Клиент обязан рисовать тренд по фактическим
+        `timestamp`, а не по номеру точки.
+      properties:
+        timestamp:
+          type: integer
+          format: int64
+          description: "[Derived] dashboard_trend.computed_at"
+          example: 1787132036
+        activeFlights:
+          type: integer
+          description: "[Derived] dashboard_trend.active_aircraft"
+          example: 788
+      required: [timestamp, activeFlights]
+
+    DashboardResponse:
+      type: object
+      properties:
+        computedAt:
+          type: integer
+          format: int64
+          description: >-
+            [Derived] `dashboard_totals.computed_at` — когда джоба посчитала
+            снапшот. Заменяет `from`/`to` продуктового контракта: окна
+            агрегации в YT нет, есть только момент пересчёта.
+          example: 1787132036
+        totals:
+          $ref: "#/components/schemas/Totals"
+        flightsByPhase:
+          $ref: "#/components/schemas/FlightsByPhase"
+        topBusiestAirports:
+          type: array
+          items:
+            $ref: "#/components/schemas/BusiestAirport"
+        busiestRoutes:
+          type: array
+          items:
+            $ref: "#/components/schemas/BusiestRoute"
+        aircraftByManufacturer:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManufacturerShare"
+        trafficTrend:
+          type: array
+          description: "Отсортирован по `timestamp` по возрастанию."
+          items:
+            $ref: "#/components/schemas/TrafficTrendPoint"
+        emergencyCount:
+          type: integer
+          description: >-
+            [OpenSky] `dashboard_totals.emergency_squawks` — борта с кодом
+            7500 или 7700 в окне пересчёта.
+          example: 0
+      required:
+        - computedAt
+        - totals
+        - flightsByPhase
+        - topBusiestAirports
+        - busiestRoutes
+        - aircraftByManufacturer
+        - trafficTrend
+        - emergencyCount

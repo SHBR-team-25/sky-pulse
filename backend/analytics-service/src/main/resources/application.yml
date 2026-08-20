@@ -28,8 +28,10 @@ skypulse:
     token: ${YT_TOKEN:}
     connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
     read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
-    positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
     ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
-    stats-hourly-path: ${YT_STATS_HOURLY_PATH://home/skypulse/stats_hourly}
-  stats:
-    default-window-seconds: ${STATS_DEFAULT_WINDOW_SECONDS:86400}
+    # Агрегаты считает SPYT-джоба, сервис только читает готовые таблицы.
+    dashboard-totals-path: ${YT_DASHBOARD_TOTALS_PATH://home/skypulse/dashboard_totals}
+    dashboard-trend-path: ${YT_DASHBOARD_TREND_PATH://home/skypulse/dashboard_trend}
+    dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/skypulse/dashboard_top_airports}
+    dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/skypulse/dashboard_routes}
+    dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}

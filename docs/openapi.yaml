@@ -88,13 +88,17 @@ paths:
   /airports:
     get:
       tags: [airports]
-      summary: Список аэропортов с индексом загруженности
+      summary: Список аэропортов с числом рейсов за сутки
       description: >-
-        Индекс загруженности: во сколько раз текущий/сегодняшний трафик
-        аэропорта отличается от его собственной исторической нормы.
         `search`/`country`/`sortBy`/`page`/`pageSize` — для табличного
         режима; `lonMin`/`latMin`/`lonMax`/`latMax`/`zoom`/`limit` — для
         отрисовки аэропортов на карте мира.
+
+
+        Загруженность выражается абсолютным числом рейсов за сутки
+        (`totalFlights24h`). Относительного индекса нет: он требует
+        исторической нормы по аэропорту, а её в YTsaurus не считает
+        ни одна джоба.
       parameters:
         - name: search
           in: query
@@ -113,7 +117,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [trafficIndex, name, totalFlights]
+            enum: [name, totalFlights]
         - name: page
           in: query
           required: false
@@ -205,21 +209,11 @@ paths:
     get:
       tags: [stats]
       summary: Дашборд статистики
-      parameters:
-        - name: from
-          in: query
-          required: false
-          description: unix ts, окно агрегации, по умолчанию последние 24ч доступного батча
-          schema:
-            type: integer
-            format: int64
-        - name: to
-          in: query
-          required: false
-          description: unix ts, окно агрегации, по умолчанию последние 24ч доступного батча
-          schema:
-            type: integer
-            format: int64
+      description: >-
+        Отдаёт последний посчитанный снапшот целиком. Параметров нет:
+        таблицы `dashboard_*` джоба перезаписывает целиком и хранит в них
+        только `computed_at`, границ окна агрегации в YTsaurus не существует,
+        поэтому попросить произвольный период нечем.
       responses:
         "200":
           description: OK
@@ -524,18 +518,11 @@ components:
                 description: "[OurAirports] iso_country"
               position:
                 $ref: "#/components/schemas/LatLon"
-              # totalFlights24h:
-              #   type: integer
-              #   description: >-
-              #     [OpenSky] count(/flights/departure + /flights/arrival) за
-              #     последние 24ч доступного батча
-              # trafficIndex:
-              #   type: number
-              #   format: double
-              #   description: >-
-              #     [Derived] totalFlights24h / историческая медиана для этого
-              #     аэропорта на тот же час/день недели; 1.0 = норма, >1 =
-              #     загруженнее обычного
+              totalFlights24h:
+                type: integer
+                description: >-
+                  [Derived] count(airport_events) за последние сутки
+                  доступного батча: вылеты плюс прилёты
             required:
               - icao
               - iata
@@ -544,7 +531,6 @@ components:
               - country
               - position
               - totalFlights24h
-              - trafficIndex
         page:
           type: integer
         pageSize:
@@ -694,53 +680,18 @@ components:
         - endTime
         - path
 
-    TrafficHeatmapResponse:
-      type: object
-      properties:
-        from:
-          type: integer
-          format: int64
-        to:
-          type: integer
-          format: int64
-        resolution:
-          type: string
-          enum: [country, airport, cell]
-        cells:
-          type: array
-          items:
-            type: object
-            properties:
-              center:
-                allOf:
-                  - $ref: "#/components/schemas/LatLon"
-                description: >-
-                  [OpenSky] центр геоячейки по позициям states
-                  (resolution="cell"), либо [OurAirports] координаты
-                  аэропорта (resolution="airport"/"country")
-              label:
-                type: string
-                nullable: true
-                description: >-
-                  [OurAirports] название аэропорта/страны, null при
-                  resolution="cell"
-              flightCount:
-                type: integer
-                description: >-
-                  [OpenSky]/[Derived] количество бортов в ячейке (states)
-                  либо рейсов аэропорта (/flights/*) за окно
-            required: [center, label, flightCount]
-      required: [from, to, resolution, cells]
-
     DashboardResponse:
       type: object
+      description: >-
+        Снапшот, а не выборка за период: все поля посчитаны одной джобой
+        на момент `computedAt`.
       properties:
-        from:
+        computedAt:
           type: integer
           format: int64
-        to:
-          type: integer
-          format: int64
+          description: >-
+            [Derived] dashboard_totals.computed_at — момент пересчёта.
+            Заменяет прежние from/to: окна агрегации в YTsaurus нет
         totals:
           type: object
           properties:
@@ -752,28 +703,42 @@ components:
               description: "[OurAirports] count(airports)"
             averageAltitudeM:
               type: number
-              description: "[Derived] среднее по states.baro_altitude"
-            averageSpeedKmh:
+              format: double
+              nullable: true
+              description: >-
+                [Derived] среднее по states.baro_altitude, метры; null, если
+                в окне пересчёта не было ни одного борта с высотой — ноль
+                означал бы полёт на уровне моря
+            averageSpeedMps:
               type: number
-              description: "[Derived] среднее по states.velocity"
+              format: double
+              nullable: true
+              description: >-
+                [Derived] среднее по states.velocity, метры в секунду —
+                единицы OpenSky сохраняются как есть, пересчёт в км/ч
+                на стороне клиента
           required:
             - activeFlights
             - trackedAirports
             - averageAltitudeM
-            - averageSpeedKmh
+            - averageSpeedMps
         flightsByPhase:
           type: object
-          description: "[Derived] распределение states по phase"
+          description: >-
+            [Derived] распределение states по фазам. Это не enum FlightPhase:
+            в YTsaurus считается airborne — все борта не на земле, поэтому
+            он включает и climbing, и descending, а сумма полей не равна
+            activeFlights
           properties:
-            on_ground:
+            onGround:
+              type: integer
+            airborne:
               type: integer
             climbing:
               type: integer
             descending:
               type: integer
-            cruising:
-              type: integer
-          required: [on_ground, climbing, descending, cruising]
+          required: [onGround, airborne, climbing, descending]
         topBusiestAirports:
           type: array
           items:
@@ -781,15 +746,57 @@ components:
             properties:
               airport:
                 $ref: "#/components/schemas/AirportRef"
+              departures:
+                type: integer
+                description: "[Derived] count(airport_events с direction=departure)"
+              arrivals:
+                type: integer
+                description: "[Derived] count(airport_events с direction=arrival)"
               totalFlights:
                 type: integer
-                description: "[OpenSky] count(/flights/departure + /flights/arrival)"
-            required: [airport, totalFlights]
+                description: "[Derived] departures + arrivals, по нему же сортировка"
+            required: [airport, departures, arrivals, totalFlights]
+        busiestRoutes:
+          type: array
+          items:
+            type: object
+            properties:
+              origin:
+                allOf:
+                  - $ref: "#/components/schemas/AirportRef"
+                description: "[Derived] flights_segments.departure_icao, оценка по треку"
+              destination:
+                allOf:
+                  - $ref: "#/components/schemas/AirportRef"
+                description: "[Derived] flights_segments.arrival_icao, оценка по треку"
+              flightCount:
+                type: integer
+                description: >-
+                  [Derived] число совпадений пары за период. Аэропорты —
+                  оценка по ближайшей точке трека, поэтому в выдаче
+                  попадаются вырожденные пары вида LIMC → LIMC
+            required: [origin, destination, flightCount]
+        aircraftByManufacturer:
+          type: array
+          items:
+            type: object
+            properties:
+              manufacturer:
+                type: string
+                description: >-
+                  [OpenSky Aircraft DB] manufacturername; борта, которых нет
+                  в справочнике, сведены в категорию Unknown
+              flightCount:
+                type: integer
+                description: "[Derived] count(states) по производителю"
+            required: [manufacturer, flightCount]
         trafficTrend:
           type: array
           description: >-
-            [Derived] тайм-серия по снапшотам, которые бэкенд обязан сам
-            сохранять
+            [Derived] тайм-серия по снапшотам, отсортирована по timestamp
+            по возрастанию. Шаг неравномерный: точка пишется на каждый
+            пересчёт, а он идёт не по расписанию, поэтому рисовать тренд
+            нужно по фактическим timestamp, а не по номеру точки
           items:
             type: object
             properties:
@@ -801,42 +808,13 @@ components:
             required: [timestamp, activeFlights]
         emergencyCount:
           type: integer
-          description: "количество случаев с squawk=7700 или squawk=7500"
-        # busiestRoutes:
-        #   type: array
-        #   items:
-        #     type: object
-        #     properties:
-        #       origin:
-        #         allOf:
-        #           - $ref: "#/components/schemas/AirportRef"
-        #         description: "[OpenSky] estDepartureAirport"
-        #       destination:
-        #         allOf:
-        #           - $ref: "#/components/schemas/AirportRef"
-        #         description: "[OpenSky] estArrivalAirport"
-        #       flightCount:
-        #         type: integer
-        #         description: >-
-        #           [Derived] подсчёт совпадений пар по /flights/all за период
-        #     required: [origin, destination, flightCount]
-        # aircraftByManufacturer:
-        #   type: array
-        #   items:
-        #     type: object
-        #     properties:
-        #       manufacturer:
-        #         type: string
-        #         description: "[OpenSky Aircraft DB] manufacturername"
-        #       count:
-        #         type: integer
-        #     required: [manufacturer, count]
+          description: "[OpenSky] количество случаев с squawk=7700 или squawk=7500"
       required:
-        - from
-        - to
+        - computedAt
         - totals
         - flightsByPhase
         - topBusiestAirports
-        - trafficTrend
         - busiestRoutes
         - aircraftByManufacturer
+        - trafficTrend
+        - emergencyCount
