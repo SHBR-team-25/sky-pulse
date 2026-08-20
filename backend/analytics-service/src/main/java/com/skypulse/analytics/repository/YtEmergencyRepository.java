@@ -29,8 +29,8 @@ public class YtEmergencyRepository implements EmergencyRepository {
 
     @Override
     public List<EmergencyFlight> current(long maxPositionAgeSeconds) {
-        // positions_current хранит последнюю позицию борта вечно, и без отсечки
-        // по свежести вчерашний сигнал бедствия навсегда останется «текущим».
+        // Позиции в таблице живут вечно: без отсечки вчерашний сигнал бедствия
+        // навсегда остался бы «текущим».
         long since = Instant.now().getEpochSecond() - maxPositionAgeSeconds;
         String query = """
                 icao24, callsign, squawk, lat, lon, on_ground, time_position from [%s] \

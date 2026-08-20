@@ -20,11 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-/**
- * Собирает снапшот дашборда: агрегаты берутся из готовых таблиц dashboard_*,
- * которые считает SPYT-джоба, а разрезы по странам и авиакомпаниям — запросом
- * по positions_current, отдельной таблицы под них нет.
- */
+/** Агрегаты — из готовых dashboard_*, страны и авиакомпании — из positions_current. */
 @Repository
 public class YtDashboardRepository implements DashboardRepository {
 
@@ -139,11 +135,7 @@ public class YtDashboardRepository implements DashboardRepository {
                 .toList();
     }
 
-    /**
-     * Строки последнего пересчёта. Джоба перезаписывает таблицы целиком, но если
-     * она когда-нибудь начнёт дописывать, смешать в одном ответе разные поколения
-     * агрегатов нельзя — числа перестанут сходиться между собой.
-     */
+    /** Смешать поколения агрегатов нельзя: числа перестанут сходиться между собой. */
     static List<JsonNode> latestGeneration(List<JsonNode> rows) {
         long newest = rows.stream()
                 .mapToLong(row -> row.path("computed_at").asLong(Long.MIN_VALUE))

@@ -164,6 +164,64 @@ paths:
         "503":
           $ref: "#/components/responses/SourceUnavailable"
 
+  /airports/{icao}/flights:
+    get:
+      tags: [airports]
+      summary: Лог вылетов и прилётов аэропорта
+      description: >-
+        Уже наблюдённые рейсы, а не борд предстоящих: каждая запись — момент,
+        когда пайплайн увидел борт у полосы, из `airport_events`.
+
+
+        Позывной берётся из `flights_segments` по `flight_id`, авиакомпания —
+        из `ref_aircraft` по `icao24`. Обоих может не быть: справочник ВС знает
+        эксплуатанта примерно у трети бортов лога, и борт без него из выдачи
+        **не** пропадает (FR4) — приходит `null`.
+
+
+        `otherAirport` — противоположный конец маршрута, тоже оценка по треку,
+        и он известен примерно у каждого десятого события. Продуктовый контракт
+        описывает его как `EstimatedAirportRef` с `asOf` и `candidatesCount`;
+        этих полей в YTsaurus нет, поэтому вместо них рядом с записью идут
+        честные `confidence` и `distanceKm` из разметки.
+      parameters:
+        - $ref: "#/components/parameters/AirportIcao"
+        - name: direction
+          in: query
+          required: false
+          description: >-
+            Фильтр направления. `all` и отсутствие параметра равнозначны;
+            всё, кроме `arrival`, `departure` и `all`, — это 400
+          schema:
+            type: string
+            enum: [arrival, departure, all]
+            default: all
+      responses:
+        "200":
+          description: >-
+            Записи за то же окно, что у `/stats/airports`, свежие первыми.
+            Пустой список означает, что за сутки данных аэропорт не отметился
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportFlightsResponse"
+        "400":
+          description: Код аэропорта или направление не подошли под формат
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Такого кода нет в `ref_airports`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
   /airports/{icao}/stats:
     get:
       tags: [airports]
@@ -172,18 +230,7 @@ paths:
         То же окно и тот же источник, что у `/stats/airports`, но по одному
         аэропорту — для карточки аэропорта.
       parameters:
-        - name: icao
-          in: path
-          required: true
-          description: >-
-            Код аэропорта из `ref_airports`: буквы, цифры и дефис, 2–8
-            символов. Регистр не важен, сервер приводит значение к верхнему.
-            Всё, что не подходит под формат, — это 400, а не «аэропорт
-            не найден»
-          schema:
-            type: string
-            pattern: "^[A-Za-z0-9-]{2,8}$"
-            example: "EDDK"
+        - $ref: "#/components/parameters/AirportIcao"
       responses:
         "200":
           description: >-
@@ -214,6 +261,20 @@ paths:
           $ref: "#/components/responses/SourceUnavailable"
 
 components:
+  parameters:
+    AirportIcao:
+      name: icao
+      in: path
+      required: true
+      description: >-
+        Код аэропорта из `ref_airports`: буквы, цифры и дефис, 2–8 символов.
+        Регистр не важен, сервер приводит значение к верхнему. Всё, что
+        не подходит под формат, — это 400, а не «аэропорт не найден»
+      schema:
+        type: string
+        pattern: "^[A-Za-z0-9-]{2,8}$"
+        example: "EDDK"
+
   responses:
     SourceUnavailable:
       description: >-
@@ -505,6 +566,78 @@ components:
         totalFlights24h:
           type: integer
       required: [from, to, airport, departures, arrivals, totalFlights24h]
+
+    FlightLogEntry:
+      type: object
+      properties:
+        icao24:
+          type: string
+          description: "[OpenSky] airport_events.icao24"
+          example: "4bccad"
+        callsign:
+          type: string
+          nullable: true
+          description: "[OpenSky] flights_segments.callsign по flight_id"
+          example: "SXS4RX"
+        airlineName:
+          type: string
+          nullable: true
+          description: "[OpenSky Aircraft DB] ref_aircraft.operator по icao24"
+          example: "SunExpress"
+        direction:
+          type: string
+          enum: [arrival, departure]
+        otherAirport:
+          allOf:
+            - $ref: "#/components/schemas/AirportRef"
+          nullable: true
+          description: >-
+            Противоположный конец маршрута по оценке разметки; известен
+            примерно у каждого десятого события
+        observedAt:
+          type: integer
+          format: int64
+          description: "[Derived] airport_events.event_ts — когда борт заметили у полосы"
+          example: 1787133926
+        confidence:
+          type: number
+          format: double
+          description: >-
+            [Derived] уверенность привязки события к аэропорту, 0..1.
+            Заменяет `candidatesCount` продуктового контракта
+          example: 0.97
+        distanceKm:
+          type: number
+          format: double
+          description: "[Derived] расстояние от борта до аэропорта в момент события"
+          example: 0.4
+      required:
+        - icao24
+        - callsign
+        - airlineName
+        - direction
+        - otherAirport
+        - observedAt
+        - confidence
+        - distanceKm
+
+    AirportFlightsResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+        airport:
+          $ref: "#/components/schemas/AirportRef"
+        items:
+          type: array
+          description: Свежие записи первыми
+          items:
+            $ref: "#/components/schemas/FlightLogEntry"
+      required: [from, to, airport, items]
 
     HourlyTrafficPoint:
       type: object

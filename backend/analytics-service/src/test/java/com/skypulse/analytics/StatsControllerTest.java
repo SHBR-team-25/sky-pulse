@@ -22,6 +22,7 @@ import com.skypulse.analytics.repository.DashboardRepository;
 import com.skypulse.analytics.repository.EmergencyRepository;
 import com.skypulse.analytics.service.DashboardService;
 import com.skypulse.analytics.service.EmergencyService;
+import com.skypulse.analytics.service.StatsWindows;
 import com.skypulse.analytics.service.TrafficStatsService;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +37,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(StatsController.class)
-@Import({DashboardService.class, TrafficStatsService.class, EmergencyService.class,
+@Import({DashboardService.class, TrafficStatsService.class, EmergencyService.class, StatsWindows.class,
         StatsControllerTest.StubRepositoryConfig.class})
 @TestPropertySource(properties = {
         "skypulse.stats.airport-window-seconds=86400",

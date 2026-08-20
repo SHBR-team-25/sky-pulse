@@ -119,11 +119,7 @@ public class YtQueryClient {
         return line.length() <= MAX_REPORTED_LENGTH ? line : line.substring(0, MAX_REPORTED_LENGTH) + "…";
     }
 
-    /**
-     * URL собирается вручную: в путях YT встречаются фигурные скобки — селектор
-     * колонок вида {@code //table{ident,name}}, — а UriBuilder принимает их
-     * за плейсхолдеры шаблона и падает на «not enough variable values».
-     */
+    /** Вручную, потому что UriBuilder принимает селектор колонок {@code {a,b}} за шаблон и падает. */
     static String buildUrl(String baseUrl, String command, Map<String, String> params) {
         String query = params.entrySet().stream()
                 .map(param -> param.getKey() + "=" + URLEncoder.encode(param.getValue(), StandardCharsets.UTF_8))

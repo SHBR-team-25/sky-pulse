@@ -165,9 +165,12 @@ paths:
   /airports/{icao}/flights:
     get:
       tags: [airports]
-      summary: Лог рейсов аэропорта за период (вылеты + прилёты)
+      summary: Лог рейсов аэропорта за сутки (вылеты + прилёты)
       description: >-
-        Уже наблюдённых OpenSky рейсов, не борд предстоящих.
+        Уже наблюдённые рейсы, а не борд предстоящих: записи берутся из
+        airport_events. Окно — последние сутки имеющихся данных, границы
+        приходят в from/to; произвольный период задать нельзя, потому что
+        событий за него в YTsaurus может не быть вовсе.
       parameters:
         - name: icao
           in: path
@@ -183,20 +186,6 @@ paths:
             type: string
             enum: [arrival, departure, all]
             default: all
-        - name: from
-          in: query
-          required: false
-          description: Окно наблюдения, unix ts (проброс в /flights/departure)
-          schema:
-            type: integer
-            format: int64
-        - name: to
-          in: query
-          required: false
-          description: Окно наблюдения, unix ts (проброс в /flights/arrival)
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           description: OK
@@ -594,6 +583,12 @@ components:
     AirportFlightsResponse:
       type: object
       properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
         airport:
           $ref: "#/components/schemas/AirportRef"
         items:
@@ -617,13 +612,25 @@ components:
                 enum: [arrival, departure]
               otherAirport:
                 allOf:
-                  - $ref: "#/components/schemas/EstimatedAirportRef"
+                  - $ref: "#/components/schemas/AirportRef"
                 nullable: true
-                description: "[OpenSky] противоположный конец маршрута, оценка"
+                description: >-
+                  [Derived] противоположный конец маршрута по оценке разметки;
+                  известен примерно у каждого десятого события. Полей asOf
+                  и candidatesCount из EstimatedAirportRef в YTsaurus нет,
+                  вместо них рядом идут confidence и distanceKm
               observedAt:
                 type: integer
                 format: int64
-                description: "[OpenSky] firstSeen (для departure) / lastSeen (для arrival)"
+                description: "[Derived] airport_events.event_ts — когда борт заметили у полосы"
+              confidence:
+                type: number
+                format: double
+                description: "[Derived] уверенность привязки события к аэропорту, 0..1"
+              distanceKm:
+                type: number
+                format: double
+                description: "[Derived] расстояние до аэропорта в момент события"
             required:
               - icao24
               - callsign
@@ -631,7 +638,9 @@ components:
               - direction
               - otherAirport
               - observedAt
-      required: [airport, items]
+              - confidence
+              - distanceKm
+      required: [from, to, airport, items]
 
     FlightDetailsResponse:
       type: object

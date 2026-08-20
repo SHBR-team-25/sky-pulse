@@ -10,8 +10,7 @@ public record DashboardSnapshot(
         List<AirportTraffic> topBusiestAirports,
         List<RouteTraffic> busiestRoutes,
         List<ManufacturerShare> aircraftByManufacturer,
-        // Страны и авиакомпании отдельной dashboard_*-таблицы не имеют: их
-        // репозиторий считает по positions_current в момент запроса.
+        // Считаются по positions_current в момент запроса: своей таблицы у них нет.
         List<CountryShare> topCountries,
         List<AirlineShare> topAirlines,
         List<TrafficPoint> trafficTrend,

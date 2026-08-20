@@ -1,7 +1,9 @@
 package com.skypulse.analytics.repository;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.skypulse.analytics.model.AirportEvent;
 import com.skypulse.analytics.model.AirportTraffic;
+import com.skypulse.analytics.model.FlightDirection;
 import com.skypulse.analytics.model.HourPoint;
 import com.skypulse.analytics.model.StatsWindow;
 import java.util.ArrayList;
@@ -12,6 +14,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
@@ -19,9 +23,14 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class YtAirportEventsRepository implements AirportEventsRepository {
 
+    private static final Logger LOG = LoggerFactory.getLogger(YtAirportEventsRepository.class);
+
     private static final long HOUR_SECONDS = 3600L;
 
-    // Индексы в паре счётчиков: направлений всего два, и заводить под них класс незачем.
+    // Крупный аэропорт даёт около сотни событий в сутки; потолок нужен на случай,
+    // если разметка начнёт плодить дубли.
+    private static final int MAX_EVENTS = 1000;
+
     private static final int DEPARTURES = 0;
     private static final int ARRIVALS = 1;
 
@@ -82,6 +91,30 @@ public class YtAirportEventsRepository implements AirportEventsRepository {
         return foldByHour(ytQueryClient.selectRows(query));
     }
 
+    @Override
+    public List<AirportEvent> events(String icao, StatsWindow window, FlightDirection direction) {
+        String directionFilter = direction == null ? "" : "direction = '%s' and ".formatted(direction.code());
+        String query = """
+                icao24, flight_id, direction, other_airport_icao, event_ts, confidence, distance_km \
+                from [%s] where airport_icao = '%s' and %sevent_ts >= %d and event_ts <= %d \
+                order by event_ts desc limit %d"""
+                .formatted(airportEventsPath, icao, directionFilter, window.from(), window.to(), MAX_EVENTS);
+        return YtRow.mapSkippingBroken(ytQueryClient.selectRows(query), YtAirportEventsRepository::toEvent, LOG);
+    }
+
+    static AirportEvent toEvent(JsonNode row) {
+        return new AirportEvent(
+                YtRow.requiredText(row, "icao24"),
+                YtRow.requiredText(row, "flight_id"),
+                "departure".equals(YtRow.requiredText(row, "direction"))
+                        ? FlightDirection.DEPARTURE
+                        : FlightDirection.ARRIVAL,
+                YtRow.text(row, "other_airport_icao"),
+                YtRow.requiredLong(row, "event_ts"),
+                YtRow.requiredDouble(row, "confidence"),
+                YtRow.requiredDouble(row, "distance_km"));
+    }
+
     private List<AirportTraffic> withNames(Map<String, int[]> counts) {
         List<AirportTraffic> traffic = new ArrayList<>(counts.size());
         counts.forEach((icao, byDirection) -> traffic.add(new AirportTraffic(
@@ -92,10 +125,7 @@ public class YtAirportEventsRepository implements AirportEventsRepository {
         return traffic;
     }
 
-    /**
-     * Вылеты и прилёты приходят разными строками: условных сумм в YT QL нет,
-     * поэтому направления сводятся в одну запись уже здесь.
-     */
+    /** Условных сумм в YT QL нет, поэтому направления сводятся в одну запись здесь. */
     static Map<String, int[]> foldByAirport(List<JsonNode> rows) {
         Map<String, int[]> counts = new LinkedHashMap<>();
         for (JsonNode row : rows) {

@@ -1,6 +1,8 @@
 package com.skypulse.analytics.repository;
 
+import com.skypulse.analytics.model.AirportEvent;
 import com.skypulse.analytics.model.AirportTraffic;
+import com.skypulse.analytics.model.FlightDirection;
 import com.skypulse.analytics.model.HourPoint;
 import com.skypulse.analytics.model.StatsWindow;
 import java.util.List;
@@ -17,4 +19,7 @@ public interface AirportEventsRepository {
     AirportTraffic trafficFor(String icao, StatsWindow window);
 
     List<HourPoint> hourlyTraffic(StatsWindow window, String icao);
+
+    /** direction == null — оба направления. Порядок: свежие события первыми. */
+    List<AirportEvent> events(String icao, StatsWindow window, FlightDirection direction);
 }

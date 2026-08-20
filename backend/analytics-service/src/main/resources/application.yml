@@ -41,6 +41,9 @@ skypulse:
     dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}
     # Рейсы аэропортов считаются по размеченным событиям, а не по dashboard_*.
     airport-events-path: ${YT_AIRPORT_EVENTS_PATH://home/skypulse/airport_events}
+    flights-segments-path: ${YT_FLIGHTS_SEGMENTS_PATH://home/skypulse/flights_segments}
+    ref-aircraft-path: ${YT_REF_AIRCRAFT_PATH://home/skypulse/ref_aircraft}
+    ref-aircraft-cache-ttl-seconds: ${YT_REF_AIRCRAFT_CACHE_TTL_SECONDS:86400}
   stats:
     top-limit: ${STATS_TOP_LIMIT:10}
     # Точки тренда пишутся на каждый пересчёт, а он идёт неравномерно, поэтому
