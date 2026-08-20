@@ -29,6 +29,8 @@ servers:
 tags:
   - name: stats
     description: Агрегаты дашборда поверх истории полётов
+  - name: airports
+    description: Рейсы аэропортов по размеченным событиям
 
 paths:
   /stats/dashboard:
@@ -56,6 +58,156 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
+  /stats/airports:
+    get:
+      tags: [stats]
+      summary: Рейсы аэропортов за сутки
+      description: >-
+        Вылеты и прилёты каждого аэропорта, о котором в `airport_events` есть
+        хотя бы одно событие, отсортированные по сумме рейсов. Это то самое
+        `totalFlights24h`, которого нет в справочнике `positions-service`:
+        рейсы считаются не по `ref_airports`, а по размеченным событиям.
+
+
+        Окно — **последние сутки имеющихся данных**, а не последние сутки по
+        часам сервиса: пайплайн встаёт, и по календарным суткам ответ был бы
+        пустым при живых событиях вчерашнего батча. Фактические границы всегда
+        приходят в `from`/`to`.
+      responses:
+        "200":
+          description: Аэропорты с рейсами за окно; пустой список — валидный ответ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportsTrafficResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
+  /stats/hourly-traffic:
+    get:
+      tags: [stats]
+      summary: Часовой профиль вылетов и прилётов
+      description: >-
+        Тайм-серия по `airport_events` с шагом в час. В отличие от
+        `trafficTrend` из дашборда это профиль **по истории рейсов**, а не по
+        моментам, когда отработала джоба, поэтому шаг ровный и по нему видно
+        суточную волну.
+
+
+        Часы без событий приходят явными нулями: без них на графике рвётся
+        ось времени, а провал в данных выглядит как отсутствие точек.
+      parameters:
+        - name: icao
+          in: query
+          required: false
+          description: >-
+            Ограничить профиль одним аэропортом. Код проверяется форматом —
+            буквы, цифры и дефис, 2–8 символов; всё остальное 400
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9-]{2,8}$"
+            example: "EDDK"
+      responses:
+        "200":
+          description: Непрерывный ряд часов внутри окна
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HourlyTrafficResponse"
+        "400":
+          description: Код аэропорта не подошёл под формат
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
+  /stats/emergencies:
+    get:
+      tags: [stats]
+      summary: Борта с сигналом бедствия
+      description: >-
+        Список бортов с кодом 7500 (захват судна) или 7700 (аварийная
+        ситуация) — то же, что `emergencyCount` в дашборде, но поимённо
+        и с координатами, чтобы их можно было показать на карте.
+
+
+        Борта берутся из текущего снапшота `positions_current`, а не из
+        агрегатов, поэтому актуальность отвечает `asOf`, а не `computedAt`.
+        Борт, о котором не было позиции дольше
+        `STATS_MAX_POSITION_AGE_SECONDS` (по умолчанию 300 с), из выдачи
+        пропадает: `positions_current` хранит последнюю позицию вечно,
+        и без отсечки вчерашний сигнал бедствия навсегда остался бы
+        «текущим».
+      responses:
+        "200":
+          description: >-
+            Пустой список — штатный и самый частый ответ: в небе может не быть
+            ни одного сигнала бедствия. Он же приходит, когда ингест стоит
+            и все позиции протухли
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergenciesResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/SourceUnavailable"
+
+  /airports/{icao}/stats:
+    get:
+      tags: [airports]
+      summary: Рейсы одного аэропорта за сутки
+      description: >-
+        То же окно и тот же источник, что у `/stats/airports`, но по одному
+        аэропорту — для карточки аэропорта.
+      parameters:
+        - name: icao
+          in: path
+          required: true
+          description: >-
+            Код аэропорта из `ref_airports`: буквы, цифры и дефис, 2–8
+            символов. Регистр не важен, сервер приводит значение к верхнему.
+            Всё, что не подходит под формат, — это 400, а не «аэропорт
+            не найден»
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9-]{2,8}$"
+            example: "EDDK"
+      responses:
+        "200":
+          description: >-
+            Аэропорт есть в справочнике. Нули в счётчиках означают, что за окно
+            по нему не было событий, — это не ошибка
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportStatsResponse"
+        "400":
+          description: Код аэропорта не подошёл под формат
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: >-
+            Такого кода нет в `ref_airports`. Пока справочник не прочитан,
+            отличить опечатку от живого аэропорта нельзя, и сервис отвечает
+            статистикой, а не 404
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -296,6 +448,139 @@ components:
           description: "[Derived] число бортов авиакомпании в текущем снапшоте"
           example: 214
       required: [airline, flightCount]
+
+    AirportTraffic:
+      type: object
+      properties:
+        airport:
+          $ref: "#/components/schemas/AirportRef"
+        departures:
+          type: integer
+          description: "[Derived] count(airport_events с direction=departure)"
+          example: 13
+        arrivals:
+          type: integer
+          description: "[Derived] count(airport_events с direction=arrival)"
+          example: 71
+        totalFlights24h:
+          type: integer
+          description: "[Derived] вылеты плюс прилёты за окно"
+          example: 84
+      required: [airport, departures, arrivals, totalFlights24h]
+
+    AirportsTrafficResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+          description: Начало окна, unix seconds
+        to:
+          type: integer
+          format: int64
+          description: >-
+            Конец окна — время последнего события в таблице, а не текущее
+            время сервиса
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AirportTraffic"
+      required: [from, to, items]
+
+    AirportStatsResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+        airport:
+          $ref: "#/components/schemas/AirportRef"
+        departures:
+          type: integer
+        arrivals:
+          type: integer
+        totalFlights24h:
+          type: integer
+      required: [from, to, airport, departures, arrivals, totalFlights24h]
+
+    HourlyTrafficPoint:
+      type: object
+      properties:
+        hour:
+          type: integer
+          format: int64
+          description: Начало часа, unix seconds
+          example: 1787130000
+        departures:
+          type: integer
+        arrivals:
+          type: integer
+        totalFlights:
+          type: integer
+          description: Сумма — считает сервис, чтобы клиент не складывал сам
+      required: [hour, departures, arrivals, totalFlights]
+
+    HourlyTrafficResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+        points:
+          type: array
+          description: Непрерывный ряд часов внутри окна, включая пустые
+          items:
+            $ref: "#/components/schemas/HourlyTrafficPoint"
+      required: [from, to, points]
+
+    EmergencyFlight:
+      type: object
+      properties:
+        icao24:
+          type: string
+          description: "[OpenSky] positions_current.icao24"
+          example: "a981a8"
+        callsign:
+          type: string
+          nullable: true
+          description: "[OpenSky] positions_current.callsign"
+          example: "N711VJ"
+        squawk:
+          type: string
+          description: "[OpenSky] код ответчика: 7500 или 7700"
+          example: "7700"
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+        onGround:
+          type: boolean
+        timePosition:
+          type: integer
+          format: int64
+          description: Момент фиксации позиции, unix seconds
+      required: [icao24, callsign, squawk, lat, lon, onGround, timePosition]
+
+    EmergenciesResponse:
+      type: object
+      properties:
+        asOf:
+          type: integer
+          format: int64
+          description: Момент запроса — борта берутся из текущего снапшота позиций
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmergencyFlight"
+      required: [asOf, items]
 
     TrafficTrendPoint:
       type: object

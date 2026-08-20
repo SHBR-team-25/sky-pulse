@@ -2,6 +2,7 @@ package com.skypulse.analytics.api;
 
 import com.skypulse.analytics.repository.exception.DataSourceRejectedException;
 import com.skypulse.analytics.repository.exception.DataSourceUnavailableException;
+import com.skypulse.analytics.service.exception.AirportNotFoundException;
 import com.skypulse.analytics.service.exception.InvalidRequestException;
 import java.time.Instant;
 import java.util.Map;
@@ -27,6 +28,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler(AirportNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(AirportNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody(HttpStatus.NOT_FOUND, ex.getMessage()));
     }
 
     @ExceptionHandler(DataSourceUnavailableException.class)

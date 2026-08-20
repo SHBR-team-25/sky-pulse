@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +42,13 @@ public class YtAirportDirectory implements AirportDirectory {
     }
 
     @Override
-    public AirportRef byIcao(String icao) {
-        AirportRef known = names().get(icao);
-        // Аэропорта нет в справочнике или справочник не прочитался — отдаём один
-        // ICAO: терять из-за имени всю строку топа хуже, чем показать голый код.
-        return known != null ? known : new AirportRef(icao, null, null);
+    public Optional<AirportRef> find(String icao) {
+        return Optional.ofNullable(names().get(icao));
+    }
+
+    @Override
+    public boolean isLoaded() {
+        return !names().isEmpty();
     }
 
     private Map<String, AirportRef> names() {

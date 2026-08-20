@@ -222,6 +222,58 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardResponse"
 
+  /stats/airports:
+    get:
+      tags: [stats]
+      summary: Рейсы аэропортов за сутки
+      description: >-
+        Вылеты и прилёты каждого аэропорта, о котором есть события.
+        Окно — последние сутки имеющихся данных, границы приходят в from/to.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AirportsTrafficResponse"
+
+  /stats/hourly-traffic:
+    get:
+      tags: [stats]
+      summary: Часовой профиль вылетов и прилётов
+      description: >-
+        Тайм-серия по истории рейсов с шагом в час; часы без событий приходят
+        нулями, иначе на графике рвётся ось времени.
+      parameters:
+        - name: icao
+          in: query
+          required: false
+          description: Ограничить профиль одним аэропортом
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HourlyTrafficResponse"
+
+  /stats/emergencies:
+    get:
+      tags: [stats]
+      summary: Борта с сигналом бедствия
+      description: >-
+        Поимённо то, что emergencyCount считает числом. Борт без свежей
+        позиции из выдачи пропадает: иначе вчерашний сигнал остался бы текущим.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergenciesResponse"
+
 components:
   parameters:
     LonMin:
@@ -679,6 +731,97 @@ components:
         - startTime
         - endTime
         - path
+
+    AirportsTrafficResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+          description: Время последнего события в данных, а не текущее время сервиса
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              airport:
+                $ref: "#/components/schemas/AirportRef"
+              departures:
+                type: integer
+                description: "[Derived] count(airport_events с direction=departure)"
+              arrivals:
+                type: integer
+                description: "[Derived] count(airport_events с direction=arrival)"
+              totalFlights24h:
+                type: integer
+                description: "[Derived] вылеты плюс прилёты за окно"
+            required: [airport, departures, arrivals, totalFlights24h]
+      required: [from, to, items]
+
+    HourlyTrafficResponse:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int64
+        to:
+          type: integer
+          format: int64
+        points:
+          type: array
+          description: Непрерывный ряд часов внутри окна, включая пустые
+          items:
+            type: object
+            properties:
+              hour:
+                type: integer
+                format: int64
+                description: Начало часа, unix seconds
+              departures:
+                type: integer
+              arrivals:
+                type: integer
+              totalFlights:
+                type: integer
+            required: [hour, departures, arrivals, totalFlights]
+      required: [from, to, points]
+
+    EmergenciesResponse:
+      type: object
+      properties:
+        asOf:
+          type: integer
+          format: int64
+          description: Момент запроса — борта берутся из текущего снапшота позиций
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              icao24:
+                type: string
+              callsign:
+                type: string
+                nullable: true
+              squawk:
+                type: string
+                description: "[OpenSky] 7500 или 7700"
+              lat:
+                type: number
+                format: double
+              lon:
+                type: number
+                format: double
+              onGround:
+                type: boolean
+              timePosition:
+                type: integer
+                format: int64
+            required: [icao24, callsign, squawk, lat, lon, onGround, timePosition]
+      required: [asOf, items]
 
     DashboardResponse:
       type: object

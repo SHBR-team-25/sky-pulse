@@ -16,9 +16,15 @@ import com.skypulse.analytics.model.ManufacturerShare;
 import com.skypulse.analytics.model.RouteTraffic;
 import com.skypulse.analytics.model.Totals;
 import com.skypulse.analytics.model.TrafficPoint;
+import com.skypulse.analytics.repository.AirportDirectory;
+import com.skypulse.analytics.repository.AirportEventsRepository;
 import com.skypulse.analytics.repository.DashboardRepository;
+import com.skypulse.analytics.repository.EmergencyRepository;
 import com.skypulse.analytics.service.DashboardService;
+import com.skypulse.analytics.service.EmergencyService;
+import com.skypulse.analytics.service.TrafficStatsService;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +32,15 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(StatsController.class)
-@Import({DashboardService.class, StatsControllerTest.StubRepositoryConfig.class})
+@Import({DashboardService.class, TrafficStatsService.class, EmergencyService.class,
+        StatsControllerTest.StubRepositoryConfig.class})
+@TestPropertySource(properties = {
+        "skypulse.stats.airport-window-seconds=86400",
+        "skypulse.stats.max-position-age-seconds=300"})
 class StatsControllerTest {
 
     private static final AirportRef KOELN = new AirportRef("EDDK", "CGN", "Cologne Bonn Airport");
@@ -57,6 +68,23 @@ class StatsControllerTest {
         @Bean
         DashboardRepository dashboardRepository() {
             return LATEST::get;
+        }
+
+        // Ручки трафика и аварийных бортов проверяются в StatsEndpointsTest,
+        // здесь их порты нужны только чтобы контекст поднялся.
+        @Bean
+        AirportDirectory airportDirectory() {
+            return StubPorts.directory();
+        }
+
+        @Bean
+        AirportEventsRepository airportEventsRepository() {
+            return StubPorts.events(new AtomicReference<>(Optional.of(StubPorts.NEWEST_EVENT_TS)));
+        }
+
+        @Bean
+        EmergencyRepository emergencyRepository() {
+            return StubPorts.emergencies(new AtomicReference<>(List.of()));
         }
     }
 

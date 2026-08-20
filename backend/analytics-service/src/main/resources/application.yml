@@ -39,8 +39,15 @@ skypulse:
     dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/skypulse/dashboard_top_airports}
     dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/skypulse/dashboard_routes}
     dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}
+    # Рейсы аэропортов считаются по размеченным событиям, а не по dashboard_*.
+    airport-events-path: ${YT_AIRPORT_EVENTS_PATH://home/skypulse/airport_events}
   stats:
     top-limit: ${STATS_TOP_LIMIT:10}
     # Точки тренда пишутся на каждый пересчёт, а он идёт неравномерно, поэтому
     # ограничение задаётся числом точек, а не окном времени.
     trend-limit: ${STATS_TREND_LIMIT:100}
+    # Сутки данных, а не сутки по часам сервиса: пайплайн встаёт, и по календарным
+    # суткам ответ был бы пустым при живых событиях вчерашнего батча.
+    airport-window-seconds: ${STATS_AIRPORT_WINDOW_SECONDS:86400}
+    # Борт, о котором давно не было позиции, аварийным считать нельзя.
+    max-position-age-seconds: ${STATS_MAX_POSITION_AGE_SECONDS:300}
