@@ -29,9 +29,18 @@ skypulse:
     connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
     read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
     ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
+    # Справочник OurAirports статический: перечитывать его чаще раза в сутки незачем.
+    ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
+    # Топы стран и авиакомпаний считаются по текущим позициям: своих таблиц у них нет.
+    positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
     # Агрегаты считает SPYT-джоба, сервис только читает готовые таблицы.
     dashboard-totals-path: ${YT_DASHBOARD_TOTALS_PATH://home/skypulse/dashboard_totals}
     dashboard-trend-path: ${YT_DASHBOARD_TREND_PATH://home/skypulse/dashboard_trend}
     dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/skypulse/dashboard_top_airports}
     dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/skypulse/dashboard_routes}
     dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}
+  stats:
+    top-limit: ${STATS_TOP_LIMIT:10}
+    # Точки тренда пишутся на каждый пересчёт, а он идёт неравномерно, поэтому
+    # ограничение задаётся числом точек, а не окном времени.
+    trend-limit: ${STATS_TREND_LIMIT:100}
