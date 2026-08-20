@@ -709,19 +709,18 @@ components:
                 [Derived] среднее по states.baro_altitude, метры; null, если
                 в окне пересчёта не было ни одного борта с высотой — ноль
                 означал бы полёт на уровне моря
-            averageSpeedMps:
+            averageSpeedKmh:
               type: number
               format: double
               nullable: true
               description: >-
-                [Derived] среднее по states.velocity, метры в секунду —
-                единицы OpenSky сохраняются как есть, пересчёт в км/ч
-                на стороне клиента
+                [Derived] среднее по states.velocity, километры в час;
+                в YTsaurus поле лежит в м/с, ×3.6 делает сервис
           required:
             - activeFlights
             - trackedAirports
             - averageAltitudeM
-            - averageSpeedMps
+            - averageSpeedKmh
         flightsByPhase:
           type: object
           description: >-
@@ -790,6 +789,37 @@ components:
                 type: integer
                 description: "[Derived] count(states) по производителю"
             required: [manufacturer, flightCount]
+        topCountries:
+          type: array
+          description: >-
+            [Derived] топ-10 стран регистрации, group by
+            positions_current.origin_country. Считается в момент запроса,
+            а не берётся из снапшота, — отражает «сейчас», а не computedAt
+          items:
+            type: object
+            properties:
+              country:
+                type: string
+                description: "[OpenSky] origin_country"
+              flightCount:
+                type: integer
+            required: [country, flightCount]
+        topAirlines:
+          type: array
+          description: >-
+            [Derived] топ-10 авиакомпаний, group by positions_current.operator,
+            считается так же в момент запроса. Борта с пустым operator
+            в выдачу не попадают: справочник покрывает около шестой части
+            бортов, и сумма flightCount заметно меньше activeFlights
+          items:
+            type: object
+            properties:
+              airline:
+                type: string
+                description: "[OpenSky Aircraft DB] operator"
+              flightCount:
+                type: integer
+            required: [airline, flightCount]
         trafficTrend:
           type: array
           description: >-
@@ -816,5 +846,7 @@ components:
         - topBusiestAirports
         - busiestRoutes
         - aircraftByManufacturer
+        - topCountries
+        - topAirlines
         - trafficTrend
         - emergencyCount

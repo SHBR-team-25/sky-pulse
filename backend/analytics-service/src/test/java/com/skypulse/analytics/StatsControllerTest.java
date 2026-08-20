@@ -1,12 +1,15 @@
 package com.skypulse.analytics;
 
+import static org.hamcrest.Matchers.closeTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.skypulse.analytics.api.StatsController;
+import com.skypulse.analytics.model.AirlineShare;
 import com.skypulse.analytics.model.AirportRef;
 import com.skypulse.analytics.model.AirportTraffic;
+import com.skypulse.analytics.model.CountryShare;
 import com.skypulse.analytics.model.DashboardSnapshot;
 import com.skypulse.analytics.model.FlightsByPhase;
 import com.skypulse.analytics.model.ManufacturerShare;
@@ -39,6 +42,8 @@ class StatsControllerTest {
                 List.of(new AirportTraffic(KOELN, 12, 64, 76)),
                 List.of(new RouteTraffic(KOELN, KOELN, 5)),
                 List.of(new ManufacturerShare("Boeing", 232)),
+                List.of(new CountryShare("Germany", 1035)),
+                List.of(new AirlineShare("Ryanair", 214)),
                 List.of(new TrafficPoint(1787132036L, 917)),
                 0);
     }
@@ -66,12 +71,15 @@ class StatsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.computedAt").value(1787132036L))
                 .andExpect(jsonPath("$.totals.activeFlights").value(917))
-                .andExpect(jsonPath("$.totals.averageSpeedMps").value(221.4))
+                .andExpect(jsonPath("$.totals.averageSpeedKmh").value(closeTo(797.04, 1e-6)))
                 .andExpect(jsonPath("$.flightsByPhase.airborne").value(797))
                 .andExpect(jsonPath("$.topBusiestAirports[0].airport.iata").value("CGN"))
                 .andExpect(jsonPath("$.topBusiestAirports[0].arrivals").value(64))
                 .andExpect(jsonPath("$.busiestRoutes[0].flightCount").value(5))
                 .andExpect(jsonPath("$.aircraftByManufacturer[0].manufacturer").value("Boeing"))
+                .andExpect(jsonPath("$.topCountries[0].country").value("Germany"))
+                .andExpect(jsonPath("$.topCountries[0].flightCount").value(1035))
+                .andExpect(jsonPath("$.topAirlines[0].airline").value("Ryanair"))
                 .andExpect(jsonPath("$.trafficTrend[0].activeFlights").value(917))
                 .andExpect(jsonPath("$.emergencyCount").value(0));
     }
@@ -84,6 +92,6 @@ class StatsControllerTest {
         mockMvc.perform(get("/api/stats/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totals.averageAltitudeM").value((Object) null))
-                .andExpect(jsonPath("$.totals.averageSpeedMps").value((Object) null));
+                .andExpect(jsonPath("$.totals.averageSpeedKmh").value((Object) null));
     }
 }

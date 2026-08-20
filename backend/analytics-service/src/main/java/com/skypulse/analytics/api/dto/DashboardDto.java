@@ -10,6 +10,8 @@ public record DashboardDto(
         List<BusiestAirportDto> topBusiestAirports,
         List<BusiestRouteDto> busiestRoutes,
         List<ManufacturerShareDto> aircraftByManufacturer,
+        List<CountryShareDto> topCountries,
+        List<AirlineShareDto> topAirlines,
         List<TrafficPointDto> trafficTrend,
         int emergencyCount
 ) {
@@ -22,6 +24,8 @@ public record DashboardDto(
                 snapshot.topBusiestAirports().stream().map(BusiestAirportDto::from).toList(),
                 snapshot.busiestRoutes().stream().map(BusiestRouteDto::from).toList(),
                 snapshot.aircraftByManufacturer().stream().map(ManufacturerShareDto::from).toList(),
+                snapshot.topCountries().stream().map(CountryShareDto::from).toList(),
+                snapshot.topAirlines().stream().map(AirlineShareDto::from).toList(),
                 snapshot.trafficTrend().stream().map(TrafficPointDto::from).toList(),
                 snapshot.emergencyCount());
     }

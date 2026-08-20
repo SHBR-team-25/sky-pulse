@@ -18,8 +18,9 @@ info:
     `trafficTrend` из `dashboard_trend`.
 
 
-    Единицы: время — unix seconds в UTC, высота — метры, скорость — м/с
-    (как в OpenSky `states.velocity`, без пересчёта в км/ч).
+    Единицы: время — unix seconds в UTC, высота — метры, скорость — **км/ч**.
+    OpenSky и `dashboard_totals` хранят скорость в м/с; пересчёт ×3.6 делает
+    сервис, чтобы дашборд не считал единицы сам.
   version: 0.1.0
 
 servers:
@@ -155,16 +156,16 @@ components:
             пересчёта не оказалось ни одного борта с высотой, джоба пишет
             `null`, а не 0 — ноль означал бы «летели на уровне моря».
           example: 9412.5
-        averageSpeedMps:
+        averageSpeedKmh:
           type: number
           format: double
           nullable: true
           description: >-
-            [Derived] `dashboard_totals.avg_velocity_mps`, среднее по
-            `states.velocity`, **метры в секунду**. Единицы OpenSky
-            сохраняются как есть; пересчёт в км/ч — дело клиента.
-          example: 221.4
-      required: [activeFlights, trackedAirports, averageAltitudeM, averageSpeedMps]
+            [Derived] `dashboard_totals.avg_velocity_mps` × 3.6 — среднее
+            по `states.velocity`, **километры в час**. В YTsaurus поле лежит
+            в м/с, пересчёт делает сервис.
+          example: 797.0
+      required: [activeFlights, trackedAirports, averageAltitudeM, averageSpeedKmh]
 
     FlightsByPhase:
       type: object
@@ -249,6 +250,48 @@ components:
           example: 232
       required: [manufacturer, flightCount]
 
+    CountryShare:
+      type: object
+      description: >-
+        Страна регистрации борта. Считается сервисом на лету —
+        `group by origin_country` по `positions_current`, отдельной таблицы
+        `dashboard_*` под этот разрез нет. Поле заполнено у всех бортов,
+        поэтому сумма `flightCount` совпадает с числом бортов в снапшоте
+        позиций.
+      properties:
+        country:
+          type: string
+          description: "[OpenSky] positions_current.origin_country"
+          example: "Germany"
+        flightCount:
+          type: integer
+          description: "[Derived] число бортов страны в текущем снапшоте"
+          example: 1035
+      required: [country, flightCount]
+
+    AirlineShare:
+      type: object
+      description: >-
+        Авиакомпания-эксплуатант. Тоже считается на лету —
+        `group by operator` по `positions_current`.
+
+
+        Борта, у которых `operator` пуст, в выдачу **не попадают**: справочник
+        OpenSky Aircraft DB покрывает лишь около шестой части бортов, и
+        категория «Unknown» вышла бы крупнее всех настоящих авиакомпаний
+        вместе взятых. Поэтому сумма `flightCount` заметно меньше
+        `totals.activeFlights` — это ожидаемо, а не потеря данных.
+      properties:
+        airline:
+          type: string
+          description: "[OpenSky Aircraft DB] positions_current.operator"
+          example: "Ryanair"
+        flightCount:
+          type: integer
+          description: "[Derived] число бортов авиакомпании в текущем снапшоте"
+          example: 214
+      required: [airline, flightCount]
+
     TrafficTrendPoint:
       type: object
       description: >-
@@ -296,6 +339,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ManufacturerShare"
+        topCountries:
+          type: array
+          description: >-
+            Топ-10 стран регистрации. В отличие от остальных полей считается
+            по `positions_current` в момент запроса, а не берётся из снапшота
+            `dashboard_*`, — то есть отражает «сейчас», а не `computedAt`.
+          items:
+            $ref: "#/components/schemas/CountryShare"
+        topAirlines:
+          type: array
+          description: "Топ-10 авиакомпаний, считается так же — по `positions_current`."
+          items:
+            $ref: "#/components/schemas/AirlineShare"
         trafficTrend:
           type: array
           description: "Отсортирован по `timestamp` по возрастанию."
@@ -314,5 +370,7 @@ components:
         - topBusiestAirports
         - busiestRoutes
         - aircraftByManufacturer
+        - topCountries
+        - topAirlines
         - trafficTrend
         - emergencyCount
