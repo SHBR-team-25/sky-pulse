@@ -111,7 +111,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useAirports.ts                       # хук GET /airports с дебаунсом параметров и query-ключами
+│   │   │       useAirports.ts                       # хук GET /airports с query-ключами
 │   │   │
 │   │   ├───lib
 │   │   │       airportsMapQuery.ts                  # сборка query карты для /airports с общим лимитом 200 записей
@@ -144,7 +144,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с дебаунсом параметров и поллингом раз в 15 с
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 15 с
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -221,8 +221,9 @@
 │   │       useUtcTime.ts                            # хук текущего UTC-времени с обновлением в начале минуты
 │   │
 │   ├───lib                                          # общие хуки и утилиты
-│   │   │   useDebouncedParams.ts                    # дебаунс объекта query-параметров со стабильной ссылкой
-│   │   │   useDebouncedValue.ts                     # базовый дебаунс произвольного значения
+│   │   │   useDebouncedCallback.ts                  # trailing-дебаунс колбэка на ref, не вызывает ре-рендеров
+│   │   │   useDebouncedParams.ts                    # дебаунс объекта query-параметров со стабильной ссылкой, сейчас не используется
+│   │   │   useDebouncedValue.ts                     # базовый дебаунс произвольного значения, сейчас не используется
 │   │   │   ymaps3.ts                                # инициализация JS API Яндекс.Карт, кластеризации и ZoomControl
 │   │   │
 │   │   └───formatters                               # форматтеры дат, полётов, координат и чисел

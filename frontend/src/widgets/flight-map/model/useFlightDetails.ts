@@ -1,6 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Flight, TrackPoint } from '@/entities/flight';
 import { useTargetFlight } from '@/features/getTargetFlight';
+
+const EMPTY_TRACK: TrackPoint[] = [];
 
 interface SelectedFlight {
     flightId: string;
@@ -24,14 +26,18 @@ export function useFlightDetails() {
         });
     }, []);
 
-    const selectedFlight: SelectedFlight | null = selectedFlightId
-        ? {
-              flightId: selectedFlightId,
-              flight: data?.flight ?? null,
-              track: data?.track ?? [],
-              isLoading: isPending,
-          }
-        : null;
+    const selectedFlight = useMemo<SelectedFlight | null>(
+        () =>
+            selectedFlightId
+                ? {
+                      flightId: selectedFlightId,
+                      flight: data?.flight ?? null,
+                      track: data?.track ?? EMPTY_TRACK,
+                      isLoading: isPending,
+                  }
+                : null,
+        [selectedFlightId, data, isPending]
+    );
 
     return { selectedFlight, handleDetailsOpenChange };
 }

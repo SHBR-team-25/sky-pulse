@@ -5,16 +5,20 @@ import { useLiveFlights } from '@/features/getLiveFlights';
 import { FlightMap } from '@/widgets/flight-map';
 import {
     isSameMapBoundsParams,
-    MAP_VIEW_SYNC_DELAY_MS,
     parseMapBoundsView,
     resolveStoredMapSearch,
     toMapBoundsParams,
     writeStoredMapSearch,
     type MapBoundsParams,
 } from '@/shared/contexts/map-view';
-import { useDebouncedValue } from '@/shared/lib/useDebouncedValue';
 import styles from './MapPage.module.css';
 import { useLocation, useSearchParams } from 'react-router';
+import type { Airport } from '@/entities/airport';
+import type { Flight } from '@/entities/flight';
+
+/** Стабильные ссылки: иначе memo на слоях карты не сработает, пока данные не пришли. */
+const EMPTY_FLIGHTS: Flight[] = [];
+const EMPTY_AIRPORTS: Airport[] = [];
 
 interface MapPageProps {
     theme?: 'light' | 'dark';
@@ -48,13 +52,11 @@ export function MapPage({ theme = 'light' }: MapPageProps) {
         setFlightsQuery((prev) => (isSameMapBoundsParams(prev, next) ? prev : next));
     }, []);
 
-    const urlQuery = useDebouncedValue(flightsQuery, MAP_VIEW_SYNC_DELAY_MS);
-
     useEffect(() => {
         setSearchParams(
             (prev) => {
                 const params = new URLSearchParams(prev);
-                Object.entries(urlQuery).forEach(([key, value]) => {
+                Object.entries(flightsQuery).forEach(([key, value]) => {
                     params.set(key, String(value));
                 });
 
@@ -62,8 +64,9 @@ export function MapPage({ theme = 'light' }: MapPageProps) {
             },
             { replace: true }
         );
-    }, [urlQuery, setSearchParams]);
+    }, [flightsQuery, setSearchParams]);
 
+    // flightsQuery уже дебаунснут в FlightMap, второй дебаунс только удвоил бы задержку
     const { data, isError } = useLiveFlights(flightsQuery);
     const { data: airportsData, isError: isAirportsError } = useAirports(
         toAirportsMapQuery(flightsQuery)
@@ -74,8 +77,8 @@ export function MapPage({ theme = 'light' }: MapPageProps) {
             <FlightMap
                 initialBounds={initialView.bounds}
                 theme={theme}
-                airports={airportsData?.items ?? []}
-                flights={data ?? []}
+                airports={airportsData?.items ?? EMPTY_AIRPORTS}
+                flights={data ?? EMPTY_FLIGHTS}
                 onBoundsChange={handleBoundsChange}
             />
 

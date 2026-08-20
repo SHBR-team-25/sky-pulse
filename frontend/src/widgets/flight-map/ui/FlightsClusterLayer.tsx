@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { PlaneFill } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
 import type { Feature } from '@yandex/ymaps3-types/packages/clusterer';
@@ -32,7 +32,9 @@ interface FlightsClusterLayerProps {
     flights: Flight[];
 }
 
-export function FlightsClusterLayer({ flights }: FlightsClusterLayerProps) {
+export const FlightsClusterLayer = memo(function FlightsClusterLayer({
+    flights,
+}: FlightsClusterLayerProps) {
     const { selectedFlight, handleDetailsOpenChange } = useFlightDetails();
 
     const flightsById = useMemo(
@@ -63,7 +65,7 @@ export function FlightsClusterLayer({ flights }: FlightsClusterLayerProps) {
         return track.map(({ lon, lat }) => [lon, lat]);
     }, [selectedFlight?.track]);
 
-    /** Фича, которую кластерер оставил одиночной - рисуем самолётик */
+    /** Одиночный самолетик. */
     const renderFlight = useCallback(
         (feature: Feature) => {
             const flightId = feature.id;
@@ -146,4 +148,4 @@ export function FlightsClusterLayer({ flights }: FlightsClusterLayerProps) {
             )}
         </>
     );
-}
+});

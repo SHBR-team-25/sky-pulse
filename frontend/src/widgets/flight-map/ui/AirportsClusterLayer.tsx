@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { MapPin } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
 import type { Feature } from '@yandex/ymaps3-types/packages/clusterer';
@@ -25,7 +25,9 @@ interface AirportsClusterLayerProps {
     airports: Airport[];
 }
 
-export function AirportsClusterLayer({ airports }: AirportsClusterLayerProps) {
+export const AirportsClusterLayer = memo(function AirportsClusterLayer({
+    airports,
+}: AirportsClusterLayerProps) {
     const { selectedAirport, handleDetailsOpenChange } = useMockAirportFlights();
     const selectedAirportIcao = selectedAirport?.airportId;
 
@@ -132,4 +134,4 @@ export function AirportsClusterLayer({ airports }: AirportsClusterLayerProps) {
             )}
         </>
     );
-}
+});

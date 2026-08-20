@@ -1,7 +1,7 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import type { LiveFlightsQuery, LiveFlightsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
-import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
+// import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
 
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 
@@ -21,6 +21,7 @@ export function liveFlightsQueryOptions(params: LiveFlightsQuery = {}) {
 
             return flights;
         },
+        structuralSharing: false,
         staleTime: DEFAULT_POLL_INTERVAL_MS,
     });
 }
@@ -28,14 +29,14 @@ export function liveFlightsQueryOptions(params: LiveFlightsQuery = {}) {
 interface UseLiveFlightsOptions {
     enabled?: boolean;
     refetchInterval?: number | false;
-    debounceMs?: number;
 }
 
 export function useLiveFlights(params: LiveFlightsQuery = {}, options: UseLiveFlightsOptions = {}) {
-    const debouncedParams = useDebouncedParams(params, options.debounceMs);
+    // Дебаунс делает вызывающая сторона (FlightMap), второй дебаунс удвоил бы задержку
+    // const debouncedParams = useDebouncedParams(params, options.debounceMs);
 
     return useQuery({
-        ...liveFlightsQueryOptions(debouncedParams),
+        ...liveFlightsQueryOptions(params),
         enabled: options.enabled ?? true,
         refetchInterval: options.refetchInterval ?? DEFAULT_POLL_INTERVAL_MS,
         refetchIntervalInBackground: false,
