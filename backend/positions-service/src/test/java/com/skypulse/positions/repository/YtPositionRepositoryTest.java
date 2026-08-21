@@ -1,11 +1,14 @@
 package com.skypulse.positions.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skypulse.positions.api.dto.BoundingBox;
+import com.skypulse.positions.model.BoundingBox;
 import com.skypulse.positions.model.Position;
+import com.skypulse.positions.repository.exception.MalformedRowException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class YtPositionRepositoryTest {
@@ -56,6 +59,50 @@ class YtPositionRepositoryTest {
         assertThat(position.operator()).isNull();
     }
 
+    // Пропущенная координата, прочитанная как 0.0, — это самолёт в Гвинейском
+    // заливе, который вдобавок попадает в любой bbox вокруг нуля.
+    @Test
+    void rejectsRowWithoutCoordinates() throws Exception {
+        JsonNode row = objectMapper.readTree("""
+                {"icao24": "01023b", "time_position": 1786841273, "on_ground": false}
+                """);
+
+        assertThatThrownBy(() -> YtPositionRepository.toPosition(row))
+                .isInstanceOf(MalformedRowException.class)
+                .hasMessageContaining("lat");
+    }
+
+    @Test
+    void rejectsNonNumericAndOutOfRangeCoordinates() throws Exception {
+        JsonNode text = objectMapper.readTree("""
+                {"icao24": "01023b", "time_position": 1, "lat": "55,7", "lon": 20.0}
+                """);
+        JsonNode offMap = objectMapper.readTree("""
+                {"icao24": "01023b", "time_position": 1, "lat": 145.0, "lon": 20.0}
+                """);
+
+        assertThatThrownBy(() -> YtPositionRepository.toPosition(text))
+                .isInstanceOf(MalformedRowException.class);
+        assertThatThrownBy(() -> YtPositionRepository.toPosition(offMap))
+                .isInstanceOf(MalformedRowException.class);
+    }
+
+    // Одна битая строка не должна стоить клиенту всей карты.
+    @Test
+    void keepsSoundRowsWhenOneIsBroken() throws Exception {
+        List<JsonNode> rows = List.of(
+                objectMapper.readTree("""
+                        {"icao24": "01023b", "time_position": 1, "lat": 45.4, "lon": 20.0}
+                        """),
+                objectMapper.readTree("""
+                        {"icao24": "01025c", "time_position": 2, "lon": 20.15}
+                        """));
+
+        assertThat(YtPositionRepository.positions(rows))
+                .singleElement()
+                .satisfies(position -> assertThat(position.icao24()).isEqualTo("01023b"));
+    }
+
     @Test
     void validatesIcao24Format() {
         assertThat(YtPositionRepository.isValidIcao24("01023b")).isTrue();
@@ -67,18 +114,29 @@ class YtPositionRepositoryTest {
         assertThat(YtPositionRepository.isValidIcao24("' or '1'='1")).isFalse();
     }
 
+    // Отсечка по свежести нужна всегда, даже без bbox: иначе на карте остаются
+    // борта, севшие часы назад, — positions_current строки не удаляет.
     @Test
-    void buildsBoundingBoxFilterOnlyWhenAreaProvided() {
-        assertThat(YtPositionRepository.boundingBoxFilter(null)).isEmpty();
-        assertThat(YtPositionRepository.boundingBoxFilter(new BoundingBox(45.0, 5.0, 55.0, 25.0)))
-                .isEqualTo(" where lat between 45.0 and 55.0 and lon between 5.0 and 25.0");
+    void filtersByFreshnessEvenWithoutBoundingBox() {
+        assertThat(YtPositionRepository.whereClause(null, 1786841000L))
+                .isEqualTo(" where time_position >= 1786841000");
+    }
+
+    // Зумленная карта возле Гринвича даёт координаты вида -0.0005, а Double.toString
+    // пишет их как -5.0E-4 — в QL такое число ехать не должно.
+    @Test
+    void writesSmallCoordinatesWithoutScientificNotation() {
+        assertThat(YtPositionRepository.whereClause(new BoundingBox(-0.0005, 51.4, 0.0005, 51.5), 1786841000L))
+                .isEqualTo(" where time_position >= 1786841000"
+                        + " and lat between 51.4 and 51.5 and lon between -0.00050 and 0.00050")
+                .doesNotContain("E-");
     }
 
     @Test
-    void normalizesProxyUrlWithMissingScheme() {
-        assertThat(YtPositionRepository.normalizeProxyUrl("http-proxy-hackathon.demo.ytsaurus.tech"))
-                .isEqualTo("https://http-proxy-hackathon.demo.ytsaurus.tech");
-        assertThat(YtPositionRepository.normalizeProxyUrl("https://already-has-scheme.tech"))
-                .isEqualTo("https://already-has-scheme.tech");
+    void combinesFreshnessAndBoundingBoxIntoSingleWhere() {
+        assertThat(YtPositionRepository.whereClause(new BoundingBox(5.0, 45.0, 25.0, 55.0), 1786841000L))
+                .isEqualTo(" where time_position >= 1786841000"
+                        + " and lat between 45.0 and 55.0 and lon between 5.0 and 25.0");
     }
+
 }

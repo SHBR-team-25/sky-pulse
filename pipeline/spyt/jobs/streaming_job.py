@@ -66,7 +66,12 @@ def main():
 
         # positions_history: ключ (icao24, time_position) уникален для каждой позиции,
         # запись в сортированную dynamic-таблицу по этому ключу — обычный append.
-        enriched_df.write.format("yt").option("path", args.positions_history).mode("append").save()
+        # inconsistent_dynamic_write: SPYT не поддерживает транзакционную запись в
+        # dynamic-таблицы, нужно явное согласие на это.
+        enriched_df.write.format("yt") \
+            .option("path", args.positions_history) \
+            .option("inconsistent_dynamic_write", "true") \
+            .mode("append").save()
 
         # positions_current: ключ icao24 один на борт, поэтому из микробатча
         # берём только самую свежую позицию на каждый борт перед записью.
@@ -75,7 +80,10 @@ def main():
             .withColumn("rn", row_number().over(latest_window)) \
             .filter(col("rn") == 1) \
             .drop("rn")
-        latest_df.write.format("yt").option("path", args.positions_current).mode("append").save()
+        latest_df.write.format("yt") \
+            .option("path", args.positions_current) \
+            .option("inconsistent_dynamic_write", "true") \
+            .mode("append").save()
 
         enriched_df.unpersist()
 
