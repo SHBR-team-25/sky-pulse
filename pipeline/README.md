@@ -10,8 +10,10 @@
 
 ```bash
 cd pipeline
-python -m venv .venv
-source .venv/bin/activate
+python3.12 -m venv ~/spyt-summer-school
+source ~/spyt-summer-school/bin/activate
+pip install --upgrade pip
+pip install ytsaurus-client ytsaurus-spyt==2.11.0 pyspark==4.2.0
 pip install -e ".[dev]"
 cp .env.example .env
 ```
@@ -28,6 +30,10 @@ cp .env.example .env
 которые кластер может выделить pipeline, затем выполните:
 
 ```bash
+cp pipeline
+set -a
+source .env
+set +a
 python scripts/recommend_resources.py
 ```
 
@@ -44,10 +50,11 @@ python scripts/recommend_resources.py
 
 ```bash
 cd pipeline
-source ~/a-summer-school
+source ~/spyt-summer-school/bin/activate
 set -a
 source .env
 set +a
+source spyt-env
 ```
 
 `~/a-summer-school` активирует SPYT-окружение и задаёт `SPARK_CONF_DIR`.
