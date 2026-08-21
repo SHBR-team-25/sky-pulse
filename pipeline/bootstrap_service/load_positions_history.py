@@ -15,7 +15,11 @@ def load(overwrite: bool = False) -> None:
     table_path = resolve_table_path(config.base_path, "positions_history")
 
     if not ensure_table(
-        client, table_path, POSITIONS_HISTORY_SCHEMA, overwrite, dynamic=True,
+        client,
+        table_path,
+        POSITIONS_HISTORY_SCHEMA,
+        overwrite,
+        dynamic=True,
         max_data_ttl_ms=config.positions_history_retention_seconds * 1000,
     ):
         logger.info("positions_history already exists at %s, skipping", table_path)

@@ -45,9 +45,7 @@ def run() -> None:
                 len(rows),
                 source_row_count,
                 positions_raw_path,
-                response.credits_remaining
-                if response.credits_remaining is not None
-                else "unknown",
+                response.credits_remaining if response.credits_remaining is not None else "unknown",
             )
         except RateLimitExceeded as error:
             wait = (

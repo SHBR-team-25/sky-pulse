@@ -31,6 +31,7 @@ def ensure_table(
     client.create("table", path, attributes=attributes, recursive=True, force=True)
     return True
 
+
 def ensure_consumer_registration(
     client: yt.YtClient,
     queue_path: str,
@@ -39,8 +40,8 @@ def ensure_consumer_registration(
 ) -> bool:
     registrations = client.list_queue_consumer_registrations(queue_path)
     for reg in registrations:
-        if reg.get('consumer_path') == consumer_path:
+        if reg.get("consumer_path") == consumer_path:
             return False
-    
+
     client.register_queue_consumer(queue_path, consumer_path, vital=vital)
     return True

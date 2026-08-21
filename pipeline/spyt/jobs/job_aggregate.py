@@ -11,10 +11,14 @@ from pyspark.sql.functions import (
     length,
     lit,
     row_number,
-    max as spark_max,
-    sum as spark_sum,
     trim,
     when,
+)
+from pyspark.sql.functions import (
+    max as spark_max,
+)
+from pyspark.sql.functions import (
+    sum as spark_sum,
 )
 
 
@@ -54,30 +58,43 @@ def validate_parameters(computed_at, top_limit, window_seconds, position_freshne
 def filter_time_window(dataframe, timestamp_column, end_ts, window_seconds):
     start_ts = end_ts - window_seconds
     return dataframe.filter(
-        col(timestamp_column).isNotNull()
-        & col(timestamp_column).between(start_ts, end_ts)
+        col(timestamp_column).isNotNull() & col(timestamp_column).between(start_ts, end_ts)
     )
 
 
 def count_when(condition, name):
-    return coalesce(
-        spark_sum(when(condition, 1).otherwise(0)),
-        lit(0),
-    ).cast("long").alias(name)
+    return (
+        coalesce(
+            spark_sum(when(condition, 1).otherwise(0)),
+            lit(0),
+        )
+        .cast("long")
+        .alias(name)
+    )
 
 
 def filter_valid_events(events):
     return events.filter(
         col("airport_icao").isNotNull()
+        & col("other_airport_icao").isNotNull()
+        & (col("airport_icao") != col("other_airport_icao"))
         & col("flight_id").isNotNull()
         & col("direction").isin("departure", "arrival")
     )
 
 
-def latest_fresh_positions(positions, computed_at, freshness_seconds):
-    freshness_window = Window.partitionBy("icao24").orderBy(
-        col("time_position").desc()
+def filter_valid_dashboard_segments(segments):
+    """Keep only completed routes between two different known airports."""
+    return segments.filter(
+        col("flight_id").isNotNull()
+        & col("departure_icao").isNotNull()
+        & col("arrival_icao").isNotNull()
+        & (col("departure_icao") != col("arrival_icao"))
     )
+
+
+def latest_fresh_positions(positions, computed_at, freshness_seconds):
+    freshness_window = Window.partitionBy("icao24").orderBy(col("time_position").desc())
     return (
         filter_time_window(
             positions,
@@ -162,9 +179,7 @@ def build_top_airports(events, computed_at, window_seconds, top_limit):
         )
         .withColumn(
             "rank",
-            row_number()
-            .over(Window.orderBy(desc("total_flights"), "airport_icao"))
-            .cast("long"),
+            row_number().over(Window.orderBy(desc("total_flights"), "airport_icao")).cast("long"),
         )
         .filter(col("rank") <= top_limit)
         .withColumn("computed_at", lit(computed_at).cast("long"))
@@ -181,15 +196,7 @@ def build_top_airports(events, computed_at, window_seconds, top_limit):
 
 def build_routes(segments, computed_at, window_seconds, top_limit):
     recent_segments = filter_time_window(segments, "end_ts", computed_at, window_seconds)
-    valid_segments = recent_segments.filter(
-        col("flight_id").isNotNull()
-        & col("departure_icao").isNotNull()
-        & col("arrival_icao").isNotNull()
-        & ~(
-            (col("departure_icao") == col("arrival_icao"))
-            & (col("point_count") < 3)
-        )
-    )
+    valid_segments = filter_valid_dashboard_segments(recent_segments)
 
     return (
         valid_segments.groupBy("departure_icao", "arrival_icao")
@@ -224,7 +231,8 @@ def build_manufacturers(segments, aircraft, computed_at, window_seconds):
         "end_ts",
         computed_at,
         window_seconds,
-    ).filter(col("flight_id").isNotNull())
+    )
+    recent_segments = filter_valid_dashboard_segments(recent_segments)
     manufacturers = aircraft.select(
         "icao24",
         trim(col("manufacturername")).alias("manufacturername"),
@@ -235,8 +243,7 @@ def build_manufacturers(segments, aircraft, computed_at, window_seconds):
         .withColumn(
             "manufacturer",
             when(
-                col("manufacturername").isNull()
-                | (length(col("manufacturername")) == 0),
+                col("manufacturername").isNull() | (length(col("manufacturername")) == 0),
                 "Unknown",
             ).otherwise(col("manufacturername")),
         )

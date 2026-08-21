@@ -8,8 +8,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from pipeline.spyt.config.spark_config import AGGREGATE_CONFIG, CLUSTER_CONFIG, PATHS
 from pipeline.spyt.launch.batch_common import (
-    DEFAULT_PYSPARK_PYTHON,
     DEFAULT_PY_FILES,
+    DEFAULT_PYSPARK_PYTHON,
     submit,
     upload_job_file,
 )
@@ -27,18 +27,30 @@ def run_job(args):
         upload_job_file(proxy, token, job_path, LOCAL_JOB_PATH)
 
     arguments = [
-        "--airport-events", PATHS["airport_events"],
-        "--positions-current", PATHS["positions_current"],
-        "--flights-segments", PATHS["flights_segments"],
-        "--ref-aircraft", PATHS["ref_aircraft"],
-        "--dashboard-totals", PATHS["dashboard_totals"],
-        "--dashboard-trend", PATHS["dashboard_trend"],
-        "--dashboard-top-airports", PATHS["dashboard_top_airports"],
-        "--dashboard-routes", PATHS["dashboard_routes"],
-        "--dashboard-manufacturers", PATHS["dashboard_manufacturers"],
-        "--top-limit", str(args.top_limit),
-        "--window-seconds", str(args.window_seconds),
-        "--position-freshness-seconds", str(args.position_freshness_seconds),
+        "--airport-events",
+        PATHS["airport_events"],
+        "--positions-current",
+        PATHS["positions_current"],
+        "--flights-segments",
+        PATHS["flights_segments"],
+        "--ref-aircraft",
+        PATHS["ref_aircraft"],
+        "--dashboard-totals",
+        PATHS["dashboard_totals"],
+        "--dashboard-trend",
+        PATHS["dashboard_trend"],
+        "--dashboard-top-airports",
+        PATHS["dashboard_top_airports"],
+        "--dashboard-routes",
+        PATHS["dashboard_routes"],
+        "--dashboard-manufacturers",
+        PATHS["dashboard_manufacturers"],
+        "--top-limit",
+        str(args.top_limit),
+        "--window-seconds",
+        str(args.window_seconds),
+        "--position-freshness-seconds",
+        str(args.position_freshness_seconds),
     ]
 
     return submit(

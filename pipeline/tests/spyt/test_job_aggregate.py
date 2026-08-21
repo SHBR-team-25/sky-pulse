@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 from pyspark.sql import SparkSession
 
-
 JOB_PATH = Path(__file__).parents[2] / "spyt" / "jobs" / "job_aggregate.py"
 MODULE_SPEC = importlib.util.spec_from_file_location("project_job_aggregate", JOB_PATH)
 job_aggregate = importlib.util.module_from_spec(MODULE_SPEC)
@@ -47,7 +46,13 @@ def positions(spark, rows):
 
 
 def events(spark, rows):
-    schema = "airport_icao string, event_ts long, flight_id string, direction string"
+    schema = """
+        airport_icao string,
+        event_ts long,
+        flight_id string,
+        direction string,
+        other_airport_icao string
+    """
     return spark.createDataFrame(rows, schema)
 
 
@@ -82,10 +87,12 @@ def test_totals_use_only_fresh_positions_and_past_events(spark):
     airport_events = events(
         spark,
         [
-            ("UUEE", 950, "f1", "departure"),
-            ("INVALID", 970, "broken", "unknown"),
-            ("UUDD", 100, "f2", "arrival"),
-            ("FUTURE", 1_001, "f3", "arrival"),
+            ("UUEE", 950, "f1", "departure", "UUDD"),
+            ("LOCAL", 960, "local", "departure", "LOCAL"),
+            ("UNKNOWN", 960, "unknown", "arrival", None),
+            ("INVALID", 970, "broken", "unknown", "OTHER"),
+            ("UUDD", 100, "f2", "arrival", "UUEE"),
+            ("FUTURE", 1_001, "f3", "arrival", "PAST"),
         ],
     )
 
@@ -172,13 +179,15 @@ def test_top_airports_count_directions_and_unique_flights(spark):
     airport_events = events(
         spark,
         [
-            ("AAA", 900, "f1", "departure"),
-            ("AAA", 910, "f1", "arrival"),
-            ("AAA", 920, "f2", "arrival"),
-            ("BBB", 930, "f3", "departure"),
-            ("OLD", 799, "f4", "departure"),
-            ("FUTURE", 1_001, "f5", "departure"),
-            ("INVALID", 940, "f6", "unknown"),
+            ("AAA", 900, "f1", "departure", "BBB"),
+            ("AAA", 910, "f1", "arrival", "BBB"),
+            ("AAA", 920, "f2", "arrival", "CCC"),
+            ("BBB", 930, "f3", "departure", "AAA"),
+            ("OLD", 799, "f4", "departure", "AAA"),
+            ("FUTURE", 1_001, "f5", "departure", "PAST"),
+            ("INVALID", 940, "f6", "unknown", "OTHER"),
+            ("LOCAL", 950, "local", "departure", "LOCAL"),
+            ("UNKNOWN", 960, "unknown", "arrival", None),
         ],
     )
 
@@ -247,12 +256,12 @@ def test_routes_exclude_unknown_old_and_future_segments(spark):
     ]
 
 
-def test_routes_exclude_weak_same_airport_segments(spark):
+def test_routes_exclude_all_same_airport_segments(spark):
     flight_segments = segments(
         spark,
         [
             ("weak", "a1", 900, "AAA", "AAA", 2),
-            ("local", "a2", 910, "AAA", "AAA", 3),
+            ("local", "a2", 910, "AAA", "AAA", 30),
             ("route", "a3", 920, "AAA", "BBB", 2),
         ],
     )
@@ -264,10 +273,9 @@ def test_routes_exclude_weak_same_airport_segments(spark):
         top_limit=10,
     ).collect()
 
-    assert {
-        (row["departure_icao"], row["arrival_icao"], row["flight_count"])
-        for row in rows
-    } == {("AAA", "AAA", 1), ("AAA", "BBB", 1)}
+    assert {(row["departure_icao"], row["arrival_icao"], row["flight_count"]) for row in rows} == {
+        ("AAA", "BBB", 1)
+    }
 
 
 def test_manufacturers_trim_names_and_use_unknown(spark):
@@ -278,6 +286,8 @@ def test_manufacturers_trim_names_and_use_unknown(spark):
             ("f2", "a1", 910, "AAA", "BBB"),
             ("f3", "a2", 920, "AAA", "BBB"),
             ("f4", "a3", 930, "AAA", "BBB"),
+            ("local", "a1", 940, "AAA", "AAA"),
+            ("unknown_departure", "a1", 950, None, "BBB"),
             ("old", "a1", 799, "AAA", "BBB"),
             ("future", "a1", 1_001, "AAA", "BBB"),
         ],
@@ -300,6 +310,28 @@ def test_manufacturers_trim_names_and_use_unknown(spark):
     assert [row.asDict() for row in rows] == [
         {"manufacturer": "Airbus", "flight_count": 2, "computed_at": 1_000},
         {"manufacturer": "Unknown", "flight_count": 2, "computed_at": 1_000},
+    ]
+
+
+def test_manufacturers_exclude_same_airport_and_unknown_endpoint_flights(spark):
+    flight_segments = segments(
+        spark,
+        [
+            ("route", "a1", 900, "AAA", "BBB"),
+            ("local", "a1", 910, "AAA", "AAA"),
+            ("unknown_arrival", "a1", 920, "AAA", None),
+        ],
+    )
+
+    rows = build_manufacturers(
+        segments=flight_segments,
+        aircraft=aircraft(spark, [("a1", "Airbus")]),
+        computed_at=1_000,
+        window_seconds=200,
+    ).collect()
+
+    assert [row.asDict() for row in rows] == [
+        {"manufacturer": "Airbus", "flight_count": 1, "computed_at": 1_000}
     ]
 
 

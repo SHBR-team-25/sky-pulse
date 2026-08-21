@@ -64,7 +64,5 @@ def fetch_states(
     result: dict[str, Any] = response.json()
     return StatesResponse(
         payload=result,
-        credits_remaining=_parse_non_negative_int(
-            response.headers.get("X-Rate-Limit-Remaining")
-        ),
+        credits_remaining=_parse_non_negative_int(response.headers.get("X-Rate-Limit-Remaining")),
     )

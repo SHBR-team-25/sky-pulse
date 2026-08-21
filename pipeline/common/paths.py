@@ -2,7 +2,6 @@
 
 import os
 
-
 _TABLE_PATHS = {
     "positions_raw": ("YT_POSITIONS_RAW_PATH", "raw/positions_raw"),
     "positions_raw_consumer": (

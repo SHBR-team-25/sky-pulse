@@ -52,9 +52,7 @@ def summarize_state_categories(response: dict[str, Any]) -> str:
     parts = [f"null={counts.pop(None, 0)}"]
     parts.extend(f"{category}={counts.pop(category, 0)}" for category in range(21))
     if counts:
-        unexpected = sorted(
-            (f"{category!r}:{count}" for category, count in counts.items())
-        )
+        unexpected = sorted((f"{category!r}:{count}" for category, count in counts.items()))
         parts.append(f"unexpected={','.join(unexpected)}")
     parts.append(f"invalid_position={invalid_position}")
     return " ".join(parts)

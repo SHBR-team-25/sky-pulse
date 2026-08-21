@@ -13,7 +13,9 @@ def _bbox() -> BoundingBox:
 def test_fetch_states_returns_server_credit_balance(monkeypatch):
     response = Mock(status_code=200, headers={"X-Rate-Limit-Remaining": "3997"})
     response.json.return_value = {"time": 123, "states": []}
-    monkeypatch.setattr("ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(
+        "ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response
+    )
     token_cache = Mock()
     token_cache.get_token.return_value = "token"
 
@@ -53,7 +55,9 @@ def test_config_rejects_unknown_scope(monkeypatch):
 def test_fetch_states_allows_missing_credit_header(monkeypatch):
     response = Mock(status_code=200, headers={})
     response.json.return_value = {"time": 123, "states": []}
-    monkeypatch.setattr("ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(
+        "ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response
+    )
 
     result = fetch_states(_bbox(), Mock(get_token=Mock(return_value="token")), "unused")
 
@@ -65,7 +69,9 @@ def test_fetch_states_raises_rate_limit_with_server_wait(monkeypatch):
         status_code=429,
         headers={"X-Rate-Limit-Retry-After-Seconds": "321.5"},
     )
-    monkeypatch.setattr("ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(
+        "ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response
+    )
 
     with pytest.raises(RateLimitExceeded) as caught:
         fetch_states(_bbox(), Mock(get_token=Mock(return_value="token")), "unused")
@@ -79,7 +85,9 @@ def test_fetch_states_ignores_malformed_rate_limit_headers(monkeypatch):
         status_code=429,
         headers={"X-Rate-Limit-Retry-After-Seconds": "not-a-number"},
     )
-    monkeypatch.setattr("ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(
+        "ingest_service.opensky_client.requests.get", lambda *args, **kwargs: response
+    )
 
     with pytest.raises(RateLimitExceeded) as caught:
         fetch_states(_bbox(), Mock(get_token=Mock(return_value="token")), "unused")

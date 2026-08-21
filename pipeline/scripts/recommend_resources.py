@@ -58,9 +58,7 @@ def recommend(capacity: Capacity, environ: dict[str, str] | None = None) -> dict
         executor_count = min(executor_count, 2)
 
     enough_for_all = (
-        capacity.cores >= 16
-        and capacity.memory_gb >= 64
-        and (not high_rate or executor_count >= 4)
+        capacity.cores >= 16 and capacity.memory_gb >= 64 and (not high_rate or executor_count >= 4)
     )
     scope = "all" if enough_for_all else "bbox"
     shuffle_partitions = max(8, executor_count * 8)

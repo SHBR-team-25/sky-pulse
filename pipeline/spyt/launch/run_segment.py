@@ -8,8 +8,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from pipeline.spyt.config.spark_config import CLUSTER_CONFIG, PATHS, SEGMENT_CONFIG
 from pipeline.spyt.launch.batch_common import (
-    DEFAULT_PYSPARK_PYTHON,
     DEFAULT_PY_FILES,
+    DEFAULT_PYSPARK_PYTHON,
     submit,
     upload_job_file,
 )
@@ -22,32 +22,50 @@ def run_job(args):
     proxy = (args.proxy or os.getenv("YT_PROXY", CLUSTER_CONFIG["proxy"])).rstrip("/")
     token = args.token or os.getenv("YT_TOKEN", CLUSTER_CONFIG["token"])
     job_path = args.job_path or f"{PATHS['code']}/job_segment.py"
-    
+
     if not args.skip_upload:
         print(f"Uploading job file to yt://{job_path}")
         upload_job_file(proxy, token, job_path, LOCAL_JOB_PATH)
-    
+
     arguments = [
-        "--positions-history", PATHS["positions_history"],
-        "--flights-open", PATHS["flights_open"],
-        "--ref-airports", PATHS["ref_airports"],
-        "--flights-segments", PATHS["flights_segments"],
-        "--airport-events", PATHS["airport_events"],
-        "--job-state", PATHS["pipeline_job_state"],
-        "--proxy", proxy,
-        "--airport-radius-km", str(args.airport_radius_km),
-        "--timeout-seconds", str(args.timeout_seconds),
-        "--max-transition-gap-seconds", str(args.max_transition_gap_seconds),
-        "--ground-glitch-max-seconds", str(args.ground_glitch_max_seconds),
-        "--allowed-lateness-seconds", str(args.allowed_lateness_seconds),
-        "--observation-scope", args.observation_scope,
-        "--bbox-lamin", str(args.bbox_lamin),
-        "--bbox-lomin", str(args.bbox_lomin),
-        "--bbox-lamax", str(args.bbox_lamax),
-        "--bbox-lomax", str(args.bbox_lomax),
-        "--bbox-exit-margin-km", str(args.bbox_exit_margin_km),
+        "--positions-history",
+        PATHS["positions_history"],
+        "--flights-open",
+        PATHS["flights_open"],
+        "--ref-airports",
+        PATHS["ref_airports"],
+        "--flights-segments",
+        PATHS["flights_segments"],
+        "--airport-events",
+        PATHS["airport_events"],
+        "--job-state",
+        PATHS["pipeline_job_state"],
+        "--proxy",
+        proxy,
+        "--airport-radius-km",
+        str(args.airport_radius_km),
+        "--timeout-seconds",
+        str(args.timeout_seconds),
+        "--max-transition-gap-seconds",
+        str(args.max_transition_gap_seconds),
+        "--ground-glitch-max-seconds",
+        str(args.ground_glitch_max_seconds),
+        "--allowed-lateness-seconds",
+        str(args.allowed_lateness_seconds),
+        "--observation-scope",
+        args.observation_scope,
+        "--bbox-lamin",
+        str(args.bbox_lamin),
+        "--bbox-lomin",
+        str(args.bbox_lomin),
+        "--bbox-lamax",
+        str(args.bbox_lamax),
+        "--bbox-lomax",
+        str(args.bbox_lomax),
+        "--bbox-exit-margin-km",
+        str(args.bbox_exit_margin_km),
     ]
-    
+
     return submit(
         proxy,
         job_path,
@@ -68,18 +86,14 @@ def main():
     parser.add_argument("--proxy")
     parser.add_argument("--token")
     parser.add_argument("--job-path")
-    parser.add_argument(
-        "--num-executors", type=int, default=SEGMENT_CONFIG["num_executors"]
-    )
+    parser.add_argument("--num-executors", type=int, default=SEGMENT_CONFIG["num_executors"])
     parser.add_argument("--driver-memory", default=SEGMENT_CONFIG["driver_memory"])
     parser.add_argument(
         "--driver-memory-overhead",
         default=SEGMENT_CONFIG["driver_memory_overhead"],
     )
     parser.add_argument("--executor-memory", default=SEGMENT_CONFIG["executor_memory"])
-    parser.add_argument(
-        "--executor-cores", type=int, default=SEGMENT_CONFIG["executor_cores"]
-    )
+    parser.add_argument("--executor-cores", type=int, default=SEGMENT_CONFIG["executor_cores"])
     parser.add_argument(
         "--shuffle-partitions",
         type=int,
@@ -144,13 +158,13 @@ def main():
         # Одиночный запуск для тестирования
         success = run_job(args)
         raise SystemExit(0 if success else 1)
-    
+
     print(
         "Starting job_segment scheduler. "
         f"Interval: {args.interval} seconds ({args.interval // 60} minutes)"
     )
     print("Press Ctrl+C to stop")
-    
+
     while True:
         try:
             print(f"\nRunning job_segment at {time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -164,7 +178,7 @@ def main():
             break
         except Exception as e:
             print(f"Unexpected error: {e}")
-        
+
         print(f"Waiting {args.interval} seconds until next run...")
         time.sleep(args.interval)
 

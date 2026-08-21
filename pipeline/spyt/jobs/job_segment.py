@@ -43,8 +43,7 @@ def create_yt_client(proxy):
     token = os.getenv("YT_SECURE_VAULT_YT_TOKEN") or os.getenv("YT_TOKEN")
     if not token:
         raise ValueError(
-            "YTsaurus token is missing: neither YT_SECURE_VAULT_YT_TOKEN "
-            "nor YT_TOKEN is set"
+            "YTsaurus token is missing: neither YT_SECURE_VAULT_YT_TOKEN nor YT_TOKEN is set"
         )
 
     from yt.wrapper import YtClient
@@ -76,9 +75,7 @@ def validate_parameters(
     if ground_glitch_max_seconds < 0:
         raise ValueError("ground_glitch_max_seconds must not be negative")
     if ground_glitch_max_seconds > max_transition_gap_seconds:
-        raise ValueError(
-            "ground_glitch_max_seconds must not exceed max_transition_gap_seconds"
-        )
+        raise ValueError("ground_glitch_max_seconds must not exceed max_transition_gap_seconds")
     if allowed_lateness_seconds < 0:
         raise ValueError("allowed_lateness_seconds must not be negative")
     if bbox is not None:
@@ -222,8 +219,7 @@ def new_open(point, departure):
         "point_count": 1,
         "max_altitude_m": (
             point["baro_altitude"]
-            if point["baro_altitude"] is not None
-            and math.isfinite(point["baro_altitude"])
+            if point["baro_altitude"] is not None and math.isfinite(point["baro_altitude"])
             else None
         ),
     }
@@ -233,9 +229,7 @@ def update_open(state, point):
     altitude = point["baro_altitude"]
     if altitude is not None and math.isfinite(altitude):
         current_max = state["max_altitude_m"]
-        state["max_altitude_m"] = (
-            altitude if current_max is None else max(current_max, altitude)
-        )
+        state["max_altitude_m"] = altitude if current_max is None else max(current_max, altitude)
     state["point_count"] += 1
     state.update(
         {
@@ -245,8 +239,7 @@ def update_open(state, point):
             "last_lon": point["lon"],
             "last_baro_altitude": point["baro_altitude"],
             "last_vertical_rate": point["vertical_rate"],
-            "last_callsign": normalize_callsign(point["callsign"])
-            or state["last_callsign"],
+            "last_callsign": normalize_callsign(point["callsign"]) or state["last_callsign"],
         }
     )
 
@@ -302,9 +295,7 @@ def timeout_reason(state, bbox, bbox_exit_margin_km):
     lamin, lomin, lamax, lomax = bbox
     latitude_km = min(abs(lat - lamin), abs(lamax - lat)) * 110.574
     longitude_km = (
-        min(abs(lon - lomin), abs(lomax - lon))
-        * 111.320
-        * abs(math.cos(math.radians(lat)))
+        min(abs(lon - lomin), abs(lomax - lon)) * 111.320 * abs(math.cos(math.radians(lat)))
     )
     outside = not (lamin <= lat <= lamax and lomin <= lon <= lomax)
     if outside or min(latitude_km, longitude_km) <= bbox_exit_margin_km:
@@ -338,9 +329,7 @@ def event(segment, direction):
             segment["departure_confidence"] if departure else segment["arrival_confidence"]
         ),
         "distance_km": (
-            segment["departure_distance_km"]
-            if departure
-            else segment["arrival_distance_km"]
+            segment["departure_distance_km"] if departure else segment["arrival_distance_km"]
         ),
         "other_airport_icao": segment["arrival_icao"] if departure else segment["departure_icao"],
     }
@@ -384,9 +373,7 @@ def validate_results(states, closed):
 
     for segment in closed:
         if segment["start_ts"] > segment["end_ts"]:
-            raise RuntimeError(
-                f"flight {segment['flight_id']} ends before it starts"
-            )
+            raise RuntimeError(f"flight {segment['flight_id']} ends before it starts")
 
 
 def write_rows(spark, rows, target_path):
@@ -440,11 +427,7 @@ def process_aircraft_points(
         # treated as one continuous track.  A large observation gap must not turn
         # two unrelated points into a flight merely because the state is not stale
         # enough to be cleaned up yet.
-        if (
-            state
-            and point["time_position"] - state["last_ts"]
-            > max_transition_gap_seconds
-        ):
+        if state and point["time_position"] - state["last_ts"] > max_transition_gap_seconds:
             if state["last_on_ground"]:
                 arrival = nearest_airport(
                     state["last_lat"],
@@ -493,8 +476,7 @@ def process_aircraft_points(
                 update_open(state, point)
             elif (
                 state["last_on_ground"]
-                and point["time_position"] - state["last_ts"]
-                > ground_glitch_max_seconds
+                and point["time_position"] - state["last_ts"] > ground_glitch_max_seconds
             ):
                 arrival = nearest_airport(
                     state["last_lat"],
@@ -628,10 +610,7 @@ def run(args, spark):
     ]
     states = {
         row["icao24"]: row.asDict()
-        for row in spark.read.format("yt")
-        .option("path", args.flights_open)
-        .load()
-        .collect()
+        for row in spark.read.format("yt").option("path", args.flights_open).load().collect()
     }
     original_open_keys = set(states)
     closed = []
@@ -694,7 +673,7 @@ def run(args, spark):
 
     # Сохраняем закрытые рейсы в flights_segments
     write_rows(spark, closed, args.flights_segments)
-    
+
     # Сохраняем события в airport_events
     events = [
         item
@@ -703,7 +682,7 @@ def run(args, spark):
         if item
     ]
     write_rows(spark, events, args.airport_events)
-    
+
     # Обновляем существующие и новые открытые рейсы. Для dynamic table запись
     # отсутствующих ключей не удаляет старые строки, поэтому закрытые рейсы ниже
     # удаляются явно через delete_rows.
@@ -716,7 +695,7 @@ def run(args, spark):
             if "departure_icao" not in state or state["departure_icao"] is None:
                 state["departure_icao"] = None
                 state["departure_confidence"] = None
-        
+
         open_schema = spark.read.format("yt").option("path", args.flights_open).load().schema
 
         states_df = spark.createDataFrame(states_list, schema=open_schema)
@@ -735,7 +714,7 @@ def run(args, spark):
             original_open_keys,
             states,
         )
-    
+
     # Обновляем watermark в job_state
     job_state_df = spark.createDataFrame(
         [
@@ -753,7 +732,6 @@ def run(args, spark):
         .mode("append")
         .save()
     )
-    
 
 
 def main():

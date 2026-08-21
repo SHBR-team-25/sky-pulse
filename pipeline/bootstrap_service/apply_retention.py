@@ -8,6 +8,7 @@ from common.yt_client import make_client
 
 logger = logging.getLogger(__name__)
 
+
 def apply() -> None:
     config = load_yt_config()
     client = make_client(config)

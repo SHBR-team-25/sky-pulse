@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 SCRIPT_PATH = Path(__file__).parents[1] / "scripts" / "recommend_resources.py"
 SPEC = importlib.util.spec_from_file_location("recommend_resources", SCRIPT_PATH)
 recommend_resources = importlib.util.module_from_spec(SPEC)

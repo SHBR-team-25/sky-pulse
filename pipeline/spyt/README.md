@@ -23,8 +23,9 @@ Java 17, `pip install ytsaurus-spyt==2.11.0 pyspark==4.2.0`, запись про
 |python pipeline/spyt/launch/run_streaming.py --trigger-seconds 30 --max-rows-per-partition 50000|Настроить частоту и верхнюю границу microbatch|
 |python pipeline/spyt/launch/run_streaming.py --skip-upload|Не перезаливать джобу (если она уже актуальна в Cypress)|
 
-По умолчанию streaming job использует два executor'а по два core, driver heap
-2 GiB и driver overhead 1 GiB. Microbatch запускается раз в 30 секунд и читает
+При значениях из `.env.example` streaming job использует четыре executor'а
+по два core, driver heap 3 GiB и driver overhead 2 GiB. Microbatch запускается
+раз в 15 секунд и читает
 не более 50 000 строк из одной партиции queue. Значения можно переопределить
 CLI-аргументами или `STREAMING_*` переменными окружения.
 
@@ -75,8 +76,10 @@ BBOX, закрывается как `bbox_exit`, а исчезнувший вн�
 максимального `time_position`. Это не позволяет streaming-обновлению dynamic table
 создать частичный или пустой snapshot во время ленивого вычисления. Витрины аэропортов, маршрутов и производителей
 считаются за интервал `DASHBOARD_WINDOW_SECONDS`, ограниченный с обеих сторон временем
-`computed_at`. Средние высота и скорость рассчитываются только по свежим воздушным
-бортам.
+`computed_at`. Исторические витрины учитывают только рейсы между двумя разными
+известными аэропортами; локальные рейсы `A → A` и рейсы с неизвестным концом
+сохраняются в исходных flight/event таблицах, но в dashboard не попадают. Средние
+высота и скорость рассчитываются только по свежим воздушным бортам.
 
 ## Мониторинг
 

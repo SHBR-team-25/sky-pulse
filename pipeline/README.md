@@ -44,15 +44,16 @@ python scripts/recommend_resources.py
 
 ```bash
 cd pipeline
-source ~/spyt-summer-school/bin/activate
+source ~/a-summer-school
 set -a
 source .env
 set +a
 ```
 
-Для запуска SPYT также должен быть задан `SPARK_CONF_DIR` вашим окружением
-YTsaurus. Если launcher предупреждает, что переменная отсутствует, активируйте
-выданное для кластера SPYT-окружение перед командами ниже.
+`~/a-summer-school` активирует SPYT-окружение и задаёт `SPARK_CONF_DIR`.
+Если файл ещё не создан, выполните раздел «Файл для быстрого входа» из
+[`setup/spyt-env.md`](../setup/spyt-env.md). Без `SPARK_CONF_DIR` `spark-submit` не распознает
+YTsaurus master.
 
 ## Дерево данных в YTsaurus
 
@@ -237,9 +238,11 @@ history/current требуется недеструктивное изменен
 ```bash
 ruff check .
 ruff format --check .
-mypy .
 pytest -q
 ```
+
+PySpark-тесты запускают локальную JVM, поэтому для полного `pytest` нужна
+Java 17 и разрешённый loopback-сокет.
 
 Для применения нового TTL к уже существующим таблицам выполните
 `python -m bootstrap_service.apply_retention`. Bootstrap не меняет атрибуты таблиц,

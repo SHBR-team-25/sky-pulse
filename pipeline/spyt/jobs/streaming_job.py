@@ -1,4 +1,5 @@
 import argparse
+
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
     col,
@@ -15,35 +16,46 @@ from pyspark.storagelevel import StorageLevel
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='job_enrich: positions_raw + ref_aircraft -> positions_current/positions_history')
-    parser.add_argument('--positions-raw', required=True, help='Input: positions_raw queue path in YT')
-    parser.add_argument(
-        '--positions-raw-consumer',
-        required=True,
-        help='Registered queue_consumer path for positions_raw',
+    parser = argparse.ArgumentParser(
+        description="job_enrich: raw + aircraft reference -> current/history"
     )
-    parser.add_argument('--ref-aircraft', required=True, help='Reference: ref_aircraft table path in YT')
-    parser.add_argument('--positions-current', required=True, help='Output: positions_current table path in YT')
-    parser.add_argument('--positions-history', required=True, help='Output: positions_history table path in YT')
-    parser.add_argument('--checkpoint', required=True, help='Checkpoint path')
-    parser.add_argument('--trigger-seconds', type=int, default=30)
-    parser.add_argument('--max-rows-per-partition', type=int, default=50_000)
+    parser.add_argument(
+        "--positions-raw", required=True, help="Input: positions_raw queue path in YT"
+    )
+    parser.add_argument(
+        "--positions-raw-consumer",
+        required=True,
+        help="Registered queue_consumer path for positions_raw",
+    )
+    parser.add_argument(
+        "--ref-aircraft", required=True, help="Reference: ref_aircraft table path in YT"
+    )
+    parser.add_argument(
+        "--positions-current", required=True, help="Output: positions_current table path in YT"
+    )
+    parser.add_argument(
+        "--positions-history", required=True, help="Output: positions_history table path in YT"
+    )
+    parser.add_argument("--checkpoint", required=True, help="Checkpoint path")
+    parser.add_argument("--trigger-seconds", type=int, default=30)
+    parser.add_argument("--max-rows-per-partition", type=int, default=50_000)
     return parser.parse_args()
 
 
 def create_streaming_session():
-    return SparkSession.builder \
-        .appName("SPYT_Streaming_Job_Enrich") \
-        .config("spark.sql.streaming.schemaInference", "true") \
-        .config("spark.streaming.stopGracefullyOnShutdown", "true") \
-        .config("spark.sql.streaming.metricsEnabled", "true") \
+    return (
+        SparkSession.builder.appName("SPYT_Streaming_Job_Enrich")
+        .config("spark.sql.streaming.schemaInference", "true")
+        .config("spark.streaming.stopGracefullyOnShutdown", "true")
+        .config("spark.sql.streaming.metricsEnabled", "true")
         .getOrCreate()
+    )
 
 
 def enrich(raw_df, ref_aircraft_df):
-    return raw_df \
-        .join(ref_aircraft_df, on="icao24", how="left") \
-        .withColumn("enriched_at", unix_timestamp(current_timestamp()))
+    return raw_df.join(ref_aircraft_df, on="icao24", how="left").withColumn(
+        "enriched_at", unix_timestamp(current_timestamp())
+    )
 
 
 def classify_aircraft(enriched_df):
@@ -69,21 +81,24 @@ def classify_aircraft(enriched_df):
 
 def latest_per_aircraft(positions_df):
     latest_window = Window.partitionBy("icao24").orderBy(col("time_position").desc())
-    return positions_df \
-        .withColumn("rn", row_number().over(latest_window)) \
-        .filter(col("rn") == 1) \
+    return (
+        positions_df.withColumn("rn", row_number().over(latest_window))
+        .filter(col("rn") == 1)
         .drop("rn")
+    )
 
 
 def newer_than_current(latest_df, current_df):
     candidate = latest_df.alias("candidate")
     current_times = current_df.select("icao24", "time_position").alias("current")
-    return candidate.join(current_times, on="icao24", how="left") \
+    return (
+        candidate.join(current_times, on="icao24", how="left")
         .filter(
             col("current.time_position").isNull()
             | (col("candidate.time_position") > col("current.time_position"))
-        ) \
+        )
         .select("candidate.*")
+    )
 
 
 def main():
@@ -118,14 +133,15 @@ def main():
     ref_aircraft_count = ref_aircraft_df.count()
     print(f"  cached ref_aircraft rows: {ref_aircraft_count}")
 
-    raw_stream = spark.readStream \
-        .format("yt") \
-        .option("path", args.positions_raw) \
-        .option("queue", args.positions_raw) \
-        .option("consumer_path", args.positions_raw_consumer) \
-        .option("max_rows_per_partition", args.max_rows_per_partition) \
-        .option("cluster", "https://http-proxy-hackathon.demo.ytsaurus.tech") \
+    raw_stream = (
+        spark.readStream.format("yt")
+        .option("path", args.positions_raw)
+        .option("queue", args.positions_raw)
+        .option("consumer_path", args.positions_raw_consumer)
+        .option("max_rows_per_partition", args.max_rows_per_partition)
+        .option("cluster", "https://http-proxy-hackathon.demo.ytsaurus.tech")
         .load()
+    )
 
     def process_batch(batch_df, batch_id):
         if batch_df.isEmpty():
@@ -149,34 +165,30 @@ def main():
                 f"unknown={class_counts.get('unknown', 0)}"
             )
 
-            filtered_df = classified_df \
-                .filter(col("aircraft_class") != "non_aircraft")
+            filtered_df = classified_df.filter(col("aircraft_class") != "non_aircraft")
 
-            filtered_df.write.format("yt") \
-                .option("path", args.positions_history) \
-                .option("inconsistent_dynamic_write", "true") \
-                .mode("append") \
-                .save()
+            filtered_df.write.format("yt").option("path", args.positions_history).option(
+                "inconsistent_dynamic_write", "true"
+            ).mode("append").save()
 
             # positions_current: ключ icao24 один на борт, поэтому из микробатча
             # берём только самую свежую позицию на каждый борт перед записью.
             latest_df = latest_per_aircraft(filtered_df)
             current_df = spark.read.format("yt").option("path", args.positions_current).load()
-            newer_than_current(latest_df, current_df).write.format("yt") \
-                .option("path", args.positions_current) \
-                .option("inconsistent_dynamic_write", "true") \
-                .mode("append") \
-                .save()
+            newer_than_current(latest_df, current_df).write.format("yt").option(
+                "path", args.positions_current
+            ).option("inconsistent_dynamic_write", "true").mode("append").save()
         finally:
             # foreachBatch должен снять cache и при ошибке одной из записей.
             classified_df.unpersist()
 
     try:
-        query = raw_stream.writeStream \
-            .foreachBatch(process_batch) \
-            .option("checkpointLocation", args.checkpoint) \
-            .trigger(processingTime=f"{args.trigger_seconds} seconds") \
+        query = (
+            raw_stream.writeStream.foreachBatch(process_batch)
+            .option("checkpointLocation", args.checkpoint)
+            .trigger(processingTime=f"{args.trigger_seconds} seconds")
             .start()
+        )
 
         query.awaitTermination()
     finally:

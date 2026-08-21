@@ -1,128 +1,242 @@
-# skyPulse: актуальная схема джоб
+# skyPulse: джобы и фильтрация данных
 
-Документ описывает фактическое поведение трёх SPYT-джоб. Пути ниже относительны
-`YT_BASE_PATH`; каждую таблицу можно переназначить отдельной переменной `YT_*_PATH`.
+Документ описывает фактическое поведение ingest и трёх SPYT-джоб. Пути указаны
+относительно `YT_BASE_PATH`; каждый из них можно переопределить переменной
+`YT_*_PATH`.
 
 ## Поток данных
 
 ```text
-OpenSky → raw/positions_raw → streaming_job
-                              ├→ positions/positions_current → job_aggregate
-reference/ref_aircraft ───────└→ positions/positions_history → job_segment
+OpenSky API → ingest_service → raw/positions_raw → streaming_job
+                                                ├→ positions/positions_current
+reference/ref_aircraft ─────────────────────────└→ positions/positions_history
+                                                                  │
+reference/ref_airports ───────────────────────────────→ job_segment
                                                                   ├→ flights/flights_open
-reference/ref_airports ────────────────────────────────────────────┤
                                                                   ├→ flights/flights_segments
                                                                   └→ flights/airport_events
-flights/* + positions_current + ref_aircraft → job_aggregate → dashboard/*
+
+positions_current + flights_segments + airport_events + ref_aircraft
+                                                → job_aggregate → dashboard/*
 ```
 
-## `streaming_job.py`: обогащение позиций
+## `ingest_service`: получение OpenSky snapshots
 
-Launcher: `pipeline/spyt/launch/run_streaming.py`.
+Сервис получает OAuth-токен, опрашивает `/api/states/all` и пишет допустимые
+наблюдения в queue `raw/positions_raw`. При `OPENSKY_SCOPE=bbox` запрос ограничен
+координатами `OPENSKY_BBOX_*`; при `all` bbox не передаётся. Ответ `429` откладывает
+следующий запрос на значение OpenSky retry-after, остальные ошибки логируются и
+повторяются после обычного poll interval.
 
-Это непрерывная Structured Streaming job. Она читает очередь
-`raw/positions_raw` через зарегистрированный vital consumer
-`raw/positions_raw_consumer`, делает left join со статическим справочником
-`reference/ref_aircraft` по `icao24` и добавляет `enriched_at` — Unix-время
-обработки. Неизвестный самолёт и строка с пустым `icao24` не теряются: поля
-справочника остаются `null`.
+Из массива OpenSky используются поля позиции, движения, транспондера, source и
+category. Callsign обрезается по краям, пустой становится `null`; числовые поля
+высоты, скорости и координат приводятся к `float`. Добавляются время snapshot
+OpenSky (`snapshot_time`) и локальное время записи (`ingested_at`).
 
-Каждый microbatch записывается в две dynamic table:
+До записи отбрасываются:
 
-- `positions/positions_history` хранит обогащённые наблюдения с ключом
-  `(icao24, time_position)`; повтор ключа заменяет предыдущую версию;
-- `positions/positions_current` получает только самую свежую строку каждого
-  `icao24` внутри microbatch и представляет последнее известное состояние борта.
+- строки без `time_position`, широты или долготы: из них нельзя построить точку;
+- OpenSky category 8–20 — однозначно не самолёты (вертолёты, БПЛА, наземная
+  техника и другие категории).
 
-Consumer offset и checkpoint продвигаются средствами YTsaurus/Spark. Путь
-checkpoint нельзя без необходимости менять или удалять: новый checkpoint означает
-новое streaming-состояние. Размер microbatch ограничивается
-`STREAMING_MAX_ROWS_PER_PARTITION`, период задаёт `STREAMING_TRIGGER_SECONDS`.
+Category `null`, 0 и 1 пока недостаточно информативны, а 2–7 обозначают самолёты,
+поэтому они сохраняются. Неожиданное целое значение тоже сохраняется как unknown:
+это безопаснее, чем потерять новый код до обновления классификатора. Распределение
+категорий и число строк без позиции пишутся в лог на каждом запросе.
 
-На demo-кластере выключены YTsaurus Shuffle, внешний Spark Shuffle Service и
-host-local чтение shuffle. Executor-ы фиксированы; dynamic allocation для этой
-конфигурации использовать нельзя.
+## `streaming_job.py`: обогащение и классификация
+
+Launcher: `pipeline/spyt/launch/run_streaming.py`. Это непрерывная Structured
+Streaming job. Она читает `raw/positions_raw` через зарегистрированный vital
+consumer `raw/positions_raw_consumer`, делает left join со статическим
+`reference/ref_aircraft` по `icao24` и добавляет Unix timestamp `enriched_at`.
+Left join сохраняет неизвестные борта; отсутствие строки в справочнике не является
+причиной терять наблюдение.
+
+После join определяется `aircraft_class`:
+
+1. category 2–7 → `aircraft`;
+2. category 8–20 → `non_aircraft`;
+3. для category `null`/0/1 первая буква `icaoaircrafttype` `H`, `G` или `T`
+   (helicopter, gyrocopter, tiltrotor) → `non_aircraft`;
+4. для category `null`/0/1 префикс `L`, `S` или `A` → `aircraft`;
+5. всё остальное → `unknown`.
+
+Явная category имеет приоритет над справочником. В history/current пишутся только
+`aircraft` и `unknown`; `non_aircraft` удаляется. Перед двумя записями DataFrame
+кэшируется, а в `finally` освобождается.
+
+- `positions/positions_history` получает все оставшиеся строки. Ключ
+  `(icao24, time_position)` делает повторную запись заменой версии того же
+  наблюдения; `enriched_at` при этом обновляется.
+- `positions/positions_current` получает одну строку на `icao24`: самую новую по
+  `time_position` в microbatch, причём только если она новее уже сохранённой. Так
+  поздний старый snapshot не откатывает текущее положение назад.
+
+Checkpoint и consumer offset продвигаются средствами Spark/YTsaurus. Удаление или
+смена checkpoint создаёт новое streaming-состояние. Размер source partition за
+microbatch ограничен `STREAMING_MAX_ROWS_PER_PARTITION`, период задаёт
+`STREAMING_TRIGGER_SECONDS`. На demo-кластере отключены YTsaurus Shuffle, внешний
+Shuffle Service и host-local shuffle read; dynamic allocation использовать нельзя.
 
 ## `job_segment.py`: выделение рейсов
 
-Launcher: `pipeline/spyt/launch/run_segment.py`. По умолчанию scheduler запускает
-job каждые `SEGMENT_INTERVAL_SECONDS` (15 минут).
+Launcher: `pipeline/spyt/launch/run_segment.py`; период задаёт
+`SEGMENT_INTERVAL_SECONDS`. Job читает новые строки history по курсору
+`pipeline_job_state[job_segment].watermark_ts`. Курсор идёт по `enriched_at`, а не
+по `time_position`: поздно записанная строка с прежним event time не теряется.
+Верхняя граница batch равна текущему времени минус `ALLOWED_LATENESS_SECONDS`.
+Внутри борта точки сортируются по `time_position`.
 
-Job читает:
+До state machine допускаются только строки, у которых:
 
-- новые строки `positions/positions_history`; курсор `watermark_ts` хранится в
-  `system/pipeline_job_state` под именем `job_segment` и движется по `enriched_at`,
-  а не по времени самой позиции;
-- состояния незавершённых рейсов из `flights/flights_open`;
-- координаты аэропортов из `reference/ref_airports`.
+- заполнены `enriched_at`, `icao24`, `on_ground`, `lat`, `lon`;
+- `enriched_at` лежит в полуинтервале `(watermark, until_ts]`;
+- координаты конечны и входят в физические диапазоны широты/долготы.
 
-Точки каждого борта обрабатываются по `time_position`. Основные правила:
+Job также загружает последнюю точку каждого борта до watermark, все состояния
+`flights_open` и аэропорты с валидными координатами. Открытые состояния без новых
+точек всё равно проходят timeout-проверку.
 
-- свежий переход `on_ground: true → false` открывает рейс;
-- если борт впервые замечен в воздухе, создаётся provisional-кандидат без известного
-  аэропорта вылета; его подтверждает только вторая airborne-точка;
-- разрыв больше `MAX_TRANSITION_GAP_SECONDS` разрывает непрерывный трек и не служит
-  надёжным доказательством взлёта или посадки;
-- посадку подтверждают две последовательные ground-точки либо ground-точка и
-  достаточно долгая стоянка;
-- короткие `airborne → ground → airborne` и same-airport
-  `ground → airborne → ground` подавляются как шум;
-- смена, исчезновение или нормализация callsign обновляет метаданные, но сама по
-  себе не закрывает рейс;
-- рейс без наблюдений закрывается по `FLIGHT_TIMEOUT_SECONDS`: за границей области
-  с допуском — как `bbox_exit`, внутри — как `observation_lost`; одноточечный
-  provisional-кандидат просто удаляется;
-- `flight_id` детерминирован по `icao24` и времени начала.
+### Полный алгоритм state machine и подавления шума
+
+Для каждого борта существует не больше одного `flights_open`. Состояние хранит
+первую и последнюю отметки, последний ground-флаг и координаты, callsign, максимум
+высоты, число точек и привязку вылета.
+
+Каждая новая точка обрабатывается так:
+
+1. Точка с `time_position <= flights_open.last_ts` игнорируется как повторная или
+   опоздавшая: состояние нельзя двигать назад.
+2. Если разрыв от состояния больше `MAX_TRANSITION_GAP_SECONDS`, прежний трек
+   сначала завершается. Состояние на земле закрывается как `landing` на последней
+   ground-точке; воздушное состояние с двумя и более точками — как `bbox_exit` или
+   `observation_lost`; одноточечный кандидат удаляется. Текущая точка затем
+   рассматривается как начало независимого трека. Большой разрыв сам по себе не
+   доказывает переход ground/air.
+3. Если открытого состояния нет и текущая точка ground, ничего не открывается.
+4. Если открытого состояния нет и точка airborne, создаётся provisional-кандидат.
+   Свежая предыдущая ground-точка (разрыв `0 < dt <= MAX_TRANSITION_GAP_SECONDS`)
+   означает наблюдаемый взлёт и позволяет привязать аэропорт вылета. Без неё
+   `departure_icao` остаётся `null`.
+5. Provisional-кандидат содержит ровно одну airborne-точку. Следующая ground-точка
+   удаляет его без сегмента и событий; только вторая airborne-точка подтверждает,
+   что это был полёт. Так одиночный ошибочный `on_ground=false` не становится
+   рейсом.
+6. Для подтверждённого воздушного состояния первая ground-точка записывается как
+   pending landing, но рейс ещё не закрывается.
+7. Вторая последовательная ground-точка подтверждает посадку. Сегмент закрывается
+   на timestamp первой ground-точки; аэропорт ищется около её координат.
+8. Если после pending ground снова пришла airborne-точка не позднее
+   `GROUND_GLITCH_MAX_SECONDS`, она добавляется в тот же рейс. Это подавляет шум
+   `airborne → ground → airborne` без искусственного разрезания полёта.
+9. Если airborne-точка пришла после более долгой ground-паузы, прежний рейс
+   закрывается на pending ground, а текущая точка открывает новый взлёт. Порог
+   отделяет короткий дребезг флага от реальной стоянки.
+10. Перед публикацией `landing` проверяется обратный шум
+    `ground → airborne → ground`: если известные аэропорты вылета и прилёта
+    совпадают и `end_ts - start_ts <= GROUND_GLITCH_MAX_SECONDS`, весь короткий
+    сегмент подавляется. При разных/неизвестных аэропортах или большей длительности
+    он сохраняется.
+11. Callsign нормализуется и обновляет метаданные, но никогда сам не закрывает рейс:
+    OpenSky может менять или временно терять его внутри одного физического полёта.
+
+После всех точек состояние без наблюдений дольше `FLIGHT_TIMEOUT_SECONDS`
+закрывается. Если последняя точка ground, причина — `landing`. Воздушный трек с
+двумя и более точками получает `bbox_exit`, когда последняя точка вне bbox или не
+дальше `BBOX_EXIT_MARGIN_KM` от его края; иначе — `observation_lost`. При scope
+`all` bbox отсутствует и причина всегда `observation_lost`. Одноточечное состояние
+по timeout удаляется без публикации.
+
+Аэропорт выбирается в радиусе `AIRPORT_RADIUS_KM`: сначала дешёвым прямоугольным
+предфильтром, затем точным расстоянием haversine. Берётся ближайший `icao_code` (или
+`ident`, если ICAO отсутствует), `confidence = 1 - distance/radius`.
 
 Результаты:
 
-- `flights/flights_open` — persistent-состояние открытого рейса и предыдущей точки;
-  закрытые состояния удаляются через `delete_rows`;
-- `flights/flights_segments` — завершённые рейсы: границы, аэропорты и расстояния,
-  число точек, максимальная высота и причина закрытия;
-- `flights/airport_events` — нормализованные `departure`/`arrival` с аэропортом,
-  `flight_id`, временем, уверенностью и расстоянием.
+- `flights_open` — persistent-состояния; закрытые строки явно удаляются по `icao24`;
+- `flights_segments` — завершённые границы рейсов, аэропорты, расстояния, число
+  точек, максимальная высота и причина закрытия;
+- `airport_events` — departure/arrival только для известного соответствующего
+  аэропорта; событие содержит второй аэропорт, если тот известен.
 
-Watermark записывается только после успешной записи результатов. Однако записи в
-несколько выходных таблиц не атомарны: падение посередине может временно оставить
-разные поколения данных.
+`flight_id = sha256("icao24:start_ts")[:32]`. Перед записью повторно проверяется,
+что watermark не изменился, и только после всех успешных записей он сдвигается до
+`until_ts`. Это обнаруживает часть конкурентных запусков, но не является lock и не
+даёт exactly-once: записи в несколько таблиц не атомарны, а редкая повторная копия
+driver теоретически может заменить строку dynamic table с тем же ключом. Для MVP
+это принято как известное ограничение; одновременно запускать два scheduler-а
+`job_segment` не следует.
 
-## `job_aggregate.py`: витрины дашборда
+## `job_aggregate.py`: витрины dashboard
 
-Launcher: `pipeline/spyt/launch/run_aggregate.py`. По умолчанию scheduler запускает
-job каждые `AGGREGATE_INTERVAL_SECONDS` (5 минут). Историческое окно задаётся
-`DASHBOARD_WINDOW_SECONDS` (24 часа).
+Launcher: `pipeline/spyt/launch/run_aggregate.py`; период задаёт
+`AGGREGATE_INTERVAL_SECONDS`, историческое окно — `DASHBOARD_WINDOW_SECONDS`.
+Перед автоматическим выбором `computed_at` весь `positions_current` кэшируется и
+материализуется. Это фиксирует единый snapshot; `computed_at` выбирается не раньше
+максимального `time_position`, чтобы небольшой clock skew не сделал свежую строку
+«будущей».
 
-Моментальные показатели строятся по одной самой свежей строке каждого `icao24` из
-`positions/positions_current`. Позиции из будущего и старше
-`POSITION_FRESHNESS_SECONDS` исключаются. `active_flights` равен числу свежих
-бортов с `on_ground=false`; `flights_open` для этого показателя не используется.
-Средняя высота и скорость, набор и снижение считаются только для бортов в воздухе.
-Emergency — squawk `7500` или `7700`.
+Snapshot-фильтры:
 
-События и сегменты берутся из замкнутого окна
-`[computed_at - DASHBOARD_WINDOW_SECONDS, computed_at]`. Счётчики рейсов используют
-уникальный `flight_id`; события без корректного направления, аэропорта или
-`flight_id` отбрасываются. Для маршрутов исключаются короткие same-airport сегменты
-с `point_count < 3`. Производитель определяется через `reference/ref_aircraft`,
-пустое или отсутствующее значение становится `Unknown`.
+- остаётся одна самая новая позиция каждого непустого `icao24`;
+- `time_position` должен лежать в замкнутом окне
+  `[computed_at - POSITION_FRESHNESS_SECONDS, computed_at]`;
+- `active_flights = airborne`; `flights_open` для snapshot не используется;
+- средняя высота/скорость, climbing (`vertical_rate > 1`) и descending
+  (`vertical_rate < -1`) считаются только для airborne;
+- emergency считает свежие позиции со squawk `7500` или `7700`.
 
-Job формирует:
+Исторические данные берутся из замкнутого окна
+`[computed_at - DASHBOARD_WINDOW_SECONDS, computed_at]`. Во всех исторических
+витринах остаются только перелёты между двумя известными разными аэропортами.
+Поэтому исключаются `A → A`, неизвестный departure/arrival, событие без второго
+аэропорта, некорректное direction и пустой `flight_id`. Рейсы считаются через
+`countDistinct(flight_id)`. Этот продуктовый фильтр не удаляет исходные сегменты и
+события — они остаются доступны для диагностики.
 
 | Таблица | Содержимое | Запись |
 |---|---|---|
-| `dashboard/dashboard_totals` | active/airborne/on-ground, средние высота и скорость, набор, снижение, emergency | полная замена snapshot |
-| `dashboard/dashboard_trend` | `computed_at → active_aircraft` | добавление новой точки |
-| `dashboard/dashboard_top_airports` | вылеты, прилёты и уникальные рейсы по аэропортам | полная замена |
-| `dashboard/dashboard_routes` | направления и число уникальных завершённых рейсов | полная замена |
-| `dashboard/dashboard_manufacturers` | число уникальных рейсов по производителям | полная замена |
+| `dashboard_totals` | snapshot-счётчики, средние и число аэропортов валидных перелётов | полная замена |
+| `dashboard_trend` | `computed_at → active_aircraft` | append |
+| `dashboard_top_airports` | departure, arrival и уникальные рейсы по аэропортам | полная замена |
+| `dashboard_routes` | пары аэропортов и уникальные рейсы | полная замена |
+| `dashboard_manufacturers` | уникальные рейсы по производителю; пустой join → `Unknown` | полная замена |
 
-Пустые наборы дают нулевые счётчики, а средние при отсутствии воздушных бортов —
-`null`. Порядок строк в топах детерминирован дополнительной сортировкой по ключам.
+Пустые наборы дают нулевые счётчики, средние без airborne остаются `null`. Топы
+имеют детерминированную дополнительную сортировку по ключам.
+
+## Все фильтры OpenSky от входа до витрин
+
+Одна строка последовательно проходит четыре уровня:
+
+1. **Ingest — структурная пригодность и грубый тип.** Bbox ограничивает стоимость и
+   географию наблюдения; отсутствие времени/координат делает точку бесполезной;
+   category 8–20 убирает заведомо не самолёты. Неопределённые типы сохраняются,
+   чтобы ранняя фильтрация не создавала систематический недосчёт.
+2. **Streaming — уточнение типа и защита current.** Справочник уточняет неизвестную
+   category по ICAO type designator. `non_aircraft` удаляется, `unknown` остаётся.
+   History дедуплицируется ключом наблюдения, current принимает только движение
+   event time вперёд. Цель — чистая авиационная история без потери сомнительных
+   самолётов и без отката live-состояния поздним snapshot.
+3. **Segment — валидность геометрии и временная связность.** Пустые/NaN/вне
+   диапазона координаты удаляются; event-time повторы игнорируются; большие gaps
+   разрывают трек; provisional, два вида ground-глитча и timeout подавляют ложные
+   рейсы из редких snapshot и дребезга `on_ground`. Радиус аэропорта не выбрасывает
+   рейс, а лишь оставляет неизвестный конец, когда доказательств привязки мало.
+4. **Aggregate — свежесть и продуктовая интерпретация.** Live snapshot исключает
+   устаревшие и будущие позиции. Исторический dashboard показывает только
+   законченные перемещения между двумя разными известными аэропортами и считает
+   уникальные `flight_id`; локальные и неполные треки остаются в source-таблицах,
+   но не искажают рейтинги маршрутов, аэропортов и производителей.
+
+Таким образом, ранние фильтры отвечают за техническую пригодность и класс объекта,
+segment — за правдоподобие физического рейса, aggregate — за смысл конкретных
+метрик. Чем позже фильтр, тем меньше данных он удаляет безвозвратно.
 
 ## Связанные процессы
 
-`bootstrap_service` не является SPYT-job: он создаёт таблицы, consumer и загружает
-справочники. `ingest_service` опрашивает OpenSky, учитывает rate-limit и пишет сырые
-наблюдения в очередь. Полная инструкция запуска и описание всех параметров находятся
-в [`pipeline/README.md`](../pipeline/README.md).
+`bootstrap_service` создаёт таблицы, consumer, TTL и загружает справочники;
+`ingest_service` не является Spark-job. Команды запуска и все переменные окружения
+описаны в [`pipeline/README.md`](../pipeline/README.md), физические схемы — в
+[`docs/database.md`](database.md).

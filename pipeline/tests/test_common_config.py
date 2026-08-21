@@ -2,7 +2,6 @@ import pytest
 
 from common.config import load_yt_config
 
-
 RETENTION_ENV_NAMES = (
     "POSITIONS_HISTORY_RETENTION_SECONDS",
     "FLIGHTS_SEGMENTS_RETENTION_SECONDS",

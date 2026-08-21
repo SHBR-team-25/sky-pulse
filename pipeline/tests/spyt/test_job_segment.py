@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 
-
 JOB_PATH = Path(__file__).parents[2] / "spyt" / "jobs" / "job_segment.py"
 MODULE_SPEC = importlib.util.spec_from_file_location("project_job_segment", JOB_PATH)
 job_segment = importlib.util.module_from_spec(MODULE_SPEC)

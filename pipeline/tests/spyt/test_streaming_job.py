@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 from pyspark.sql import SparkSession
 
-
 JOB_PATH = Path(__file__).parents[2] / "spyt" / "jobs" / "streaming_job.py"
 MODULE_SPEC = importlib.util.spec_from_file_location("project_streaming_job", JOB_PATH)
 streaming_job = importlib.util.module_from_spec(MODULE_SPEC)
@@ -47,10 +46,7 @@ def test_enrich_keeps_known_and_unknown_aircraft(spark):
     )
     before = int(time.time())
 
-    rows = {
-        row["callsign"]: row.asDict()
-        for row in enrich(raw, aircraft).collect()
-    }
+    rows = {row["callsign"]: row.asDict() for row in enrich(raw, aircraft).collect()}
     after = int(time.time())
 
     assert set(rows) == {"KNOWN1", "UNKNOWN1", "NOICAO"}
@@ -60,10 +56,7 @@ def test_enrich_keeps_known_and_unknown_aircraft(spark):
     assert rows["UNKNOWN1"]["model"] is None
     assert rows["NOICAO"]["manufacturername"] is None
     assert rows["NOICAO"]["model"] is None
-    assert all(
-        before <= row["enriched_at"] <= after
-        for row in rows.values()
-    )
+    assert all(before <= row["enriched_at"] <= after for row in rows.values())
 
 
 def test_enrich_preserves_raw_position_fields(spark):
@@ -102,10 +95,7 @@ def test_classify_aircraft_uses_category_before_reference_type(spark):
         "icao24 string, category long, icaoaircrafttype string",
     )
 
-    classes = {
-        row["icao24"]: row["aircraft_class"]
-        for row in classify_aircraft(rows).collect()
-    }
+    classes = {row["icao24"]: row["aircraft_class"] for row in classify_aircraft(rows).collect()}
 
     assert classes == {
         "airplane-category": "aircraft",
@@ -128,10 +118,7 @@ def test_classify_unknown_category_conservatively_uses_aircraft_type(spark):
         "icao24 string, category long, icaoaircrafttype string",
     )
 
-    classes = {
-        row["icao24"]: row["aircraft_class"]
-        for row in classify_aircraft(rows).collect()
-    }
+    classes = {row["icao24"]: row["aircraft_class"] for row in classify_aircraft(rows).collect()}
 
     assert classes == {
         "landplane": "aircraft",

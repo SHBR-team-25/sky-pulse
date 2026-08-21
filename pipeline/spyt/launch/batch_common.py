@@ -1,6 +1,5 @@
 import subprocess
 
-
 DEFAULT_PY_FILES = "yt:///home/hackathon/lib/spyt_deps.zip"
 DEFAULT_PYSPARK_PYTHON = "/usr/bin/python3.11"
 
@@ -32,8 +31,13 @@ def submit(
     shuffle_partitions=None,
 ):
     command = [
-        "spark-submit", "--master", f"ytsaurus://{proxy}", "--deploy-mode", "cluster",
-        "--num-executors", str(num_executors),
+        "spark-submit",
+        "--master",
+        f"ytsaurus://{proxy}",
+        "--deploy-mode",
+        "cluster",
+        "--num-executors",
+        str(num_executors),
     ]
     if driver_memory:
         command.extend(["--driver-memory", driver_memory])
@@ -45,17 +49,26 @@ def submit(
         command.extend(["--conf", f"spark.driver.memoryOverhead={driver_memory_overhead}"])
     if shuffle_partitions is not None:
         command.extend(["--conf", f"spark.sql.shuffle.partitions={shuffle_partitions}"])
-    command.extend([
-        # Executors placed on the same YTsaurus exec-node still have isolated
-        # sandbox /tmp directories. Spark's host-local shortcut therefore tries
-        # to open another executor's non-existent local shuffle index. Fetch
-        # blocks over the owning executor's BlockManager instead.
-        "--conf", "spark.ytsaurus.shuffle.enabled=false",
-        "--conf", "spark.shuffle.service.enabled=false",
-        "--conf", "spark.shuffle.readHostLocalDisk=false",
-        "--conf", f"spark.pyspark.python={pyspark_python}",
-        "--py-files", py_files, f"yt://{job_path}", *arguments,
-    ])
+    command.extend(
+        [
+            # Executors placed on the same YTsaurus exec-node still have isolated
+            # sandbox /tmp directories. Spark's host-local shortcut therefore tries
+            # to open another executor's non-existent local shuffle index. Fetch
+            # blocks over the owning executor's BlockManager instead.
+            "--conf",
+            "spark.ytsaurus.shuffle.enabled=false",
+            "--conf",
+            "spark.shuffle.service.enabled=false",
+            "--conf",
+            "spark.shuffle.readHostLocalDisk=false",
+            "--conf",
+            f"spark.pyspark.python={pyspark_python}",
+            "--py-files",
+            py_files,
+            f"yt://{job_path}",
+            *arguments,
+        ]
+    )
     try:
         subprocess.run(command, check=True)
         print("Batch job completed successfully")

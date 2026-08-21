@@ -1,6 +1,7 @@
 import logging
+
 from bootstrap_service.schemas import CONSUMER_SCHEMA
-from bootstrap_service.table_writer import ensure_table, ensure_consumer_registration
+from bootstrap_service.table_writer import ensure_consumer_registration, ensure_table
 from common.config import load_yt_config
 from common.paths import table_path
 from common.yt_client import make_client

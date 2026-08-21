@@ -15,7 +15,11 @@ def load(overwrite: bool = False) -> None:
     table_path = resolve_table_path(config.base_path, "flights_segments")
 
     if not ensure_table(
-        client, table_path, FLIGHTS_SEGMENTS_SCHEMA, overwrite, dynamic=True,
+        client,
+        table_path,
+        FLIGHTS_SEGMENTS_SCHEMA,
+        overwrite,
+        dynamic=True,
         max_data_ttl_ms=config.flights_segments_retention_seconds * 1000,
     ):
         logger.info("flights_segments already exists at %s, skipping", table_path)

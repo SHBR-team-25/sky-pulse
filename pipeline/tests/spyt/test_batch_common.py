@@ -1,4 +1,10 @@
-from pipeline.spyt.launch import batch_common
+import importlib.util
+from pathlib import Path
+
+MODULE_PATH = Path(__file__).parents[2] / "spyt" / "launch" / "batch_common.py"
+MODULE_SPEC = importlib.util.spec_from_file_location("project_batch_common", MODULE_PATH)
+batch_common = importlib.util.module_from_spec(MODULE_SPEC)
+MODULE_SPEC.loader.exec_module(batch_common)
 
 
 def test_batch_submit_uses_executor_block_manager_shuffle(monkeypatch):

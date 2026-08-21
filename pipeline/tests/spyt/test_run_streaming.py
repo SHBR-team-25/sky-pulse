@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 LAUNCHER_PATH = Path(__file__).parents[2] / "spyt" / "launch" / "run_streaming.py"
 MODULE_SPEC = importlib.util.spec_from_file_location("project_run_streaming", LAUNCHER_PATH)
 run_streaming = importlib.util.module_from_spec(MODULE_SPEC)
