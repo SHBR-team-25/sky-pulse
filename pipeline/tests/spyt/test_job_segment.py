@@ -265,6 +265,50 @@ def test_single_false_takeoff_flag_is_discarded_on_timeout():
     assert closed == []
 
 
+def test_single_airborne_candidate_followed_by_ground_is_discarded():
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=point(90, on_ground=True, baro_altitude=None),
+        points=[
+            point(100, on_ground=False, baro_altitude=8_839.2),
+            point(120, on_ground=True, baro_altitude=None),
+        ],
+        airports=AIRPORTS,
+        until_ts=120,
+        timeout_seconds=50,
+        max_transition_gap_seconds=30,
+        ground_glitch_max_seconds=15,
+        airport_radius_km=15.0,
+    )
+
+    assert state is None
+    assert closed == []
+
+
+def test_large_gap_splits_track_before_flight_timeout():
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=point(90, on_ground=True, baro_altitude=None),
+        points=[
+            point(100, on_ground=False),
+            point(110, on_ground=False),
+            point(800, on_ground=True, baro_altitude=None),
+        ],
+        airports=AIRPORTS,
+        until_ts=800,
+        timeout_seconds=1_000,
+        max_transition_gap_seconds=300,
+        ground_glitch_max_seconds=60,
+        airport_radius_km=15.0,
+    )
+
+    assert state is None
+    assert len(closed) == 1
+    assert closed[0]["end_ts"] == 110
+    assert closed[0]["closed_reason"] == "bbox_exit"
+    assert closed[0]["arrival_icao"] is None
+
+
 def test_confirmed_track_near_bbox_edge_is_closed_as_bbox_exit():
     state, closed = process_aircraft_points(
         state=None,
@@ -310,6 +354,7 @@ def test_unknown_departure_stays_unknown_when_flight_lands_near_airport():
         previous_point=None,
         points=[
             point(100, on_ground=False),
+            point(105, on_ground=False),
             point(110, on_ground=True),
             point(120, on_ground=True),
         ],
@@ -461,6 +506,7 @@ def test_multiple_flights_in_one_batch_have_unique_ids_and_ordered_bounds():
         previous_point=point(90, on_ground=True),
         points=[
             point(100, on_ground=False),
+            point(110, on_ground=False),
             point(120, on_ground=True),
             point(130, on_ground=True),
             point(140, on_ground=False, callsign="AFL200"),

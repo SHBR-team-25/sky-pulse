@@ -13,6 +13,7 @@ streaming_job = importlib.util.module_from_spec(MODULE_SPEC)
 MODULE_SPEC.loader.exec_module(streaming_job)
 
 enrich = streaming_job.enrich
+classify_aircraft = streaming_job.classify_aircraft
 latest_per_aircraft = streaming_job.latest_per_aircraft
 newer_than_current = streaming_job.newer_than_current
 parse_arguments = streaming_job.parse_arguments
@@ -90,6 +91,58 @@ def test_enrich_preserves_raw_position_fields(spark):
     assert row["on_ground"] is False
     assert row["manufacturername"] == "Boeing"
     assert row["enriched_at"] is not None
+
+
+def test_classify_aircraft_uses_category_before_reference_type(spark):
+    rows = spark.createDataFrame(
+        [
+            ("airplane-category", 2, "H1T"),
+            ("non-airplane-category", 8, "L2J"),
+        ],
+        "icao24 string, category long, icaoaircrafttype string",
+    )
+
+    classes = {
+        row["icao24"]: row["aircraft_class"]
+        for row in classify_aircraft(rows).collect()
+    }
+
+    assert classes == {
+        "airplane-category": "aircraft",
+        "non-airplane-category": "non_aircraft",
+    }
+
+
+def test_classify_unknown_category_conservatively_uses_aircraft_type(spark):
+    rows = spark.createDataFrame(
+        [
+            ("landplane", 0, " l2j "),
+            ("seaplane", 1, "S1P"),
+            ("amphibian", None, "A1P"),
+            ("helicopter", 0, "H2T"),
+            ("gyrocopter", 1, "G1P"),
+            ("tiltrotor", None, "T2T"),
+            ("missing", 0, None),
+            ("unexpected", 21, "H1T"),
+        ],
+        "icao24 string, category long, icaoaircrafttype string",
+    )
+
+    classes = {
+        row["icao24"]: row["aircraft_class"]
+        for row in classify_aircraft(rows).collect()
+    }
+
+    assert classes == {
+        "landplane": "aircraft",
+        "seaplane": "aircraft",
+        "amphibian": "aircraft",
+        "helicopter": "non_aircraft",
+        "gyrocopter": "non_aircraft",
+        "tiltrotor": "non_aircraft",
+        "missing": "unknown",
+        "unexpected": "unknown",
+    }
 
 
 def test_current_position_never_moves_backwards(spark):

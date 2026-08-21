@@ -15,6 +15,8 @@ build_routes = job_aggregate.build_routes
 build_top_airports = job_aggregate.build_top_airports
 build_totals = job_aggregate.build_totals
 build_trend = job_aggregate.build_trend
+choose_computed_at = job_aggregate.choose_computed_at
+materialize_positions_snapshot = job_aggregate.materialize_positions_snapshot
 validate_parameters = job_aggregate.validate_parameters
 
 
@@ -55,9 +57,11 @@ def segments(spark, rows):
         icao24 string,
         end_ts long,
         departure_icao string,
-        arrival_icao string
+        arrival_icao string,
+        point_count long
     """
-    return spark.createDataFrame(rows, schema)
+    normalized_rows = [row if len(row) == 6 else (*row, 10) for row in rows]
+    return spark.createDataFrame(normalized_rows, schema)
 
 
 def aircraft(spark, rows):
@@ -134,6 +138,34 @@ def test_trend_uses_active_flights_from_totals(spark):
         "computed_at": 1_000,
         "active_aircraft": 7,
     }
+
+
+def test_materialized_position_snapshot_reports_latest_timestamp(spark):
+    current_positions = positions(
+        spark,
+        [
+            ("old", 950, False, 1_000.0, 100.0, 2.0, None),
+            ("new", 1_005, False, 2_000.0, 200.0, 3.0, None),
+        ],
+    )
+
+    snapshot, latest_position_ts = materialize_positions_snapshot(current_positions)
+    try:
+        assert snapshot.is_cached
+        assert snapshot.count() == 2
+        assert latest_position_ts == 1_005
+    finally:
+        snapshot.unpersist()
+
+
+def test_computed_at_is_not_older_than_frozen_position_snapshot():
+    assert choose_computed_at(None, latest_position_ts=1_005, now_ts=1_000) == 1_005
+    assert choose_computed_at(None, latest_position_ts=995, now_ts=1_000) == 1_000
+    assert choose_computed_at(None, latest_position_ts=None, now_ts=1_000) == 1_000
+
+
+def test_explicit_computed_at_is_preserved_for_reproducible_runs():
+    assert choose_computed_at(900, latest_position_ts=1_005, now_ts=1_000) == 900
 
 
 def test_top_airports_count_directions_and_unique_flights(spark):
@@ -213,6 +245,29 @@ def test_routes_exclude_unknown_old_and_future_segments(spark):
             "computed_at": 1_000,
         },
     ]
+
+
+def test_routes_exclude_weak_same_airport_segments(spark):
+    flight_segments = segments(
+        spark,
+        [
+            ("weak", "a1", 900, "AAA", "AAA", 2),
+            ("local", "a2", 910, "AAA", "AAA", 3),
+            ("route", "a3", 920, "AAA", "BBB", 2),
+        ],
+    )
+
+    rows = build_routes(
+        segments=flight_segments,
+        computed_at=1_000,
+        window_seconds=200,
+        top_limit=10,
+    ).collect()
+
+    assert {
+        (row["departure_icao"], row["arrival_icao"], row["flight_count"])
+        for row in rows
+    } == {("AAA", "AAA", 1), ("AAA", "BBB", 1)}
 
 
 def test_manufacturers_trim_names_and_use_unknown(spark):

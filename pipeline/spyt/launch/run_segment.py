@@ -40,6 +40,7 @@ def run_job(args):
         "--max-transition-gap-seconds", str(args.max_transition_gap_seconds),
         "--ground-glitch-max-seconds", str(args.ground_glitch_max_seconds),
         "--allowed-lateness-seconds", str(args.allowed_lateness_seconds),
+        "--observation-scope", args.observation_scope,
         "--bbox-lamin", str(args.bbox_lamin),
         "--bbox-lomin", str(args.bbox_lomin),
         "--bbox-lamax", str(args.bbox_lamax),
@@ -54,6 +55,11 @@ def run_job(args):
         args.num_executors,
         args.py_files,
         args.pyspark_python,
+        driver_memory=args.driver_memory,
+        driver_memory_overhead=args.driver_memory_overhead,
+        executor_memory=args.executor_memory,
+        executor_cores=args.executor_cores,
+        shuffle_partitions=args.shuffle_partitions,
     )
 
 
@@ -62,7 +68,23 @@ def main():
     parser.add_argument("--proxy")
     parser.add_argument("--token")
     parser.add_argument("--job-path")
-    parser.add_argument("--num-executors", type=int, default=1)
+    parser.add_argument(
+        "--num-executors", type=int, default=SEGMENT_CONFIG["num_executors"]
+    )
+    parser.add_argument("--driver-memory", default=SEGMENT_CONFIG["driver_memory"])
+    parser.add_argument(
+        "--driver-memory-overhead",
+        default=SEGMENT_CONFIG["driver_memory_overhead"],
+    )
+    parser.add_argument("--executor-memory", default=SEGMENT_CONFIG["executor_memory"])
+    parser.add_argument(
+        "--executor-cores", type=int, default=SEGMENT_CONFIG["executor_cores"]
+    )
+    parser.add_argument(
+        "--shuffle-partitions",
+        type=int,
+        default=SEGMENT_CONFIG["shuffle_partitions"],
+    )
     parser.add_argument(
         "--airport-radius-km",
         type=float,
@@ -87,6 +109,11 @@ def main():
         "--allowed-lateness-seconds",
         type=int,
         default=SEGMENT_CONFIG["allowed_lateness_seconds"],
+    )
+    parser.add_argument(
+        "--observation-scope",
+        choices=("bbox", "all"),
+        default=SEGMENT_CONFIG["opensky_scope"],
     )
     parser.add_argument("--bbox-lamin", type=float, default=SEGMENT_CONFIG["bbox_lamin"])
     parser.add_argument("--bbox-lomin", type=float, default=SEGMENT_CONFIG["bbox_lomin"])

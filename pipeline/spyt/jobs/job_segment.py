@@ -27,6 +27,7 @@ def parse_arguments():
     parser.add_argument("--bbox-lomin", type=float, default=5.0)
     parser.add_argument("--bbox-lamax", type=float, default=55.0)
     parser.add_argument("--bbox-lomax", type=float, default=25.0)
+    parser.add_argument("--observation-scope", choices=("bbox", "all"), default="bbox")
     parser.add_argument("--bbox-exit-margin-km", type=float, default=25.0)
     parser.add_argument("--until-ts", type=int)
     return parser.parse_args()
@@ -294,6 +295,8 @@ def append_landing(closed, state, end_ts, arrival, ground_glitch_max_seconds):
 
 def timeout_reason(state, bbox, bbox_exit_margin_km):
     """Classify why an airborne observed track disappeared."""
+    if bbox is None:
+        return "observation_lost"
     lat = state["last_lat"]
     lon = state["last_lon"]
     lamin, lomin, lamax, lomax = bbox
@@ -432,7 +435,16 @@ def process_aircraft_points(
         if state and point["time_position"] <= state["last_ts"]:
             continue
 
-        if state and point["time_position"] - state["last_ts"] > timeout_seconds:
+        # FLIGHT_TIMEOUT_SECONDS controls how long an open state is retained, while
+        # MAX_TRANSITION_GAP_SECONDS defines whether two observations can still be
+        # treated as one continuous track.  A large observation gap must not turn
+        # two unrelated points into a flight merely because the state is not stale
+        # enough to be cleaned up yet.
+        if (
+            state
+            and point["time_position"] - state["last_ts"]
+            > max_transition_gap_seconds
+        ):
             if state["last_on_ground"]:
                 arrival = nearest_airport(
                     state["last_lat"],
@@ -457,7 +469,12 @@ def process_aircraft_points(
             state = None
 
         if state:
-            if point["on_ground"] and state["last_on_ground"]:
+            # One airborne observation is only a provisional flight candidate.
+            # A ground observation cannot confirm that a takeoff really happened;
+            # require another airborne point instead.
+            if point["on_ground"] and state["point_count"] == 1:
+                state = None
+            elif point["on_ground"] and state["last_on_ground"]:
                 arrival = nearest_airport(
                     state["last_lat"],
                     state["last_lon"],
@@ -551,7 +568,11 @@ def run(args, spark):
         max_transition_gap_seconds=args.max_transition_gap_seconds,
         ground_glitch_max_seconds=args.ground_glitch_max_seconds,
         allowed_lateness_seconds=args.allowed_lateness_seconds,
-        bbox=(args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax),
+        bbox=(
+            None
+            if args.observation_scope == "all"
+            else (args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax)
+        ),
         bbox_exit_margin_km=args.bbox_exit_margin_km,
     )
     until_ts = (
@@ -590,10 +611,6 @@ def run(args, spark):
         .drop("rn")
     )
     previous_by_aircraft = {row["icao24"]: row.asDict() for row in previous.collect()}
-    points_by_aircraft = {}
-    for row in new_rows.orderBy("icao24", "time_position").collect():
-        points_by_aircraft.setdefault(row["icao24"], []).append(row.asDict())
-
     airports = [
         row.asDict()
         for row in spark.read.format("yt")
@@ -619,21 +636,27 @@ def run(args, spark):
     original_open_keys = set(states)
     closed = []
 
-    for icao24 in set(points_by_aircraft) | set(states):
+    processed_aircraft = set()
+
+    def process_one_aircraft(icao24, points):
         state = states.get(icao24)
         previous_point = previous_by_aircraft.get(icao24)
 
         state, newly_closed = process_aircraft_points(
             state=state,
             previous_point=previous_point,
-            points=points_by_aircraft.get(icao24, []),
+            points=points,
             airports=airports,
             until_ts=until_ts,
             timeout_seconds=args.timeout_seconds,
             max_transition_gap_seconds=args.max_transition_gap_seconds,
             ground_glitch_max_seconds=args.ground_glitch_max_seconds,
             airport_radius_km=args.airport_radius_km,
-            bbox=(args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax),
+            bbox=(
+                None
+                if args.observation_scope == "all"
+                else (args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax)
+            ),
             bbox_exit_margin_km=args.bbox_exit_margin_km,
         )
         closed.extend(newly_closed)
@@ -642,6 +665,29 @@ def run(args, spark):
             states[icao24] = state
         else:
             states.pop(icao24, None)
+
+    # collect() retained the complete 15-minute batch in both the JVM result
+    # buffer and a Python dictionary.  For world-wide snapshots this is millions
+    # of rows.  The iterator keeps only one sorted aircraft track in Python.
+    current_icao24 = None
+    current_points = []
+    for row in new_rows.orderBy("icao24", "time_position").toLocalIterator():
+        point = row.asDict()
+        icao24 = point["icao24"]
+        if current_icao24 is not None and icao24 != current_icao24:
+            process_one_aircraft(current_icao24, current_points)
+            processed_aircraft.add(current_icao24)
+            current_points = []
+        current_icao24 = icao24
+        current_points.append(point)
+
+    if current_icao24 is not None:
+        process_one_aircraft(current_icao24, current_points)
+        processed_aircraft.add(current_icao24)
+
+    # Open states without new observations must still be timed out.
+    for icao24 in original_open_keys - processed_aircraft:
+        process_one_aircraft(icao24, [])
 
     validate_results(states, closed)
     ensure_watermark_unchanged(spark, args.job_state, watermark)

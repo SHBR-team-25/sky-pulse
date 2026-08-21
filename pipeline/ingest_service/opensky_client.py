@@ -40,15 +40,16 @@ def _parse_non_negative_float(value: str | None) -> float | None:
 
 
 def fetch_states(
-    bbox: BoundingBox, token_cache: TokenCache, states_url: str
+    bbox: BoundingBox | None, token_cache: TokenCache, states_url: str
 ) -> StatesResponse:
-    params: dict[str, float | str] = {
-        "lamin": bbox.lamin,
-        "lomin": bbox.lomin,
-        "lamax": bbox.lamax,
-        "lomax": bbox.lomax,
-        "extended": "1",
-    }
+    params: dict[str, float | str] = {"extended": "1"}
+    if bbox is not None:
+        params.update(
+            lamin=bbox.lamin,
+            lomin=bbox.lomin,
+            lamax=bbox.lamax,
+            lomax=bbox.lomax,
+        )
     response = requests.get(
         states_url,
         params=params,

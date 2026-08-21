@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ingest_service.config import BoundingBox
+from ingest_service.config import BoundingBox, load_ingest_config
 from ingest_service.opensky_client import RateLimitExceeded, fetch_states
 
 
@@ -22,6 +22,32 @@ def test_fetch_states_returns_server_credit_balance(monkeypatch):
     assert result.payload == {"time": 123, "states": []}
     assert result.credits_remaining == 3997
     response.raise_for_status.assert_called_once_with()
+
+
+def test_fetch_states_without_bbox_requests_all_states(monkeypatch):
+    response = Mock(status_code=200, headers={})
+    response.json.return_value = {"time": 123, "states": []}
+    get = Mock(return_value=response)
+    monkeypatch.setattr("ingest_service.opensky_client.requests.get", get)
+
+    fetch_states(None, Mock(get_token=Mock(return_value="token")), "states-url")
+
+    assert get.call_args.kwargs["params"] == {"extended": "1"}
+
+
+def test_config_all_scope_disables_bbox(monkeypatch):
+    monkeypatch.setenv("OPENSKY_CLIENT_ID", "client")
+    monkeypatch.setenv("OPENSKY_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("OPENSKY_SCOPE", "ALL")
+
+    assert load_ingest_config().bbox is None
+
+
+def test_config_rejects_unknown_scope(monkeypatch):
+    monkeypatch.setenv("OPENSKY_SCOPE", "world")
+
+    with pytest.raises(ValueError, match="OPENSKY_SCOPE"):
+        load_ingest_config()
 
 
 def test_fetch_states_allows_missing_credit_header(monkeypatch):

@@ -1,9 +1,8 @@
 import logging
-import os
-
 from bootstrap_service.schemas import CONSUMER_SCHEMA
 from bootstrap_service.table_writer import ensure_table, ensure_consumer_registration
 from common.config import load_yt_config
+from common.paths import table_path
 from common.yt_client import make_client
 
 logger = logging.getLogger(__name__)
@@ -12,11 +11,8 @@ logger = logging.getLogger(__name__)
 def load(overwrite: bool = False) -> None:
     config = load_yt_config()
     client = make_client(config)
-    consumer_path = os.getenv(
-        "YT_POSITIONS_RAW_CONSUMER_PATH",
-        f"{config.base_path}/positions_raw_consumer",
-    )
-    queue_path = f"{config.base_path}/positions_raw"
+    consumer_path = table_path(config.base_path, "positions_raw_consumer")
+    queue_path = table_path(config.base_path, "positions_raw")
 
     if not ensure_table(
         client,
