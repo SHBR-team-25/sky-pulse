@@ -9,6 +9,15 @@ export default defineConfig(({ mode }) => {
     return {
         base: env.VITE_ASSET_BASE_URL || '/',
         plugins: [react()],
+        // Lightning CSS нужен для custom media и адаптивных стилей из main.
+        css: {
+            transformer: 'lightningcss',
+            lightningcss: {
+                drafts: {
+                    customMedia: true,
+                },
+            },
+        },
         resolve: {
             alias: {
                 '@': path.resolve(import.meta.dirname, './src'),

@@ -1,7 +1,7 @@
 import type { Airport } from '@/entities/airport';
 import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
 import { AirportFlightsSection } from './AirportFlightsSection';
-import styles from './AirportDetailsPopover.module.css';
+import styles from './AirportDetails.module.css';
 
 interface AirportDetailsCardProps {
     airport: Airport;

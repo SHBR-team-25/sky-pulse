@@ -5,7 +5,7 @@ import {
     formatTime,
     numberFormatter,
 } from '@/shared/lib/formatters';
-import styles from './FlightDetailsPopover.module.css';
+import styles from './FlightDetails.module.css';
 import type { FlightDetailsResponse } from '@/features/getTargetFlight';
 
 interface FlightDetailsCardProps {

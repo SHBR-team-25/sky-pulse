@@ -21,6 +21,7 @@ export function formatTrafficTrendData(
         xAxis: {
             type: 'datetime',
             labels: {
+                autoRotation: true,
                 dateFormat: isSingleDay ? 'HH:mm' : 'DD.MM.YYYY',
             },
             title: {
