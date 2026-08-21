@@ -106,7 +106,7 @@
     "pages/map/index.ts": "публичный API страницы",
     "pages/map/ui": "",
     "pages/map/ui/MapPage.module.css": "стили контейнера карты",
-    "pages/map/ui/MapPage.tsx": "карта с bounds в URL и localStorage, debounce 300 мс и состоянием ошибки рейсов",
+    "pages/map/ui/MapPage.tsx": "карта с bounds в URL и localStorage, debounce 300 мс и мок-данными рейсов",
 
     "shared": "переиспользуемый код без привязки к домену",
     "shared/api": "транспортный слой",

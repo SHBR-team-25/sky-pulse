@@ -1,19 +1,24 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// https://vite.dev/config/
-export default defineConfig({
-    plugins: [react()],
-    resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './src'),
-            '@app': path.resolve(__dirname, './src/app'),
-            '@pages': path.resolve(__dirname, './src/pages'),
-            '@widgets': path.resolve(__dirname, './src/widgets'),
-            '@features': path.resolve(__dirname, './src/features'),
-            '@entities': path.resolve(__dirname, './src/entities'),
-            '@shared': path.resolve(__dirname, './src/shared'),
+export default defineConfig(({ mode }) => {
+    // В production CI подставляет адрес бакета, локально ассеты остаются на Vite-сервере.
+    const env = loadEnv(mode, process.cwd(), 'VITE_');
+
+    return {
+        base: env.VITE_ASSET_BASE_URL || '/',
+        plugins: [react()],
+        resolve: {
+            alias: {
+                '@': path.resolve(import.meta.dirname, './src'),
+                '@app': path.resolve(import.meta.dirname, './src/app'),
+                '@pages': path.resolve(import.meta.dirname, './src/pages'),
+                '@widgets': path.resolve(import.meta.dirname, './src/widgets'),
+                '@features': path.resolve(import.meta.dirname, './src/features'),
+                '@entities': path.resolve(import.meta.dirname, './src/entities'),
+                '@shared': path.resolve(import.meta.dirname, './src/shared'),
+            },
         },
-    },
+    };
 });

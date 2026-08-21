@@ -1,0 +1,79 @@
+# На pull request линт проверки и проверка билда
+on:
+  pull_request:
+    - workflows: [frontend-check]
+      filter:
+        source_branches: "**"
+        target_branches: "main"
+        paths:
+          [
+            "frontend/**",
+            "deploy/nginx/parts/frontend.conf",
+            "deploy/scripts/publish-frontend.sh",
+            ".sourcecraft/ci.yaml",
+          ]
+
+        # при мердже изменений в main происходит деплой
+  push:
+    - workflows: [frontend-deploy]
+      filter:
+        branches: "main"
+        paths:
+          [
+            "frontend/**",
+            "deploy/nginx/parts/frontend.conf",
+            "deploy/scripts/publish-frontend.sh",
+            ".sourcecraft/ci.yaml",
+          ]
+
+env:
+  # Публичные параметры окружения
+  S3_BUCKET_NAME: "team25-frontend-static"
+  S3_ENDPOINT_URL: "https://storage.yandexcloud.net"
+  AWS_DEFAULT_REGION: "ru-central1"
+  VITE_ASSET_BASE_URL: "https://storage.yandexcloud.net/team25-frontend-static/"
+  TARGET_HOST: "skypulse.duckdns.org"
+  TARGET_DEPLOY_DIR: "/opt/skypulse/deploy"
+  PUBLIC_APP_URL: "https://skypulse.duckdns.org/"
+
+workflows:
+  frontend-check:
+    tasks:
+      - name: check-frontend
+        cubes:
+          - name: lint-and-build
+            image: node:24-alpine
+            script:
+              - |
+                set -eu
+                cd frontend
+                npm ci
+                npm run lint
+                # Тестовое значение нужно только для проверки production-сборки в PR
+                VITE_YANDEX_MAPS_API_KEY="ci-check" npm run build
+
+  frontend-deploy:
+    tasks:
+      - name: deploy-frontend
+        env:
+          # Секреты настраиваются в SourceCraft
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          VITE_YANDEX_MAPS_API_KEY: ${{ secrets.VITE_YANDEX_MAPS_API_KEY }}
+          TARGET_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        cubes:
+          - name: build-and-deploy
+            image: node:24-alpine
+            script:
+              - |
+                set -eu
+                apk add --no-cache aws-cli curl openssh-client
+                cd frontend
+                npm ci
+                npm run lint
+                : "${VITE_YANDEX_MAPS_API_KEY:?Не задан VITE_YANDEX_MAPS_API_KEY}"
+                npm run build
+                cd ..
+                sh deploy/scripts/publish-frontend.sh

@@ -173,7 +173,7 @@
 │   │   │
 │   │   └───ui
 │   │           MapPage.module.css                   # стили контейнера карты
-│   │           MapPage.tsx                          # карта с bounds в URL и localStorage, debounce 300 мс и состоянием ошибки рейсов
+│   │           MapPage.tsx                          # карта с bounds в URL и localStorage, debounce 300 мс и мок-данными рейсов
 │   │
 │   └───notFound                                     # страница 404
 │       │   index.ts                                 # публичный API страницы
