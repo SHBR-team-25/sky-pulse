@@ -107,6 +107,17 @@ class YtDashboardRepositoryTest {
         assertThat(point.activeFlights()).isEqualTo(788);
     }
 
+    // Ноль активных бортов — пропуск сбора: такая точка обрывает линию тренда на графике.
+    @Test
+    void skipsEmptyTrendPoints() {
+        String query = YtDashboardRepository.trendQuery("//home/skypulse/dashboard_trend", 96);
+
+        assertThat(query)
+                .contains("from [//home/skypulse/dashboard_trend]")
+                .contains("where active_aircraft > 0")
+                .contains("order by computed_at desc limit 96");
+    }
+
     // Пустая ячейка в Jackson молча читается как ноль, а «аэропорт без кода» —
     // это битая строка, а не аэропорт с нулевым трафиком.
     @Test
