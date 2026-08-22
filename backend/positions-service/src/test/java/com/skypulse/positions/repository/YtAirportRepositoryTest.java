@@ -110,7 +110,7 @@ class YtAirportRepositoryTest {
                 """));
         client.modificationTime = "\"2026-08-18T00:00:00.000000Z\"";
         // TTL 0 — каждый вызов пробует перечитать таблицу заново.
-        var repository = new YtAirportRepository(client, "//home/skypulse/ref_airports", 0L);
+        var repository = new YtAirportRepository(client, "//home/hackathon/team25/ref_airports", 0L);
         AirportDirectory loaded = repository.directory();
 
         client.failing = true;
@@ -125,7 +125,7 @@ class YtAirportRepositoryTest {
         var client = new FakeQueryClient();
         client.rows = List.of();
         client.modificationTime = "\"позавчера\"";
-        var repository = new YtAirportRepository(client, "//home/skypulse/ref_airports", 60L);
+        var repository = new YtAirportRepository(client, "//home/hackathon/team25/ref_airports", 60L);
 
         assertThat(repository.directory().asOf()).isNull();
     }
@@ -135,7 +135,7 @@ class YtAirportRepositoryTest {
     void failsWhenThereIsNothingCachedYet() {
         var client = new FakeQueryClient();
         client.failing = true;
-        var repository = new YtAirportRepository(client, "//home/skypulse/ref_airports", 60L);
+        var repository = new YtAirportRepository(client, "//home/hackathon/team25/ref_airports", 60L);
 
         assertThatThrownBy(repository::directory).isInstanceOf(DataSourceUnavailableException.class);
     }
