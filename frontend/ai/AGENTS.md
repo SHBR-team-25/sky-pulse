@@ -61,9 +61,8 @@
 │   │   │   index.ts                                 # публичный API сущности
 │   │   │
 │   │   ├───model
-│   │   │       legacy-flight-types.ts               # замороженные типы удалённой из спеки ручки GET /airports/{icao}/flights
-│   │   │       mock-data.ts                         # моки пяти аэропортов и рейсов, клонированных для виртуального списка
-│   │   │       types.ts                             # типы аэропорта и сортировки из OpenAPI, направления рейсов — из замороженных
+│   │   │       mock-data.ts                         # мок списка из пяти московских аэропортов
+│   │   │       types.ts                             # типы аэропорта, лога рейсов и сортировки из OpenAPI
 │   │   │
 │   │   └───ui
 │   │           AirportTooltip.module.css            # стили всплывающей подсказки аэропорта
@@ -74,11 +73,11 @@
 │   │   │
 │   │   ├───lib
 │   │   │       formatTrafficTrendData.ts            # тренд трафика в ChartData: линия по времени в мс и активным рейсам
+│   │   │       isSingleDayTrend.ts                  # укладывается ли тренд в одни сутки — выбор формата оси времени
 │   │   │
 │   │   ├───model
-│   │   │       legacy-types.ts                      # замороженные типы удалённой из спеки ручки GET /stats/dashboard
 │   │   │       mock-data.ts                         # моки дашборда: полный, пустой и генератор по диапазону дат
-│   │   │       types.ts                             # типы сводки, фаз, топа аэропортов и тренда, выведенные из замороженных
+│   │   │       types.ts                             # типы сводки, фаз, топа аэропортов и тренда, выведенные из схем DashboardResponse
 │   │   │
 │   │   └───ui
 │   │       ├───AverageDataBadge
@@ -126,19 +125,16 @@
 │   │   │       useAirportsFlights.ts                # хук GET /airports/{icao}/flights с таймаутом 5 с без повторных попыток
 │   │   │
 │   │   └───model
-│   │           types.ts                             # query GET /airports/{icao}/flights, ответ — из замороженного контракта
+│   │           types.ts                             # query и ответ GET /airports/{icao}/flights из OpenAPI
 │   │
 │   ├───getDashboardData                             # получение сводной статистики для дашборда
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useDashboardData.ts                  # useSuspenseQuery и queryOptions GET /stats/dashboard с query-ключами
+│   │   │       useDashboardData.ts                  # useSuspenseQuery и queryOptions GET /stats/dashboard — ручка без параметров
 │   │   │
-│   │   ├───lib
-│   │   │       dashboardRange.ts                    # диапазон дат дашборда из query-параметров from/to в unix-секундах
-│   │   │
-│   │   └───model
-│   │           types.ts                             # query GET /stats/dashboard (from/to), расписан руками — ручки нет в спеке
+│   │   └───lib
+│   │           dashboardRange.ts                    # заготовка диапазона дат from/to в unix-секундах — ручка окно не принимает
 │   │
 │   ├───getLiveFlights                               # получение бортов в воздухе в реальном времени
 │   │   │   index.ts                                 # публичный API фичи
@@ -277,7 +273,7 @@
         ├───model
         │       flightIconRotation.ts                # поворот иконки самолёта по trueTrack с поправкой на наклон 45°
         │       useFlightDetails.ts                  # выбор борта на карте поверх useTargetFlight: позиция плюс трек
-        │       useMockAirportFlights.ts             # мок-запрос рейсов аэропорта с задержкой 500 мс и таймаутом 5 с
+        │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
                 AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов

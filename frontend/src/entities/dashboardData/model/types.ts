@@ -1,11 +1,12 @@
-import type { DashboardData } from './legacy-types';
+import type { components, paths } from '@shared/api';
 
-export type { DashboardData };
+export type DashboardData =
+    paths['/stats/dashboard']['get']['responses'][200]['content']['application/json'];
 
-export type DashboardTotals = DashboardData['totals'];
+export type DashboardTotals = components['schemas']['Totals'];
 
-export type DashboardFlightsByPhase = DashboardData['flightsByPhase'];
+export type DashboardFlightsByPhase = components['schemas']['FlightsByPhase'];
 
-export type DashboardBusiestAirport = DashboardData['topBusiestAirports'][number];
+export type DashboardBusiestAirport = components['schemas']['BusiestAirport'];
 
-export type DashboardTrafficTrendPoint = DashboardData['trafficTrend'][number];
+export type DashboardTrafficTrendPoint = components['schemas']['TrafficTrendPoint'];

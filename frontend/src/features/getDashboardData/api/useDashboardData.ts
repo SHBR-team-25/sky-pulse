@@ -1,20 +1,19 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import type { DashboardQuery } from '../model/types';
 import type { DashboardData } from '@entities/dashboardData';
 import { fetchJson } from '@shared/api';
 
 export const dashboardDataQueryKeys = {
     all: ['dashboard-data'] as const,
-    stats: (params: DashboardQuery) => [...dashboardDataQueryKeys.all, 'stats', params] as const,
+    stats: () => [...dashboardDataQueryKeys.all, 'stats'] as const,
 };
 
-export function dashboardDataQueryOptions(params: DashboardQuery = {}) {
+export function dashboardDataQueryOptions() {
     return queryOptions({
-        queryKey: dashboardDataQueryKeys.stats(params),
-        queryFn: ({ signal }) => fetchJson<DashboardData>('/stats/dashboard', { params, signal }),
+        queryKey: dashboardDataQueryKeys.stats(),
+        queryFn: ({ signal }) => fetchJson<DashboardData>('/stats/dashboard', { signal }),
     });
 }
 
-export function useDashboardData(params: DashboardQuery = {}) {
-    return useSuspenseQuery(dashboardDataQueryOptions(params));
+export function useDashboardData() {
+    return useSuspenseQuery(dashboardDataQueryOptions());
 }

@@ -2,7 +2,7 @@ import { MapPin } from '@gravity-ui/icons';
 import { Icon } from '@gravity-ui/uikit';
 import type { Airport } from '@/entities/airport';
 import { YMapMarker } from '@/shared/lib/ymaps3';
-import { useMockAirportFlights } from '../model/useMockAirportFlights';
+import { useSelectedAirportFlights } from '../model/useSelectedAirportFlights';
 import { AirportDetailsPopover } from './AirportDetailsPopover';
 import styles from './AirportsLayer.module.css';
 
@@ -11,8 +11,14 @@ interface AirportsLayerProps {
 }
 
 export function AirportsLayer({ airports }: AirportsLayerProps) {
-    const { selectedAirport, handleDetailsOpenChange } = useMockAirportFlights();
-    const selectedAirportIcao = selectedAirport?.airportId;
+    const {
+        selectedAirportIcao,
+        details,
+        isLoading,
+        isError,
+        handleDetailsOpenChange,
+        handleRetry,
+    } = useSelectedAirportFlights();
 
     return airports.map((airport) => {
         const code = airport.iata ?? airport.icao;
@@ -38,8 +44,9 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
             >
                 <AirportDetailsPopover
                     airport={airport}
-                    details={isSelected ? (selectedAirport?.details ?? null) : null}
-                    isLoading={isSelected && !!selectedAirport?.isLoading}
+                    details={isSelected ? details : null}
+                    isError={isSelected && isError}
+                    isLoading={isSelected && isLoading}
                     open={isSelected}
                     tooltipContent={
                         <span className={styles.airportTooltipContent}>
@@ -48,6 +55,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                         </span>
                     }
                     onOpenChange={handleDetailsOpenChange}
+                    onRetry={handleRetry}
                 >
                     {marker}
                 </AirportDetailsPopover>

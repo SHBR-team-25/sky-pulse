@@ -21,20 +21,24 @@ interface AirportDetailsPopoverProps {
     airport: Airport;
     children: ReactElement<MarkerElementProps>;
     details: AirportFlightsResponse | null;
+    isError: boolean;
     isLoading: boolean;
     open: boolean;
     tooltipContent: ReactNode;
     onOpenChange: (airportId: string, open: boolean) => void;
+    onRetry: () => void;
 }
 
 export function AirportDetailsPopover({
     airport,
     children,
     details,
+    isError,
     isLoading,
     open,
     tooltipContent,
     onOpenChange,
+    onRetry,
 }: AirportDetailsPopoverProps) {
     const handleOpenChange = useCallback(
         (nextOpen: boolean) => onOpenChange(airport.icao, nextOpen),
@@ -54,6 +58,15 @@ export function AirportDetailsPopover({
             <div className={styles.message} role="status" aria-live="polite">
                 <Spin size="l" />
                 <span>Загружаем рейсы аэропорта</span>
+            </div>
+        );
+    } else if (isError) {
+        content = (
+            <div className={styles.message} role="alert">
+                <span>Не удалось загрузить рейсы аэропорта</span>
+                <Button view="normal" size="s" onClick={onRetry}>
+                    Повторить
+                </Button>
             </div>
         );
     } else if (details) {

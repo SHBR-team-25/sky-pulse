@@ -13,7 +13,7 @@ import {
 
 import { AirportDetailsPopover } from './AirportDetailsPopover';
 import styles from './AirportsLayer.module.css';
-import { useMockAirportFlights } from '../model/useMockAirportFlights';
+import { useSelectedAirportFlights } from '../model/useSelectedAirportFlights';
 import type { Airport } from '@/entities/airport';
 
 const CLUSTER_SOURCE = 'clustered-airports';
@@ -28,8 +28,14 @@ interface AirportsClusterLayerProps {
 export const AirportsClusterLayer = memo(function AirportsClusterLayer({
     airports,
 }: AirportsClusterLayerProps) {
-    const { selectedAirport, handleDetailsOpenChange } = useMockAirportFlights();
-    const selectedAirportIcao = selectedAirport?.airportId;
+    const {
+        selectedAirportIcao,
+        details,
+        isLoading,
+        isError,
+        handleDetailsOpenChange,
+        handleRetry,
+    } = useSelectedAirportFlights();
 
     const airportsByIcao = useMemo(
         () => new Map(airports.map((airport) => [airport.icao, airport])),
@@ -80,8 +86,9 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
                 <YMapMarker coordinates={feature.geometry.coordinates} source={CLUSTER_SOURCE}>
                     <AirportDetailsPopover
                         airport={airport}
-                        details={isSelected ? (selectedAirport?.details ?? null) : null}
-                        isLoading={isSelected && !!selectedAirport?.isLoading}
+                        details={isSelected ? details : null}
+                        isError={isSelected && isError}
+                        isLoading={isSelected && isLoading}
                         open={isSelected}
                         tooltipContent={
                             <span className={styles.airportTooltipContent}>
@@ -90,13 +97,22 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
                             </span>
                         }
                         onOpenChange={handleDetailsOpenChange}
+                        onRetry={handleRetry}
                     >
                         {marker}
                     </AirportDetailsPopover>
                 </YMapMarker>
             );
         },
-        [airportsByIcao, selectedAirport, selectedAirportIcao, handleDetailsOpenChange]
+        [
+            airportsByIcao,
+            selectedAirportIcao,
+            details,
+            isLoading,
+            isError,
+            handleDetailsOpenChange,
+            handleRetry,
+        ]
     );
 
     /** Схлопнутая группа аэропортов. */

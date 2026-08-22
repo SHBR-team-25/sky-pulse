@@ -7,6 +7,11 @@ interface AverageDataBadgeProps {
     totals: DashboardTotals;
 }
 
+/** Средние бывают `null`: в окне пересчёта не оказалось ни одного борта с высотой или скоростью */
+function formatValue(value: number | null) {
+    return value === null ? '—' : numberFormatter.format(value);
+}
+
 export function AverageDataBadge({ totals }: AverageDataBadgeProps) {
     const tiles = [
         { key: 'airports', label: 'Отслеживаемых аэропортов', value: totals.trackedAirports },
@@ -23,11 +28,11 @@ export function AverageDataBadge({ totals }: AverageDataBadgeProps) {
                     title={label}
                     message={
                         <span className={styles.tile}>
-                            <span className={styles.tileValue}>
-                                {numberFormatter.format(value)}
-                            </span>
+                            <span className={styles.tileValue}>{formatValue(value)}</span>
 
-                            {unit && <span className={styles.tileUnit}>{unit}</span>}
+                            {unit && value !== null && (
+                                <span className={styles.tileUnit}>{unit}</span>
+                            )}
                         </span>
                     }
                     layout="vertical"

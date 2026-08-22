@@ -17,7 +17,10 @@ export function BusiestAirportsBadge({ airports }: BusiestAirportsBadgeProps) {
                 airports.length > 0 ? (
                     <DefinitionList className={styles.list} responsive>
                         {airports.map(({ airport, totalFlights }) => (
-                            <DefinitionList.Item key={airport.icao} name={airport.name}>
+                            <DefinitionList.Item
+                                key={airport.icao}
+                                name={airport.name ?? airport.iata ?? airport.icao}
+                            >
                                 <span className={styles.value}>
                                     {numberFormatter.format(totalFlights)}
                                 </span>
@@ -25,7 +28,7 @@ export function BusiestAirportsBadge({ airports }: BusiestAirportsBadgeProps) {
                         ))}
                     </DefinitionList>
                 ) : (
-                    'Нет данных за выбранный период'
+                    'Нет данных'
                 )
             }
         />

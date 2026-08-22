@@ -347,6 +347,321 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    '/stats/dashboard': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Снапшот статистики для дашборда
+         * @description Единственный запрос дашборда: отдаёт последний посчитанный снапшот целиком — счётчики, распределение по фазам, топ аэропортов, топ маршрутов, разбивку по производителям и тренд.
+         *
+         *     Параметров нет намеренно. Клиент не может попросить период: в YT лежит ровно один снапшот, и `computedAt` в ответе — единственное, что о его актуальности известно. Насколько снапшот свежий, клиент решает сам, сравнив `computedAt` с текущим временем; по NFR2 джоба обязана пересчитывать агрегаты не реже раза в час.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Снапшот целиком. Нулевые счётчики — валидный ответ: так выглядит и пересчёт по пустому окну, и остановленный ингест. Отличить одно от другого по этой ручке нельзя. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['DashboardResponse'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/stats/airports': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Рейсы аэропортов за сутки
+         * @description Вылеты и прилёты каждого аэропорта, о котором в `airport_events` есть хотя бы одно событие, отсортированные по сумме рейсов. Это то самое `totalFlights24h`, которого нет в справочнике `positions-service`: рейсы считаются не по `ref_airports`, а по размеченным событиям.
+         *
+         *     Окно — **последние сутки имеющихся данных**, а не последние сутки по часам сервиса: пайплайн встаёт, и по календарным суткам ответ был бы пустым при живых событиях вчерашнего батча. Фактические границы всегда приходят в `from`/`to`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Аэропорты с рейсами за окно; пустой список — валидный ответ */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['AirportsTrafficResponse'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/stats/hourly-traffic': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Часовой профиль вылетов и прилётов
+         * @description Тайм-серия по `airport_events` с шагом в час. В отличие от `trafficTrend` из дашборда это профиль **по истории рейсов**, а не по моментам, когда отработала джоба, поэтому шаг ровный и по нему видно суточную волну.
+         *
+         *     Часы без событий приходят явными нулями: без них на графике рвётся ось времени, а провал в данных выглядит как отсутствие точек.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Ограничить профиль одним аэропортом. Код проверяется форматом — буквы, цифры и дефис, 2–8 символов; всё остальное 400 */
+                    icao?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Непрерывный ряд часов внутри окна */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['HourlyTrafficResponse'];
+                    };
+                };
+                /** @description Код аэропорта не подошёл под формат */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/stats/emergencies': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Борта с сигналом бедствия
+         * @description Список бортов с кодом 7500 (захват судна) или 7700 (аварийная ситуация) — то же, что `emergencyCount` в дашборде, но поимённо и с координатами, чтобы их можно было показать на карте.
+         *
+         *     Борта берутся из текущего снапшота `positions_current`, а не из агрегатов, поэтому актуальность отвечает `asOf`, а не `computedAt`. Борт, о котором не было позиции дольше `STATS_MAX_POSITION_AGE_SECONDS` (по умолчанию 300 с), из выдачи пропадает: `positions_current` хранит последнюю позицию вечно, и без отсечки вчерашний сигнал бедствия навсегда остался бы «текущим».
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Пустой список — штатный и самый частый ответ: в небе может не быть ни одного сигнала бедствия. Он же приходит, когда ингест стоит и все позиции протухли */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['EmergenciesResponse'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/airports/{icao}/flights': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Лог вылетов и прилётов аэропорта
+         * @description Уже наблюдённые рейсы, а не борд предстоящих: каждая запись — момент, когда пайплайн увидел борт у полосы, из `airport_events`.
+         *
+         *     Позывной берётся из `flights_segments` по `flight_id`, авиакомпания — из `ref_aircraft` по `icao24`. Обоих может не быть: справочник ВС знает эксплуатанта примерно у трети бортов лога, и борт без него из выдачи **не** пропадает (FR4) — приходит `null`.
+         *
+         *     `otherAirport` — противоположный конец маршрута, тоже оценка по треку, и он известен примерно у каждого десятого события. Продуктовый контракт описывает его как `EstimatedAirportRef` с `asOf` и `candidatesCount`; этих полей в YTsaurus нет, поэтому вместо них рядом с записью идут честные `confidence` и `distanceKm` из разметки.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Фильтр направления. `all` и отсутствие параметра равнозначны; всё, кроме `arrival`, `departure` и `all`, — это 400 */
+                    direction?: 'arrival' | 'departure' | 'all';
+                };
+                header?: never;
+                path: {
+                    /** @description Код аэропорта из `ref_airports`: буквы, цифры и дефис, 2–8 символов. Регистр не важен, сервер приводит значение к верхнему. Всё, что не подходит под формат, — это 400, а не «аэропорт не найден» */
+                    icao: components['parameters']['AirportIcao'];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Записи за то же окно, что у `/stats/airports`, свежие первыми. Пустой список означает, что за сутки данных аэропорт не отметился */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['AirportFlightsResponse'];
+                    };
+                };
+                /** @description Код аэропорта или направление не подошли под формат */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                /** @description Такого кода нет в `ref_airports` */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    '/airports/{icao}/stats': {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Рейсы одного аэропорта за сутки
+         * @description То же окно и тот же источник, что у `/stats/airports`, но по одному аэропорту — для карточки аэропорта.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Код аэропорта из `ref_airports`: буквы, цифры и дефис, 2–8 символов. Регистр не важен, сервер приводит значение к верхнему. Всё, что не подходит под формат, — это 400, а не «аэропорт не найден» */
+                    icao: components['parameters']['AirportIcao'];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Аэропорт есть в справочнике. Нули в счётчиках означают, что за окно по нему не было событий, — это не ошибка */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['AirportStatsResponse'];
+                    };
+                };
+                /** @description Код аэропорта не подошёл под формат */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                /** @description Такого кода нет в `ref_airports`. Пока справочник не прочитан, отличить опечатку от живого аэропорта нельзя, и сервис отвечает статистикой, а не 404 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        'application/json': components['schemas']['ApiError'];
+                    };
+                };
+                500: components['responses']['InternalError'];
+                503: components['responses']['SourceUnavailable'];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -579,10 +894,320 @@ export interface components {
              */
             message: string;
         };
+        /** @description Аэропорт в выдаче агрегатов. В `dashboard_*` лежит только ICAO — `iata` и `name` сервис добирает джойном с `ref_airports` (`icao_code`/`iata_code`/`name`). Если аэропорта в справочнике нет, оба поля приходят `null`, а сам аэропорт из выдачи не пропадает. */
+        AirportRef: {
+            /**
+             * @description [Derived] dashboard_top_airports.airport_icao
+             * @example EDDK
+             */
+            icao: string;
+            /**
+             * @description [OurAirports] ref_airports.iata_code
+             * @example CGN
+             */
+            iata: string | null;
+            /**
+             * @description [OurAirports] ref_airports.name
+             * @example Cologne Bonn Airport
+             */
+            name: string | null;
+        };
+        /** @description Строка `dashboard_totals`, одна на весь снапшот. */
+        Totals: {
+            /**
+             * @description [OpenSky] dashboard_totals.active_flights
+             * @example 917
+             */
+            activeFlights: number;
+            /**
+             * @description [OurAirports] dashboard_totals.tracked_airports
+             * @example 38
+             */
+            trackedAirports: number;
+            /**
+             * Format: double
+             * @description [Derived] `dashboard_totals.avg_altitude_m`, среднее по `states.baro_altitude`, метры. **Бывает `null`**: если в окне пересчёта не оказалось ни одного борта с высотой, джоба пишет `null`, а не 0 — ноль означал бы «летели на уровне моря».
+             * @example 9412.5
+             */
+            averageAltitudeM: number | null;
+            /**
+             * Format: double
+             * @description [Derived] `dashboard_totals.avg_velocity_mps` × 3.6 — среднее по `states.velocity`, **километры в час**. В YTsaurus поле лежит в м/с, пересчёт делает сервис.
+             * @example 797
+             */
+            averageSpeedKmh: number | null;
+        };
+        /** @description Распределение бортов по фазам из `dashboard_totals`. Это **не** enum `FlightPhase` карты: в YT считается `airborne` — все борта не на земле, а не `cruising` в узком смысле. Порога «вертикальная скорость ≈ 0» джоба не применяет, поэтому `airborne` включает и `climbing`, и `descending`, и горизонтальный полёт — сумма по полям не равна `activeFlights`. */
+        FlightsByPhase: {
+            /** @description [OpenSky] dashboard_totals.on_ground */
+            onGround: number;
+            /** @description [OpenSky] dashboard_totals.airborne */
+            airborne: number;
+            /** @description [OpenSky] dashboard_totals.climbing, vertical_rate > 0 */
+            climbing: number;
+            /** @description [OpenSky] dashboard_totals.descending, vertical_rate < 0 */
+            descending: number;
+        };
+        /** @description Строка `dashboard_top_airports`, отсортировано по `rank`. */
+        BusiestAirport: {
+            airport: components['schemas']['AirportRef'];
+            /**
+             * @description [Derived] dashboard_top_airports.departures
+             * @example 12
+             */
+            departures: number;
+            /**
+             * @description [Derived] dashboard_top_airports.arrivals
+             * @example 64
+             */
+            arrivals: number;
+            /**
+             * @description [Derived] `dashboard_top_airports.total_flights` — вылеты плюс прилёты, по нему же и отсортирована выдача.
+             * @example 74
+             */
+            totalFlights: number;
+        };
+        /** @description Строка `dashboard_routes`. Пара строится по `flights_segments`, где аэропорты вылета и прилёта — **оценка** по ближайшей точке трека, поэтому в выдаче попадаются вырожденные пары вида `LIMC → LIMC`: борт взлетел и сел в одном аэропорту либо оценка не разошлась. Фильтровать их сервис не берётся — это забота джобы. */
+        BusiestRoute: {
+            origin: components['schemas']['AirportRef'];
+            destination: components['schemas']['AirportRef'];
+            /**
+             * @description [Derived] dashboard_routes.flight_count
+             * @example 5
+             */
+            flightCount: number;
+        };
+        /** @description Строка `dashboard_manufacturers`. */
+        ManufacturerShare: {
+            /**
+             * @description [OpenSky Aircraft DB] `dashboard_manufacturers.manufacturer`. Борта, которых нет в справочнике, сведены в отдельную категорию `Unknown` — она обычно и самая крупная, и её стоит показывать отдельно от настоящих производителей.
+             * @example Boeing
+             */
+            manufacturer: string;
+            /**
+             * @description [Derived] dashboard_manufacturers.flight_count
+             * @example 232
+             */
+            flightCount: number;
+        };
+        /** @description Страна регистрации борта. Считается сервисом на лету — `group by origin_country` по `positions_current`, отдельной таблицы `dashboard_*` под этот разрез нет. Поле заполнено у всех бортов, поэтому сумма `flightCount` совпадает с числом бортов в снапшоте позиций. */
+        CountryShare: {
+            /**
+             * @description [OpenSky] positions_current.origin_country
+             * @example Germany
+             */
+            country: string;
+            /**
+             * @description [Derived] число бортов страны в текущем снапшоте
+             * @example 1035
+             */
+            flightCount: number;
+        };
+        /**
+         * @description Авиакомпания-эксплуатант. Тоже считается на лету — `group by operator` по `positions_current`.
+         *
+         *     Борта, у которых `operator` пуст, в выдачу **не попадают**: справочник OpenSky Aircraft DB покрывает лишь около шестой части бортов, и категория «Unknown» вышла бы крупнее всех настоящих авиакомпаний вместе взятых. Поэтому сумма `flightCount` заметно меньше `totals.activeFlights` — это ожидаемо, а не потеря данных.
+         */
+        AirlineShare: {
+            /**
+             * @description [OpenSky Aircraft DB] positions_current.operator
+             * @example Ryanair
+             */
+            airline: string;
+            /**
+             * @description [Derived] число бортов авиакомпании в текущем снапшоте
+             * @example 214
+             */
+            flightCount: number;
+        };
+        AirportTraffic: {
+            airport: components['schemas']['AirportRef'];
+            /**
+             * @description [Derived] count(airport_events с direction=departure)
+             * @example 13
+             */
+            departures: number;
+            /**
+             * @description [Derived] count(airport_events с direction=arrival)
+             * @example 71
+             */
+            arrivals: number;
+            /**
+             * @description [Derived] вылеты плюс прилёты за окно
+             * @example 84
+             */
+            totalFlights24h: number;
+        };
+        AirportsTrafficResponse: {
+            /**
+             * Format: int64
+             * @description Начало окна, unix seconds
+             */
+            from: number;
+            /**
+             * Format: int64
+             * @description Конец окна — время последнего события в таблице, а не текущее время сервиса
+             */
+            to: number;
+            items: components['schemas']['AirportTraffic'][];
+        };
+        AirportStatsResponse: {
+            /** Format: int64 */
+            from: number;
+            /** Format: int64 */
+            to: number;
+            airport: components['schemas']['AirportRef'];
+            departures: number;
+            arrivals: number;
+            totalFlights24h: number;
+        };
+        FlightLogEntry: {
+            /**
+             * @description [OpenSky] airport_events.icao24
+             * @example 4bccad
+             */
+            icao24: string;
+            /**
+             * @description [OpenSky] flights_segments.callsign по flight_id
+             * @example SXS4RX
+             */
+            callsign: string | null;
+            /**
+             * @description [OpenSky Aircraft DB] ref_aircraft.operator по icao24
+             * @example SunExpress
+             */
+            airlineName: string | null;
+            /** @enum {string} */
+            direction: 'arrival' | 'departure';
+            /** @description Противоположный конец маршрута по оценке разметки; известен примерно у каждого десятого события */
+            otherAirport: components['schemas']['AirportRef'] | null;
+            /**
+             * Format: int64
+             * @description [Derived] airport_events.event_ts — когда борт заметили у полосы
+             * @example 1787133926
+             */
+            observedAt: number;
+            /**
+             * Format: double
+             * @description [Derived] уверенность привязки события к аэропорту, 0..1. Заменяет `candidatesCount` продуктового контракта
+             * @example 0.97
+             */
+            confidence: number;
+            /**
+             * Format: double
+             * @description [Derived] расстояние от борта до аэропорта в момент события
+             * @example 0.4
+             */
+            distanceKm: number;
+        };
+        AirportFlightsResponse: {
+            /** Format: int64 */
+            from: number;
+            /** Format: int64 */
+            to: number;
+            airport: components['schemas']['AirportRef'];
+            /** @description Свежие записи первыми */
+            items: components['schemas']['FlightLogEntry'][];
+        };
+        HourlyTrafficPoint: {
+            /**
+             * Format: int64
+             * @description Начало часа, unix seconds
+             * @example 1787130000
+             */
+            hour: number;
+            departures: number;
+            arrivals: number;
+            /** @description Сумма — считает сервис, чтобы клиент не складывал сам */
+            totalFlights: number;
+        };
+        HourlyTrafficResponse: {
+            /** Format: int64 */
+            from: number;
+            /** Format: int64 */
+            to: number;
+            /** @description Непрерывный ряд часов внутри окна, включая пустые */
+            points: components['schemas']['HourlyTrafficPoint'][];
+        };
+        EmergencyFlight: {
+            /**
+             * @description [OpenSky] positions_current.icao24
+             * @example a981a8
+             */
+            icao24: string;
+            /**
+             * @description [OpenSky] positions_current.callsign
+             * @example N711VJ
+             */
+            callsign: string | null;
+            /**
+             * @description [OpenSky] код ответчика: 7500 или 7700
+             * @example 7700
+             */
+            squawk: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            onGround: boolean;
+            /**
+             * Format: int64
+             * @description Момент фиксации позиции, unix seconds
+             */
+            timePosition: number;
+        };
+        EmergenciesResponse: {
+            /**
+             * Format: int64
+             * @description Момент запроса — борта берутся из текущего снапшота позиций
+             */
+            asOf: number;
+            items: components['schemas']['EmergencyFlight'][];
+        };
+        /** @description Точка `dashboard_trend`. Шаг между точками **неравномерный**: строка пишется на каждый пересчёт, а он идёт не по расписанию — в истории встречаются и две точки подряд с разницей в пару минут, и разрыв в несколько часов. Клиент обязан рисовать тренд по фактическим `timestamp`, а не по номеру точки. */
+        TrafficTrendPoint: {
+            /**
+             * Format: int64
+             * @description [Derived] dashboard_trend.computed_at
+             * @example 1787132036
+             */
+            timestamp: number;
+            /**
+             * @description [Derived] dashboard_trend.active_aircraft
+             * @example 788
+             */
+            activeFlights: number;
+        };
+        DashboardResponse: {
+            /**
+             * Format: int64
+             * @description [Derived] `dashboard_totals.computed_at` — когда джоба посчитала снапшот. Заменяет `from`/`to` продуктового контракта: окна агрегации в YT нет, есть только момент пересчёта.
+             * @example 1787132036
+             */
+            computedAt: number;
+            totals: components['schemas']['Totals'];
+            flightsByPhase: components['schemas']['FlightsByPhase'];
+            topBusiestAirports: components['schemas']['BusiestAirport'][];
+            busiestRoutes: components['schemas']['BusiestRoute'][];
+            aircraftByManufacturer: components['schemas']['ManufacturerShare'][];
+            /** @description Топ-10 стран регистрации. В отличие от остальных полей считается по `positions_current` в момент запроса, а не берётся из снапшота `dashboard_*`, — то есть отражает «сейчас», а не `computedAt`. */
+            topCountries: components['schemas']['CountryShare'][];
+            /** @description Топ-10 авиакомпаний, считается так же — по `positions_current`. */
+            topAirlines: components['schemas']['AirlineShare'][];
+            /** @description Отсортирован по `timestamp` по возрастанию. */
+            trafficTrend: components['schemas']['TrafficTrendPoint'][];
+            /**
+             * @description [OpenSky] `dashboard_totals.emergency_squawks` — борта с кодом 7500 или 7700 в окне пересчёта.
+             * @example 0
+             */
+            emergencyCount: number;
+        };
     };
     responses: {
         /**
          * @description Источник данных не ответил или ответил негодным: YTsaurus недоступен, вернул ошибку либо прислал тело, которое не разбирается как ответ. Сервис при этом исправен, поэтому повторить запрос осмысленно.
+         *
+         *     Сюда же попадает пустая `dashboard_totals` — джоба ещё ни разу не посчитала агрегаты. Отдавать в этом случае нули нельзя: дашборд показал бы «в небе никого» вместо «данных пока нет».
          *
          *     Поле `message` заполнено по-русски и пригодно для показа пользователю; подробности источника (trace_id, текст запроса) остаются в логе сервиса и наружу не выходят.
          */
@@ -627,6 +1252,8 @@ export interface components {
         LonMax: number;
         /** @description Северная граница видимой области карты */
         LatMax: number;
+        /** @description Код аэропорта из `ref_airports`: буквы, цифры и дефис, 2–8 символов. Регистр не важен, сервер приводит значение к верхнему. Всё, что не подходит под формат, — это 400, а не «аэропорт не найден» */
+        AirportIcao: string;
     };
     requestBodies: never;
     headers: never;

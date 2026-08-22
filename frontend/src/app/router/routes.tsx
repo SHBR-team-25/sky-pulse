@@ -1,10 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { Layout } from '@/pages/layout';
-import {
-    dashboardDataQueryOptions,
-    parseDashboardRange,
-    toDashboardQuery,
-} from '@/features/getDashboardData';
+import { dashboardDataQueryOptions } from '@/features/getDashboardData';
 import { airportsQueryOptions, toAirportsMapQuery } from '@/features/getAirports';
 import { liveFlightsQueryOptions } from '@/features/getLiveFlights';
 import { queryClient } from '@shared/api';
@@ -52,10 +48,8 @@ export const router = createBrowserRouter([
                     Component: async () => (await import('@/pages/dashboard')).DashboardPage,
                 },
                 ErrorBoundary: RouterErrorFallback,
-                loader: ({ request }) => {
-                    const { searchParams } = new URL(request.url);
-                    const params = toDashboardQuery(parseDashboardRange(searchParams));
-                    void queryClient.prefetchQuery(dashboardDataQueryOptions(params));
+                loader: () => {
+                    void queryClient.prefetchQuery(dashboardDataQueryOptions());
 
                     return null;
                 },
