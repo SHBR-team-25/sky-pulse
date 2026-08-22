@@ -13,10 +13,15 @@ services:
     restart: unless-stopped
 
   svc_analytics:
-    image: hashicorp/http-echo
-    command:
-      - "-text=analytics stub ok"
-      - "-listen=:8080"
+    build:
+      context: ../backend/analytics-service
+    env_file: .env
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   nginx:
