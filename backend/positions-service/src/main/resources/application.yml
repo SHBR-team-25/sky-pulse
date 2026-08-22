@@ -1,5 +1,9 @@
 server:
   port: ${PORT:8080}
+  error:
+    # Контейнерные ошибки уходят в /error мимо ApiExceptionHandler, и без этого
+    # тело приходит без message — единственного поля, которое можно показать.
+    include-message: always
 
 spring:
   application:
@@ -22,5 +26,19 @@ skypulse:
   yt:
     proxy: ${YT_PROXY:localhost:80}
     token: ${YT_TOKEN:}
+    # Без таймаутов зависший прокси держит поток Tomcat вечно: несколько минут
+    # поллинга карты — и свободных потоков не остаётся вообще.
+    connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
+    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
     positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
     positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
+    pipeline-job-state-path: ${YT_PIPELINE_JOB_STATE_PATH://home/skypulse/pipeline_job_state}
+    ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
+    # Справочник OurAirports статический: перечитывать его чаще раза в сутки незачем,
+    # а полное чтение таблицы стоит десятки секунд.
+    ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
+    # Борт, о котором давно не было позиции, скорее всего сел.
+    max-position-age-seconds: ${YT_MAX_POSITION_AGE_SECONDS:300}
+  pipeline:
+    # Несколько пропущенных опросов подряд при интервале 15 с.
+    stale-after-seconds: ${PIPELINE_STALE_AFTER_SECONDS:120}

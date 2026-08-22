@@ -3,7 +3,7 @@ import { Icon } from '@gravity-ui/uikit';
 import type { Airport } from '@/entities/airport';
 import { YMapMarker } from '@/shared/lib/ymaps3';
 import { useMockAirportFlights } from '../model/useMockAirportFlights';
-import { AirportDetailsPopover } from './AirportDetailsPopover';
+import { AirportDetails } from './AirportDetails';
 import styles from './AirportsLayer.module.css';
 
 interface AirportsLayerProps {
@@ -23,6 +23,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                 type="button"
                 aria-label={`Аэропорт ${airport.name}, ${code}`}
                 aria-pressed={isSelected}
+                onClick={() => handleDetailsOpenChange(airport.icao, true)}
             >
                 <span className={styles.airportMarkerIcon} aria-hidden="true">
                     <Icon data={MapPin} size={12} />
@@ -36,7 +37,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                 coordinates={[airport.position.lon, airport.position.lat]}
                 zIndex={100}
             >
-                <AirportDetailsPopover
+                <AirportDetails
                     airport={airport}
                     details={isSelected ? (selectedAirport?.details ?? null) : null}
                     isLoading={isSelected && !!selectedAirport?.isLoading}
@@ -50,7 +51,7 @@ export function AirportsLayer({ airports }: AirportsLayerProps) {
                     onOpenChange={handleDetailsOpenChange}
                 >
                     {marker}
-                </AirportDetailsPopover>
+                </AirportDetails>
             </YMapMarker>
         );
     });

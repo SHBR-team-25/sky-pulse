@@ -12,7 +12,7 @@ import {
     YMapMarker,
 } from '@/shared/lib/ymaps3';
 
-import { FlightDetailsPopover } from './FlightDetailsPopover';
+import { FlightDetails } from './FlightDetails';
 import styles from './FlightsLayer.module.css';
 import { useMockFlightDetails } from '../model/useMockFlightDetails';
 import type { LiveFlight } from '@/entities/flight';
@@ -20,7 +20,7 @@ import type { LiveFlight } from '@/entities/flight';
 const CLUSTER_SOURCE = 'clustered-flights';
 const FLIGHT_PATH_STYLE: DrawingStyle = {
     zIndex: 100,
-    stroke: [{ color: 'var(--sky-color-status-warning)', width: 4 }],
+    stroke: [{ color: 'var(--sky-color-map-flight-path)', width: 4 }],
 };
 
 interface FlightsLayerProps {
@@ -147,11 +147,12 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
             {soloFlights.map((flight) => {
                 const isSelected = selectedFlight?.flightId === flight.icao24;
                 const marker = (
-                    <div
+                    <button
                         className={styles.flightMarker}
-                        role="img"
-                        tabIndex={0} // чтобы можно было перемещаться через Tab
+                        type="button"
                         aria-label={`Рейс ${flight.callsign ?? flight.icao24}`}
+                        aria-pressed={isSelected}
+                        onClick={() => handleDetailsOpenChange(flight.icao24, true)}
                     >
                         <span
                             className={styles.flightMarkerIcon}
@@ -162,7 +163,7 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                         >
                             <Icon data={PlaneFill} size={14} />
                         </span>
-                    </div>
+                    </button>
                 );
 
                 return (
@@ -171,7 +172,7 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                         coordinates={[flight.position.lon, flight.position.lat]}
                         zIndex={200}
                     >
-                        <FlightDetailsPopover
+                        <FlightDetails
                             details={isSelected ? selectedFlight.details : null}
                             flightId={flight.icao24}
                             isLoading={isSelected && selectedFlight.isLoading}
@@ -180,7 +181,7 @@ export function FlightsLayer({ flights }: FlightsLayerProps) {
                             onOpenChange={handleDetailsOpenChange}
                         >
                             {marker}
-                        </FlightDetailsPopover>
+                        </FlightDetails>
                     </YMapMarker>
                 );
             })}

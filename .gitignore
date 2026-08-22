@@ -36,3 +36,5 @@ __pycache__/
 # python env and cache
 ytsaurus-env/
 __pycache__/
+
+deploy/certs/

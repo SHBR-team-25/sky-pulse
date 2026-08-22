@@ -1,1 +1,1 @@
-export { airportsQueryKeys, useAirports } from './api/useAirports';
+export { airportsQueryKeys, airportsQueryOptions, useAirports } from './api/useAirports';

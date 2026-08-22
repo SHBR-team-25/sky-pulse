@@ -5,7 +5,14 @@ import {
     parseDashboardRange,
     toDashboardQuery,
 } from '@/features/getDashboardData';
+import { airportsQueryOptions } from '@/features/getAirports';
+import { liveFlightsQueryOptions } from '@/features/getLiveFlights';
 import { queryClient } from '@shared/api';
+import {
+    parseMapBoundsView,
+    resolveMapSearchParams,
+    toMapBoundsParams,
+} from '@/shared/contexts/map-view';
 import { PageLoader, RouterErrorFallback } from '@shared/ui';
 import { NotFoundPage } from '@/pages/notFound';
 
@@ -23,10 +30,19 @@ export const router = createBrowserRouter([
                     Component: async () => {
                         const { MapPage } = await import('@pages/map');
 
-                        return () => <MapPage theme="dark" />;
+                        return MapPage;
                     },
                 },
                 ErrorBoundary: RouterErrorFallback,
+                loader: ({ request }) => {
+                    const { searchParams } = new URL(request.url);
+                    const view = parseMapBoundsView(resolveMapSearchParams(searchParams));
+                    const params = toMapBoundsParams(view);
+                    void queryClient.prefetchQuery(liveFlightsQueryOptions(params));
+                    void queryClient.prefetchQuery(airportsQueryOptions(params));
+
+                    return null;
+                },
             },
             {
                 path: 'dashboard',

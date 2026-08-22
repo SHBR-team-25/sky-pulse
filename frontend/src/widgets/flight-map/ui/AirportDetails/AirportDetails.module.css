@@ -1,0 +1,356 @@
+.sheet {
+    --g-color-sfx-veil: var(--sky-color-sheet-veil);
+    --g-sheet-background-color: var(--sky-color-surface-sheet);
+
+    z-index: 2147483000;
+}
+
+.popover {
+    --g-popup-background-color: var(--sky-color-surface-popup);
+    --g-popup-border-color: var(--sky-color-popup-border);
+    --g-popup-border-radius: 13px;
+    --g-popup-border-width: 1px;
+    --airport-details-content-height: 332px;
+
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    color: var(--sky-color-text-primary);
+    overflow: visible;
+    box-shadow:
+        0 26px 60px -18px var(--sky-color-shadow-strong),
+        0 0 0 1px var(--sky-color-popup-outline);
+    backdrop-filter: blur(22px);
+}
+
+.sheetContent {
+    --airport-details-content-height: 332px;
+
+    color: var(--sky-color-text-primary);
+    overflow: hidden;
+}
+
+.sheetContent,
+.sheetSwipeArea {
+    background: var(--sky-color-surface-sheet);
+    border: 1px solid var(--sky-color-sheet-border);
+    box-shadow:
+        0 26px 60px -18px var(--sky-color-shadow-strong),
+        0 0 0 1px var(--sky-color-popup-outline);
+    backdrop-filter: blur(22px);
+}
+
+.sheetSwipeArea {
+    inset-block-start: -12px;
+    height: 32px;
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+}
+
+.sheetSwipeArea::after {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: 40px;
+    height: 4px;
+    background: var(--sky-color-text-muted);
+    border-radius: 999px;
+    opacity: 0.7;
+    transform: translate(-50%, -50%);
+    content: '';
+    pointer-events: none;
+}
+
+.sheetContentBottom {
+    max-height: calc(100dvh - 48px);
+    border-top: 0;
+    border-bottom: 0;
+}
+
+.card {
+    width: 100%;
+    min-height: var(--airport-details-content-height);
+    color: var(--sky-color-text-primary);
+    border-radius: inherit;
+}
+
+.content {
+    position: relative;
+    width: 100%;
+}
+
+.content .closeButton {
+    top: 28px;
+    right: 28px;
+}
+
+.closeButton {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    right: 8px;
+    color: var(--sky-color-text-muted);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 44px 13px 15px;
+    border-bottom: 1px solid var(--sky-color-divider-strong);
+}
+
+.heading {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    gap: 3px;
+}
+
+.airportName,
+.airportMeta,
+.flightIdentity small,
+.route small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.airportName {
+    color: var(--sky-color-text-primary);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.airportMeta {
+    color: var(--sky-color-text-faint);
+    font-size: 10px;
+}
+
+.tabs {
+    display: flex;
+    gap: 17px;
+    padding: 0 15px;
+    border-bottom: 1px solid var(--sky-color-divider);
+}
+
+.tab {
+    padding: 10px 1px 8px;
+    color: var(--sky-color-text-muted);
+    font: inherit;
+    font-size: 11px;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+}
+
+.tabCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    margin-left: 4px;
+    padding: 2px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    line-height: 1;
+    background: transparent;
+    /* border: 1px solid transparent; */
+    border-radius: 3px;
+    opacity: 0.22;
+    transition:
+        opacity 0.15s ease,
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.tab:hover {
+    color: var(--sky-color-text-default);
+}
+
+.tab:hover .tabCount {
+    opacity: 0.55;
+}
+
+.tab[data-active] {
+    color: var(--sky-color-text-primary);
+    font-weight: 500;
+    border-bottom-color: var(--sky-color-accent-primary);
+}
+
+.tab[data-active] .tabCount {
+    color: var(--sky-color-accent-link);
+    background: oklch(72% 0.14 220deg / 0.14);
+    border-color: oklch(72% 0.14 220deg / 0.2);
+    opacity: 0.9;
+}
+
+.tab:focus-visible {
+    outline: 2px solid var(--sky-color-border-strong);
+    outline-offset: 2px;
+}
+
+.tableHeader,
+.flightRow {
+    display: grid;
+    grid-template-columns: 43px 67px minmax(0, 1fr) 57px;
+    column-gap: 9px;
+}
+
+.tableHeader {
+    padding: 6px calc(36px + var(--sky-scrollbar-size)) 6px 15px;
+    color: var(--sky-color-text-faint);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--sky-color-divider);
+    text-align: left;
+}
+
+.tableHeader span:last-child {
+    text-align: right;
+}
+
+.flightList {
+    height: 282px;
+    max-height: 282px;
+    /* --g-list-item-padding: 0; */
+}
+
+/* .flightList :global(.g-list__items) {
+    scrollbar-gutter: stable;
+} */
+
+.flightRow {
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    padding: 7px 15px;
+    border-bottom: 1px solid var(--sky-color-divider-subtle);
+}
+
+.flightRow time {
+    color: var(--sky-color-text-default);
+    font:
+        400 11px/1 'Roboto Mono',
+        monospace;
+}
+
+.flightIdentity,
+.route {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.flightIdentity strong,
+.route strong {
+    overflow: hidden;
+    color: var(--sky-color-accent-link);
+    font:
+        400 12px/1.1 'Roboto Mono',
+        monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.route strong {
+    color: var(--sky-color-text-secondary);
+}
+
+.flightIdentity small,
+.route small {
+    color: var(--sky-color-text-faint);
+    font-size: 9px;
+}
+
+.direction {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    color: var(--sky-color-status-success);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.direction > span {
+    width: 5px;
+    height: 5px;
+    background: currentColor;
+    border-radius: 50%;
+}
+
+.direction[data-direction='arrival'] {
+    color: var(--sky-color-accent-secondary);
+}
+
+.empty,
+.message {
+    display: grid;
+    min-height: var(--airport-details-content-height);
+    color: var(--sky-color-text-muted);
+    font-size: 12px;
+    place-content: center;
+    justify-items: center;
+    gap: 12px;
+}
+
+.empty {
+    min-height: 184px;
+    padding: 20px;
+    text-align: center;
+}
+
+.sheetMobile .sheetContentBottom {
+    max-height: calc(100dvh - 24px);
+}
+
+.sheetMobile .sheetSwipeArea {
+    border-radius: 14px 14px 0 0;
+}
+
+.sheetMobile .content {
+    padding: 14px 14px calc(20px + env(safe-area-inset-bottom));
+}
+
+.sheetMobile .header {
+    padding: 14px 14px 12px;
+}
+
+.sheetMobile .tabs {
+    justify-content: space-between;
+    gap: 8px;
+    padding-inline: 14px;
+}
+
+.sheetMobile .tableHeader,
+.sheetMobile .flightRow {
+    grid-template-columns: 40px 60px minmax(72px, 1fr) 52px;
+    column-gap: 7px;
+}
+
+.sheetMobile .tableHeader {
+    padding-inline: 14px calc(14px + var(--sky-scrollbar-size));
+}
+
+.sheetMobile .flightRow {
+    padding-inline: 14px;
+}
+
+.sheetMobile .flightList {
+    height: clamp(220px, 42dvh, 282px);
+    max-height: 42dvh;
+}
+
+.sheetCompactMobile .tableHeader,
+.sheetCompactMobile .flightRow {
+    grid-template-columns: 38px 58px minmax(65px, 1fr) 10px;
+    column-gap: 6px;
+}
+
+.sheetCompactMobile .direction {
+    overflow: hidden;
+    font-size: 0;
+}
