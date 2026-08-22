@@ -30,10 +30,10 @@ skypulse:
     # поллинга карты — и свободных потоков не остаётся вообще.
     connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
     read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
-    positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
-    positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions_history}
-    pipeline-job-state-path: ${YT_PIPELINE_JOB_STATE_PATH://home/skypulse/pipeline_job_state}
-    ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
+    positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions/positions_current}
+    positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/skypulse/positions/positions_history}
+    pipeline-job-state-path: ${YT_PIPELINE_JOB_STATE_PATH://home/skypulse/system/pipeline_job_state}
+    ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/reference/ref_airports}
     # Справочник OurAirports статический: перечитывать его чаще раза в сутки незачем,
     # а полное чтение таблицы стоит десятки секунд.
     ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
