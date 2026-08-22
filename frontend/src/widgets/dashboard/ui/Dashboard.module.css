@@ -17,11 +17,12 @@
 
 .title {
     margin: 0;
-    padding: 16px 0;
+    margin-top: 16px;
 }
 
 .computedAt {
     margin: 0;
+    margin-top: 16px;
     color: var(--g-color-text-secondary);
 }
 

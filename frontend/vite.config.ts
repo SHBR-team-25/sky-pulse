@@ -2,13 +2,23 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// https://vite.dev/config/
+const POSITIONS_SERVICE = 'http://localhost:8080';
+const ANALYTICS_SERVICE = 'http://localhost:8081';
+
 export default defineConfig({
     plugins: [react()],
     server: {
         proxy: {
+            '^/api/stats': {
+                target: ANALYTICS_SERVICE,
+                changeOrigin: true,
+            },
+            '^/api/airports/[^/]+/(stats|flights)': {
+                target: ANALYTICS_SERVICE,
+                changeOrigin: true,
+            },
             '/api': {
-                target: 'http://localhost:8080',
+                target: POSITIONS_SERVICE,
                 changeOrigin: true,
             },
         },

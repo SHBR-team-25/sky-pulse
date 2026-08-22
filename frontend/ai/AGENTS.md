@@ -74,6 +74,7 @@
 │   │   ├───lib
 │   │   │       formatTrafficTrendData.ts            # тренд трафика в ChartData: линия по времени в мс и активным рейсам
 │   │   │       isSingleDayTrend.ts                  # укладывается ли тренд в одни сутки — выбор формата оси времени
+│   │   │       toBusiestAirports.ts                 # выдача /stats/airports к форме dashboard_top_airports, топ-10 по сумме рейсов
 │   │   │
 │   │   ├───model
 │   │   │       mock-data.ts                         # моки дашборда: полный, пустой и генератор по диапазону дат

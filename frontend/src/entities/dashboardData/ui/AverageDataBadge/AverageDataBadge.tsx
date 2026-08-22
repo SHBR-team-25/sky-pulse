@@ -5,6 +5,8 @@ import { numberFormatter } from '@/shared/lib/formatters';
 
 interface AverageDataBadgeProps {
     totals: DashboardTotals;
+    /** Аэропорты с рейсами за сутки из `/stats/airports`; без него — счётчик справочника из `dashboard_totals` */
+    trackedAirports?: number;
 }
 
 /** Средние бывают `null`: в окне пересчёта не оказалось ни одного борта с высотой или скоростью */
@@ -12,9 +14,13 @@ function formatValue(value: number | null) {
     return value === null ? '—' : numberFormatter.format(value);
 }
 
-export function AverageDataBadge({ totals }: AverageDataBadgeProps) {
+export function AverageDataBadge({ totals, trackedAirports }: AverageDataBadgeProps) {
     const tiles = [
-        { key: 'airports', label: 'Отслеживаемых аэропортов', value: totals.trackedAirports },
+        {
+            key: 'airports',
+            label: 'Отслеживаемых аэропортов',
+            value: trackedAirports ?? totals.trackedAirports,
+        },
         { key: 'altitude', label: 'Средняя высота', value: totals.averageAltitudeM, unit: 'м' },
         { key: 'speed', label: 'Средняя скорость', value: totals.averageSpeedKmh, unit: 'км/ч' },
     ];

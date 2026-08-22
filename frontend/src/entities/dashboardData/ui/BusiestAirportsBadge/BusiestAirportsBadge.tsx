@@ -11,8 +11,9 @@ export function BusiestAirportsBadge({ airports }: BusiestAirportsBadgeProps) {
     return (
         <Alert
             theme="normal"
-            title="Самые загруженные аэропорты"
+            title="Самые загруженные аэропорты по количеству рейсов в сутки"
             layout="vertical"
+            className={styles.listAlert}
             message={
                 airports.length > 0 ? (
                     <DefinitionList className={styles.list} responsive>
