@@ -133,11 +133,7 @@ public class YtDashboardRepository implements DashboardRepository {
                 .toList();
     }
 
-    /**
-     * Ноль активных бортов — это пропуск сбора, а не «никто не летит»: такая точка роняет линию
-     * тренда в пол. Отбрасываем её в запросе, чтобы лимит набирался осмысленными точками.
-     * Свежие точки нужны сверху, а клиенту тренд отдаётся по возрастанию времени.
-     */
+
     static String trendQuery(String trendPath, int trendLimit) {
         return """
                 computed_at, active_aircraft from [%s] where active_aircraft > 0 \
@@ -145,7 +141,7 @@ public class YtDashboardRepository implements DashboardRepository {
                 .formatted(trendPath, trendLimit);
     }
 
-    /** Смешать поколения агрегатов нельзя: числа перестанут сходиться между собой. */
+
     static List<JsonNode> latestGeneration(List<JsonNode> rows) {
         long newest = rows.stream()
                 .mapToLong(row -> row.path("computed_at").asLong(Long.MIN_VALUE))
