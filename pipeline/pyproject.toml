@@ -4,11 +4,12 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "ytsaurus-client",
+    "ytsaurus-yson",
     "requests",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["mypy", "pyspark==4.2.0", "pytest", "ruff"]
 
 [build-system]
 requires = ["setuptools>=68"]
