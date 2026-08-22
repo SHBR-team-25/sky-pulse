@@ -1,7 +1,6 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import type { LiveFlightsQuery, LiveFlightsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
-// import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
 
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 
@@ -33,8 +32,6 @@ interface UseLiveFlightsOptions {
 
 export function useLiveFlights(params: LiveFlightsQuery = {}, options: UseLiveFlightsOptions = {}) {
     // Дебаунс делает вызывающая сторона (FlightMap), второй дебаунс удвоил бы задержку
-    // const debouncedParams = useDebouncedParams(params, options.debounceMs);
-
     return useQuery({
         ...liveFlightsQueryOptions(params),
         enabled: options.enabled ?? true,

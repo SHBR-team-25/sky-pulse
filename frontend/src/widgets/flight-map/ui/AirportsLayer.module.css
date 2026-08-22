@@ -19,7 +19,6 @@
     place-items: center;
 }
 
-/* .. FIXME: */
 .airportMarkerSelected {
     color: var(--sky-color-accent-secondary);
     border-color: var(--sky-color-accent-primary);

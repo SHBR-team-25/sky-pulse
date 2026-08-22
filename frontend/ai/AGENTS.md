@@ -194,12 +194,6 @@
 │   │       index.ts                                 # публичный API shared/api
 │   │       queryClient.ts                           # общий QueryClient: staleTime 60 с, без ретраев на ApiError 4xx, throwOnError только без данных
 │   │
-│   ├───assets                                       # статические ресурсы
-│   │   └───images
-│   │           hero.png                             # изображение для промо-блока
-│   │           react.svg                            # логотип React
-│   │           vite.svg                             # логотип Vite / favicon
-│   │
 │   ├───contexts                                     # React-контексты общего состояния
 │   │   └───map-view                                 # состояние центра и масштаба карты
 │   │       │   context.ts                           # контексты текущего представления карты и его обновления
@@ -219,8 +213,6 @@
 │   │
 │   ├───lib                                          # общие хуки и утилиты
 │   │   │   useDebouncedCallback.ts                  # trailing-дебаунс колбэка на ref, не вызывает ре-рендеров
-│   │   │   useDebouncedParams.ts                    # дебаунс объекта query-параметров со стабильной ссылкой, сейчас не используется
-│   │   │   useDebouncedValue.ts                     # базовый дебаунс произвольного значения, сейчас не используется
 │   │   │   ymaps3.ts                                # инициализация JS API Яндекс.Карт, кластеризации и ZoomControl
 │   │   │
 │   │   └───formatters                               # форматтеры дат, полётов, координат и чисел
@@ -284,7 +276,6 @@
                 AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
                 AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 64 px до zoom 8
                 AirportsLayer.module.css             # стили маркеров, кластеров и подсказок аэропортов
-                AirportsLayer.tsx                    # некластерный слой маркеров аэропортов с кодами, сейчас не подключён
                 FlightDetailsCard.tsx                # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
                 FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
                 FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
@@ -292,7 +283,6 @@
                 FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
                 FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
                 FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
-                FlightsLayer.tsx                     # некластерный слой бортов с поповерами и треком, сейчас не подключён
                 MarkerTooltip.module.css             # стили всплывающей подсказки маркера
                 MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
 ```
