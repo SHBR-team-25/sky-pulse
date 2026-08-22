@@ -2,7 +2,7 @@ import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import type { LiveFlightsQuery, LiveFlightsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
 
-const DEFAULT_POLL_INTERVAL_MS = 15_000;
+const DEFAULT_POLL_INTERVAL_MS = 5_000;
 
 export const liveFlightsQueryKeys = {
     all: ['live-flights'] as const,

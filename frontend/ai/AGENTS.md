@@ -141,7 +141,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 15 с
+│   │   │       useLiveFlights.ts                    # хук GET /flights/live с поллингом раз в 5 с, placeholderData оставляет прошлые точки
 │   │   │
 │   │   └───model
 │   │           types.ts                             # типы query-параметров и ответа GET /flights/live
@@ -251,9 +251,6 @@
 └───widgets                                          # слой самостоятельных блоков интерфейса
     ├───app-footer                                   # подвал приложения
     │   │   index.ts                                 # публичный API виджета
-    │   │
-    │   ├───model
-    │   │       mock-data.ts                         # моковые технические параметры карты и статусы рейсов
     │   │
     │   └───ui
     │           AppFooter.module.css                 # стили подвала
