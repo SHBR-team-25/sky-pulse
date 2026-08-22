@@ -88,8 +88,16 @@ ssh $ssh_options "$TARGET_SSH_USER@$TARGET_HOST" "
     set -eu
     sudo install -d -m 0755 '$TARGET_DEPLOY_DIR/static'
     sudo install -d -m 0755 '/var/backups/skypulse'
-    sudo cp -f '$TARGET_DEPLOY_DIR/static/index.html' '/var/backups/skypulse/index.html.prev'
-    sudo cp -f '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf' '/var/backups/skypulse/frontend.conf.prev'
+
+    # На первом деплое старых файлов может ещё не быть, поэтому бэкап необязателен.
+    sudo rm -f '/var/backups/skypulse/index.html.prev' '/var/backups/skypulse/frontend.conf.prev'
+    if [ -f '$TARGET_DEPLOY_DIR/static/index.html' ]; then
+        sudo cp -f '$TARGET_DEPLOY_DIR/static/index.html' '/var/backups/skypulse/index.html.prev'
+    fi
+    if [ -f '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf' ]; then
+        sudo cp -f '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf' '/var/backups/skypulse/frontend.conf.prev'
+    fi
+
     sudo install -m 0644 '$remote_index' '$TARGET_DEPLOY_DIR/static/index.html.next'
     sudo install -m 0644 '$remote_nginx' '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf.next'
 
@@ -99,8 +107,16 @@ ssh $ssh_options "$TARGET_SSH_USER@$TARGET_HOST" "
 
     # При ошибке nginx возвращаем оба файла предыдущего релиза.
     if ! sudo docker compose -f '$TARGET_DEPLOY_DIR/compose.prod.yml' exec -T nginx nginx -t; then
-        sudo cp -f '/var/backups/skypulse/index.html.prev' '$TARGET_DEPLOY_DIR/static/index.html'
-        sudo cp -f '/var/backups/skypulse/frontend.conf.prev' '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf'
+        if [ -f '/var/backups/skypulse/index.html.prev' ]; then
+            sudo cp -f '/var/backups/skypulse/index.html.prev' '$TARGET_DEPLOY_DIR/static/index.html'
+        else
+            sudo rm -f '$TARGET_DEPLOY_DIR/static/index.html'
+        fi
+        if [ -f '/var/backups/skypulse/frontend.conf.prev' ]; then
+            sudo cp -f '/var/backups/skypulse/frontend.conf.prev' '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf'
+        else
+            sudo rm -f '$TARGET_DEPLOY_DIR/nginx/parts/frontend.conf'
+        fi
         rm -f '$remote_index' '$remote_nginx'
         exit 1
     fi
