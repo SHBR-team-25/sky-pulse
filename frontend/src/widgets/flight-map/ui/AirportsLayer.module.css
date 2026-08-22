@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .airportMarker {
     position: relative;
     display: grid;
@@ -11,8 +13,8 @@
     border-radius: 50%;
     outline: none;
     box-shadow:
-        0 5px 16px rgba(0, 0, 0, 0.35),
-        0 0 11px rgba(255, 190, 70, 0.2);
+        0 5px 16px var(--sky-color-shadow),
+        0 0 11px var(--sky-color-warning-glow-soft);
     transform: translate(-50%, -50%);
     backdrop-filter: blur(8px);
     cursor: pointer;
@@ -30,9 +32,9 @@
 
 .airportMarker:focus-visible {
     box-shadow:
-        0 5px 16px rgba(0, 0, 0, 0.35),
-        0 0 0 3px rgba(255, 255, 255, 0.8),
-        0 0 13px rgba(255, 190, 70, 0.4);
+        0 5px 16px var(--sky-color-shadow),
+        0 0 0 3px var(--sky-color-focus-ring),
+        0 0 13px var(--sky-color-warning-glow);
 }
 
 .airportMarkerIcon {
@@ -59,11 +61,11 @@
     font-size: 12px;
     font-weight: 800;
     background: var(--sky-color-status-warning);
-    border: 2.5px solid rgba(255, 255, 255, 0.9);
+    border: 2.5px solid var(--sky-color-focus-ring);
     border-radius: 50%;
     box-shadow:
-        0 7px 22px rgba(0, 0, 0, 0.4),
-        0 0 0 6px rgba(255, 190, 70, 0.18);
+        0 7px 22px var(--sky-color-shadow-strong),
+        0 0 0 6px var(--sky-color-warning-glow-soft);
     transform: translate(-50%, -50%);
     place-items: center;
 }
@@ -71,7 +73,19 @@
 .airportClusterMarker::after {
     position: absolute;
     inset: -9px;
-    border: 1px solid rgba(255, 190, 70, 0.35);
+    border: 1px solid var(--sky-color-warning-glow);
     border-radius: 50%;
     content: '';
+}
+
+@media (--touch-device) {
+    .airportMarker {
+        width: 28px;
+        height: 28px;
+    }
+
+    .airportClusterMarker {
+        width: 34px;
+        height: 34px;
+    }
 }

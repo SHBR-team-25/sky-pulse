@@ -12,7 +12,7 @@ import {
     YMapMarker,
 } from '@/shared/lib/ymaps3';
 
-import { FlightDetailsPopover } from './FlightDetailsPopover';
+import { FlightDetails } from './FlightDetails';
 import styles from './FlightsLayer.module.css';
 import { getFlightIconRotation } from '../model/flightIconRotation';
 import { useFlightDetails } from '../model/useFlightDetails';
@@ -25,7 +25,7 @@ const CLUSTER_GRID_SIZE = 64;
 
 const FLIGHT_PATH_STYLE: DrawingStyle = {
     zIndex: 100,
-    stroke: [{ color: 'var(--sky-color-status-warning)', width: 4 }],
+    stroke: [{ color: 'var(--sky-color-map-flight-path)', width: 4 }],
 };
 
 interface FlightsClusterLayerProps {
@@ -72,11 +72,12 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
             const flight = flightsById.get(flightId);
             const isSelected = selectedFlight?.flightId === flightId;
             const marker = (
-                <div
+                <button
                     className={styles.flightMarker}
-                    role="img"
-                    tabIndex={0}
+                    type="button"
                     aria-label={`Рейс ${flight?.callsign ?? flightId}`}
+                    aria-pressed={isSelected}
+                    onClick={() => handleDetailsOpenChange(flightId, true)}
                 >
                     <span
                         className={styles.flightMarkerIcon}
@@ -85,12 +86,12 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
                     >
                         <Icon data={PlaneFill} size={14} />
                     </span>
-                </div>
+                </button>
             );
 
             return (
                 <YMapMarker coordinates={feature.geometry.coordinates} source={CLUSTER_SOURCE}>
-                    <FlightDetailsPopover
+                    <FlightDetails
                         flight={isSelected ? selectedFlight.flight : null}
                         flightId={flightId}
                         isLoading={isSelected && selectedFlight.isLoading}
@@ -99,7 +100,7 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
                         onOpenChange={handleDetailsOpenChange}
                     >
                         {marker}
-                    </FlightDetailsPopover>
+                    </FlightDetails>
                 </YMapMarker>
             );
         },

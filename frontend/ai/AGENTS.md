@@ -9,15 +9,15 @@
 
 ### Технологический стек
 
-| Категория | Технология |
-| --- | --- |
-| Язык | TypeScript |
-| State-менеджер | Zustand |
-| Стили | CSS Modules |
-| Роутинг | react-router-dom |
-| Работа с API | TanStack Query |
-| UI-компоненты | GravityUI |
-| Карта | JS API яндекс карт |
+| Категория        | Технология            |
+| ---------------- | --------------------- |
+| Язык             | TypeScript            |
+| State-менеджер   | Zustand               |
+| Стили            | CSS Modules           |
+| Роутинг          | react-router-dom      |
+| Работа с API     | TanStack Query        |
+| UI-компоненты    | GravityUI             |
+| Карта            | JS API яндекс карт    |
 | Доставка статики | Yandex Object Storage |
 
 ### Тестирование
@@ -43,7 +43,7 @@
 │
 ├───app                                              # слой приложения: композиция провайдеров и layout
 │   │   App.module.css                               # стили корневого layout (шапка / карта / подвал)
-│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary, MapViewProvider и RouterProvider
+│   │   App.tsx                                      # корневой компонент: QueryProvider, ThemeProvider, ErrorBoundary и RouterProvider
 │   │   index.ts                                     # публичный API слоя app
 │   │
 │   ├───providers                                    # глобальные провайдеры приложения
@@ -97,8 +97,8 @@
 │   │       │       FlightsBadge.tsx                 # активные рейсы и их разбивка по фазам полёта
 │   │       │
 │   │       └───TrafficTrendGraph
-│   │               TrafficTrendGraph.module.css     # стили контейнера графика тренда трафика
-│   │               TrafficTrendGraph.tsx            # линейный Chart тренда трафика, заглушка при пустых данных
+│   │               TrafficTrendGraph.module.css     # адаптивные стили контейнера графика тренда трафика
+│   │               TrafficTrendGraph.tsx            # линейный Chart тренда с форматом времени для дня или диапазона дат и заглушкой пустых данных
 │   │
 │   └───flight                                       # сущность «рейс»
 │       │   index.ts                                 # публичный API сущности
@@ -167,7 +167,7 @@
 │   │   │   index.ts                                 # публичный API страницы
 │   │   │
 │   │   └───ui
-│   │           Layout.tsx                           # шапка, Outlet под Suspense с PageLoader и подвал
+│   │           Layout.tsx                           # MapViewProvider, шапка, Outlet под Suspense с PageLoader и подвал
 │   │
 │   ├───map                                          # страница карты полётов
 │   │   │   index.ts                                 # публичный API страницы
@@ -188,27 +188,40 @@
 │
 ├───shared                                           # переиспользуемый код без привязки к домену
 │   ├───api                                          # транспортный слой
-│   │       constants.ts                             # API_BASE_URL из переменных окружения
+│   │       constants.ts                             # API_BASE_URL и общий интервал поллинга 2 с
 │   │       fetchJson.ts                             # обёртка fetch: buildUrl, парсинг JSON, класс ApiError
 │   │       generated-types.ts                       # типы, сгенерированные из OpenAPI-спеки (правится только генератором)
 │   │       index.ts                                 # публичный API shared/api
 │   │       queryClient.ts                           # общий QueryClient: staleTime 60 с, без ретраев на ApiError 4xx, throwOnError только без данных
 │   │
+│   ├───config                                       # общие конфигурационные значения интерфейса
+│   │       breakpoints.css                          # переиспользуемые custom media брейкпоинты адаптивных CSS-стилей
+│   │       breakpoints.ts                           # брейкпоинты compact mobile, mobile и desktop и их media queries
+│   │       index.ts                                 # публичный API конфигурации интерфейса
+│   │
 │   ├───contexts                                     # React-контексты общего состояния
-│   │   └───map-view                                 # состояние центра и масштаба карты
-│   │       │   context.ts                           # контексты текущего представления карты и его обновления
-│   │       │   index.ts                             # публичный API контекста представления карты
-│   │       │   MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
-│   │       │   types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
-│   │       │   useMapView.ts                        # хуки для чтения и обновления представления карты
-│   │       │
-│   │       └───lib
-│   │               mapViewParams.ts                 # разбор и сборка bbox и zoom в URL с квантованием до сотых
-│   │               mapViewStorage.ts                # чтение и запись последнего вида карты в localStorage
-│   │               resolveMapSearch.ts              # подстановка сохранённого вида карты, если в URL его нет
+│   │   ├───map-view                                 # состояние вида карты, bounds в URL и сохранение поисковой строки
+│   │   │   │   context.ts                           # контексты текущего представления карты и его обновления
+│   │   │   │   index.ts                             # публичный API контекста представления карты
+│   │   │   │   MapViewProvider.tsx                  # провайдер центра и масштаба карты с защитой от дублей
+│   │   │   │   types.ts                             # тип MapView и начальные центр [34, 57.8] и zoom 5
+│   │   │   │   useMapView.ts                        # хуки для чтения и обновления представления карты
+│   │   │   │
+│   │   │   └───lib
+│   │   │           mapViewParams.ts                 # разбор и сборка bbox и zoom в URL с квантованием до сотых
+│   │   │           mapViewStorage.ts                # чтение и запись последнего вида карты в localStorage
+│   │   │           resolveMapSearch.ts              # подстановка сохранённого вида карты, если в URL его нет
+│   │   │
+│   │   └───theme                                    # состояние и переключение цветовой темы приложения
+│   │           AppThemeProvider.tsx                 # провайдер светлой и тёмной тем с сохранением выбора и тёмной темой по умолчанию
+│   │           context.ts                           # React-контекст активной темы и функции переключения
+│   │           index.ts                             # публичный API контекста темы
+│   │           types.ts                             # типы темы и значения контекста
+│   │           useAppTheme.ts                       # хук доступа к активной теме и её переключению
 │   │
 │   ├───hooks                                        # переиспользуемые React-хуки
 │   │       index.ts                                 # публичный API общих хуков
+│   │       useMediaQuery.ts                         # responsive CSS media query hook
 │   │       useUtcTime.ts                            # хук текущего UTC-времени с обновлением в начале минуты
 │   │
 │   ├───lib                                          # общие хуки и утилиты
@@ -226,7 +239,7 @@
 │       │
 │       ├───PageLoader
 │       │       PageLoader.module.css                # стили контейнера лоадера страницы
-│       │       PageLoader.tsx                       # фолбэк для Suspense: Loader размера l с role=status
+│       │       PageLoader.tsx                       # фолбэк для Suspense: Spin размера l с role=status
 │       │
 │       ├───RootErrorFallback
 │       │       RootErrorFallback.tsx                # фолбэк корневого ErrorBoundary с кнопкой перезагрузки страницы
@@ -258,7 +271,7 @@
     │   │
     │   └───ui
     │           Dashboard.module.css                 # стили сетки дашборда, бейджей и графика
-    │           Dashboard.tsx                        # диапазон дат в query-параметрах, бейджи и график тренда (пока на моках)
+    │           Dashboard.tsx                        # диапазон дат в query-параметрах, моки, бейджи и адаптивный график тренда
     │
     └───flight-map                                   # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                                 # публичный API виджета
@@ -269,22 +282,34 @@
         │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
-                AirportDetailsCard.tsx               # карточка аэропорта с метаданными и секцией рейсов
-                AirportDetailsPopover.module.css     # стили поповера, карточки и виртуального списка рейсов аэропорта
-                AirportDetailsPopover.tsx            # поповер деталей аэропорта с загрузкой, ошибкой и кнопкой закрытия
-                AirportFlightsList.tsx               # виртуальный список рейсов с загрузкой по 10 строк
-                AirportFlightsSection.tsx            # сортирует рейсы, фильтрует по направлению и выводит вкладки со счётчиками
-                AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 64 px до zoom 8
-                AirportsLayer.module.css             # стили маркеров, кластеров и подсказок аэропортов
-                FlightDetailsCard.tsx                # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
-                FlightDetailsPopover.module.css      # стили поповера, карточки и сообщений деталей рейса
-                FlightDetailsPopover.tsx             # поповер деталей рейса с состояниями загрузки и отсутствия данных
-                FlightMap.module.css                 # стили контейнера карты рейсов
-                FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
-                FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
-                FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
-                MarkerTooltip.module.css             # стили всплывающей подсказки маркера
-                MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
+            │   AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 64 px до zoom 8
+            │   AirportsLayer.module.css             # стили маркеров, кластеров и подсказок аэропортов
+            │   FlightMap.module.css                 # стили контейнера карты рейсов
+            │   FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
+            │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
+            │   FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
+            │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера
+            │   MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
+            │
+            ├───AirportDetails                       # адаптивные детали аэропорта в поповере или нижнем Sheet
+            │       AirportDetails.module.css        # стили деталей аэропорта, поповера и Sheet
+            │       AirportDetails.tsx               # переключает детали аэропорта между desktop-поповером и mobile-Sheet
+            │       AirportDetailsCard.tsx           # карточка аэропорта с метаданными и секцией рейсов
+            │       AirportDetailsContent.tsx        # контент деталей аэропорта: загрузка, ошибка с кнопкой «Повторить» и список рейсов
+            │       AirportDetailsPopover.tsx        # desktop-поповер деталей аэропорта с подсказкой маркера
+            │       AirportDetailsSheet.tsx          # mobile-Sheet деталей аэропорта с адаптивными отступами
+            │       AirportFlightsList.tsx           # виртуальный список рейсов с постраничной загрузкой по 10 строк
+            │       AirportFlightsSection.tsx        # сортирует рейсы и фильтрует их вкладками по направлению
+            │       index.ts                         # публичный API деталей аэропорта
+            │
+            └───FlightDetails                        # адаптивные детали рейса в поповере или нижнем Sheet
+                    FlightDetails.module.css         # стили деталей рейса, поповера и Sheet
+                    FlightDetails.tsx                # переключает детали рейса между desktop-поповером и mobile-Sheet
+                    FlightDetailsCard.tsx            # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
+                    FlightDetailsContent.tsx         # контент деталей рейса: загрузка, отсутствие данных и карточка борта
+                    FlightDetailsPopover.tsx         # desktop-поповер деталей рейса с подсказкой маркера
+                    FlightDetailsSheet.tsx           # mobile-Sheet деталей рейса с адаптивными отступами
+                    index.ts                         # публичный API деталей рейса
 ```
 
 <!-- TREE:END -->

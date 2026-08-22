@@ -1,0 +1,1 @@
+export { FlightDetails } from './FlightDetails';

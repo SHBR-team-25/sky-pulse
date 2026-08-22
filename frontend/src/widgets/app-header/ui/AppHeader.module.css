@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .header {
     z-index: 1;
     display: flex;
@@ -119,6 +121,88 @@
     white-space: nowrap;
 }
 
+.themeToggle {
+    position: relative;
+    width: 54px;
+    height: 28px;
+    color: var(--sky-color-text-muted);
+}
+
+.themeToggle :global(.g-switch__indicator),
+.themeToggle :global(.g-switch__indicator)::before,
+.themeToggle :global(.g-switch__outline) {
+    width: 54px;
+    height: 28px;
+    border-radius: 999px;
+}
+
+.themeToggle :global(.g-switch__indicator)::before {
+    box-sizing: border-box;
+    background: var(--sky-color-surface-control);
+    border: 1px solid var(--sky-color-border-control);
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.themeToggle:hover :global(.g-switch__indicator)::before,
+.themeToggle:global(.g-switch_checked) :global(.g-switch__indicator)::before,
+.themeToggle:global(.g-switch_checked):hover :global(.g-switch__indicator)::before {
+    background: var(--sky-color-surface-selected);
+    border-color: var(--sky-color-border-strong);
+}
+
+.themeToggle :global(.g-switch__slider) {
+    inset-block-start: 2px;
+    inset-inline-start: 2px;
+    width: 24px;
+    height: 24px;
+    background: var(--sky-color-surface-popup);
+    border: 1px solid var(--sky-color-popup-outline);
+    box-shadow: 0 2px 7px var(--sky-color-shadow);
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.themeToggle:global(.g-switch_checked) :global(.g-switch__slider) {
+    transform: translateX(26px);
+}
+
+.themeToggle :global(.g-switch__control:focus-visible + .g-switch__outline) {
+    outline: 2px solid var(--sky-color-accent-primary);
+    outline-offset: 2px;
+}
+
+.themeToggle :global(.g-control-label__text) {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    margin: 0;
+    pointer-events: none;
+}
+
+.themeToggleIcons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    width: 54px;
+    height: 28px;
+}
+
+.themeToggleIcon {
+    display: grid;
+    width: 27px;
+    height: 28px;
+    transition: color 0.2s ease;
+    place-items: center;
+}
+
+.themeToggle:not(:global(.g-switch_checked)) .themeToggleSun {
+    color: var(--sky-color-status-warning);
+}
+
+.themeToggle:global(.g-switch_checked) .themeToggleMoon {
+    color: var(--sky-color-accent-secondary);
+}
+
 .liveStatus {
     display: flex;
     align-items: center;
@@ -135,4 +219,41 @@
 
 .utcTime {
     color: inherit;
+}
+
+@media (--touch-device) {
+    .header {
+        height: 56px;
+        padding-inline: 14px;
+    }
+
+    .navigationButton {
+        padding-inline: 8px;
+    }
+}
+
+@media (max-width: 520px) {
+    .header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        height: auto;
+        padding: 8px 12px;
+        gap: 6px 10px;
+    }
+
+    .navigation {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .navigationButton {
+        flex: 1;
+        min-height: 32px;
+    }
+
+    .status {
+        grid-column: 2;
+        grid-row: 1;
+    }
 }

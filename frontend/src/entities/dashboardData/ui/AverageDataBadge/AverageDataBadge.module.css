@@ -1,3 +1,5 @@
+@import '@/shared/config/breakpoints.css';
+
 .averageDataBadge {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -26,4 +28,11 @@
 .tileUnit {
     font-size: 13px;
     color: var(--sky-color-text-secondary);
+}
+
+@media (--mobile) {
+    .averageDataBadge {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
 }

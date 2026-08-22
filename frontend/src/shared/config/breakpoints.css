@@ -1,0 +1,3 @@
+@custom-media --tablet (max-width: 960px);
+@custom-media --touch-device (max-width: 768px);
+@custom-media --mobile (max-width: 600px);

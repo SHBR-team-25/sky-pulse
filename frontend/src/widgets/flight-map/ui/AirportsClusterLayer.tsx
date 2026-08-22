@@ -11,7 +11,7 @@ import {
     YMapMarker,
 } from '@/shared/lib/ymaps3';
 
-import { AirportDetailsPopover } from './AirportDetailsPopover';
+import { AirportDetails } from './AirportDetails';
 import styles from './AirportsLayer.module.css';
 import { useSelectedAirportFlights } from '../model/useSelectedAirportFlights';
 import type { Airport } from '@/entities/airport';
@@ -75,6 +75,7 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
                     type="button"
                     aria-label={`Аэропорт ${airport.name}, ${code}`}
                     aria-pressed={isSelected}
+                    onClick={() => handleDetailsOpenChange(airport.icao, true)}
                 >
                     <span className={styles.airportMarkerIcon} aria-hidden="true">
                         <Icon data={MapPin} size={12} />
@@ -84,7 +85,7 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
 
             return (
                 <YMapMarker coordinates={feature.geometry.coordinates} source={CLUSTER_SOURCE}>
-                    <AirportDetailsPopover
+                    <AirportDetails
                         airport={airport}
                         details={isSelected ? details : null}
                         isError={isSelected && isError}
@@ -100,7 +101,7 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
                         onRetry={handleRetry}
                     >
                         {marker}
-                    </AirportDetailsPopover>
+                    </AirportDetails>
                 </YMapMarker>
             );
         },

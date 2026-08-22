@@ -26,7 +26,7 @@ export const router = createBrowserRouter([
                     Component: async () => {
                         const { MapPage } = await import('@pages/map');
 
-                        return () => <MapPage theme="dark" />;
+                        return MapPage;
                     },
                 },
                 ErrorBoundary: RouterErrorFallback,
