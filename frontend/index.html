@@ -2,7 +2,7 @@
 <html lang="ru">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/png" href="/yt_logo.webp" />
+        <link rel="icon" type="image/png" href="/yt_logo.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>SkyPulse</title>
         <script src="https://api-maps.yandex.ru/v3/?apikey=%VITE_YANDEX_MAPS_API_KEY%&lang=ru_RU"></script>
@@ -34,12 +34,10 @@
             );
 
             ym(111856824, 'init', {
-                ssr: true,
+                defer: true,
                 webvisor: true,
                 clickmap: true,
                 ecommerce: 'dataLayer',
-                referrer: document.referrer,
-                url: location.href,
                 accurateTrackBounce: true,
                 trackLinks: true,
             });

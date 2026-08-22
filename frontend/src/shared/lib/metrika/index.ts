@@ -1,0 +1,1 @@
+export { MetrikaPageTracker } from './MetrikaPageTracker';
