@@ -263,6 +263,10 @@
     ├───app-header                                   # шапка приложения
     │   │   index.ts                                 # публичный API виджета
     │   │
+    │   ├───assets
+    │   │       yt_logo.png                          # логотип SkyPulse, PNG-фолбэк
+    │   │       yt_logo.webp                         # логотип SkyPulse, основной формат
+    │   │
     │   └───ui
     │           AppHeader.module.css                 # стили шапки
     │           AppHeader.tsx                        # логотип, навигация NavLink на /map и /dashboard, текущее UTC-время

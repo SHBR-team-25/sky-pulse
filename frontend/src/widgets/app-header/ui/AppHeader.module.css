@@ -21,6 +21,11 @@
     gap: 10px;
 }
 
+.logoPicture {
+    display: flex;
+    flex: none;
+}
+
 .logo {
     flex: none;
     width: 26px;
