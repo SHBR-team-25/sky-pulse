@@ -62,7 +62,8 @@ export function AirportFlightsList({ flights }: AirportFlightsListProps) {
                             </span>
                             <span className={styles.route}>
                                 <strong>
-                                    {isDeparture ? '→' : '←'} {otherAirportCode}
+                                    {otherAirportCode === '-' ? '' : isDeparture ? '→' : '←'}{' '}
+                                    {otherAirportCode}
                                 </strong>
 
                                 <AirportTooltip content={otherAirportName}>

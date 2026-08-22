@@ -22,20 +22,11 @@
 }
 
 .logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex: none;
     width: 26px;
     height: 26px;
-    background: var(--sky-color-accent-primary);
+    object-fit: cover;
     border-radius: 7px;
-}
-
-.logoMark {
-    width: 11px;
-    height: 11px;
-    background: var(--sky-color-bg-canvas);
-    clip-path: polygon(50% 0%, 100% 100%, 50% 78%, 0% 100%);
 }
 
 .productName {
