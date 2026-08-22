@@ -24,8 +24,8 @@ export function EmergencyBadge({ count }: EmergencyBadgeProps) {
             title="Количество аварий"
             message={
                 isSafe
-                    ? 'За указанный период происшествий не было'
-                    : `За указанный период произошло ${count} ${INCIDENT_FORMS[pluralRules.select(count)]}`
+                    ? 'Происшествий не было'
+                    : `Произошло ${count} ${INCIDENT_FORMS[pluralRules.select(count)]}`
             }
         />
     );

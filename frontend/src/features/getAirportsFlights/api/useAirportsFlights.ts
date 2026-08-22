@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { AirportFlightsQuery, AirportFlightsResponse } from '../model/types';
 import { fetchJson } from '@shared/api';
 
@@ -35,7 +35,10 @@ export function useAirportsFlights(
             );
         },
         enabled: Boolean(icao) && (options.enabled ?? true),
-        placeholderData: keepPreviousData,
-        retry: false, // TODO: подумать надо ли ретрай
+        // Данные попапа привязаны к конкретному аэропорту: keepPreviousData показал бы
+        // рейсы предыдущего как готовые
+        retry: false,
+        // Ошибку рисует сам попап, глобальный throwOnError уронил бы ErrorBoundary всей карты
+        throwOnError: false,
     });
 }

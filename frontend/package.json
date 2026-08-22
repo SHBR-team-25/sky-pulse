@@ -10,7 +10,7 @@
         "lint:fix": "eslint . --fix",
         "preview": "vite preview",
         "format": "prettier --write \"**/*.{ts,tsx}\"",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc -b",
         "prepare": "cd .. && husky frontend/.husky",
         "generateApi": "openapi-typescript ../docs/openapi.yaml -o ./src/shared/api/generated-types.ts",
         "generateApi:check": "openapi-typescript ../docs/openapi.yaml -o ./src/shared/api/generated-types.ts --check",

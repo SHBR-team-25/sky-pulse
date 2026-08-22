@@ -21,7 +21,6 @@
     place-items: center;
 }
 
-/* .. FIXME: */
 .airportMarkerSelected {
     color: var(--sky-color-accent-secondary);
     border-color: var(--sky-color-accent-primary);
@@ -53,9 +52,40 @@
     letter-spacing: 0.06em;
 }
 
+.airportClusterMarker {
+    position: relative;
+    display: grid;
+    width: 29px;
+    height: 29px;
+    color: var(--sky-color-bg-canvas-deep);
+    font-size: 12px;
+    font-weight: 800;
+    background: var(--sky-color-status-warning);
+    border: 2.5px solid var(--sky-color-focus-ring);
+    border-radius: 50%;
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow-strong),
+        0 0 0 6px var(--sky-color-warning-glow-soft);
+    transform: translate(-50%, -50%);
+    place-items: center;
+}
+
+.airportClusterMarker::after {
+    position: absolute;
+    inset: -9px;
+    border: 1px solid var(--sky-color-warning-glow);
+    border-radius: 50%;
+    content: '';
+}
+
 @media (--touch-device) {
     .airportMarker {
         width: 28px;
         height: 28px;
+    }
+
+    .airportClusterMarker {
+        width: 34px;
+        height: 34px;
     }
 }

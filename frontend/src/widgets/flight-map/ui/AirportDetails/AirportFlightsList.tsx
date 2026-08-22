@@ -53,7 +53,6 @@ export function AirportFlightsList({ flights }: AirportFlightsListProps) {
 
                     return (
                         <div className={styles.flightRow}>
-                            {/* // FIXME: проверить как будет приходить с бека */}
                             <time dateTime={new Date(flight.observedAt * 1000).toISOString()}>
                                 {formatTime(flight.observedAt)}
                             </time>

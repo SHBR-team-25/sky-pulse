@@ -19,4 +19,4 @@ export {
 } from './lib/mapViewStorage';
 export { resolveMapSearchParams, resolveStoredMapSearch } from './lib/resolveMapSearch';
 export { INITIAL_MAP_BOUNDS_VIEW, INITIAL_MAP_VIEW, MAP_ZOOM_RANGE } from './types';
-export type { MapBoundsParams, MapBoundsView, MapView } from './types';
+export type { MapBoundsParams, MapBoundsView, MapRectParams, MapView } from './types';

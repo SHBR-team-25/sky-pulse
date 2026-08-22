@@ -21,3 +21,17 @@ export function formatTime(timestamp: number) {
 export function formatUtcTime(date: Date) {
     return `${utcTimeFormatter.format(date)} UTC`;
 }
+
+/** Форматтер даты и времени в текущем часовом поясе. */
+export const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+});
+
+/** Форматирует timestamp в секундах как дату и время. */
+export function formatDateTime(timestamp: number) {
+    return dateTimeFormatter.format(timestamp * 1000);
+}

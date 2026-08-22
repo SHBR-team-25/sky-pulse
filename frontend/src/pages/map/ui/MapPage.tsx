@@ -1,21 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from '@gravity-ui/uikit';
-import { airportsMock } from '@/entities/airport';
+import { toAirportsMapQuery, useAirports } from '@/features/getAirports';
+import { useLiveFlights } from '@/features/getLiveFlights';
 import { FlightMap } from '@/widgets/flight-map';
 import { useAppTheme } from '@/shared/contexts/theme';
 import {
     isSameMapBoundsParams,
-    MAP_VIEW_SYNC_DELAY_MS,
     parseMapBoundsView,
     resolveStoredMapSearch,
     toMapBoundsParams,
     writeStoredMapSearch,
     type MapBoundsParams,
 } from '@/shared/contexts/map-view';
-import { useDebouncedValue } from '@/shared/lib/useDebouncedValue';
 import styles from './MapPage.module.css';
-import { flightsMock } from '@/entities/flight';
 import { useLocation, useSearchParams } from 'react-router';
+import type { Airport } from '@/entities/airport';
+import type { Flight } from '@/entities/flight';
+
+/** Стабильные ссылки: иначе memo на слоях карты не сработает, пока данные не пришли. */
+const EMPTY_FLIGHTS: Flight[] = [];
+const EMPTY_AIRPORTS: Airport[] = [];
 
 export function MapPage() {
     const { theme } = useAppTheme();
@@ -35,7 +39,6 @@ export function MapPage() {
         }
     }, [restoredSearch, setSearchParams]);
 
-    // Пустой search не пишется, поэтому первый рендер с голым URL не затирает сохранённое
     useEffect(() => {
         writeStoredMapSearch(search);
     }, [search]);
@@ -48,13 +51,11 @@ export function MapPage() {
         setFlightsQuery((prev) => (isSameMapBoundsParams(prev, next) ? prev : next));
     }, []);
 
-    const urlQuery = useDebouncedValue(flightsQuery, MAP_VIEW_SYNC_DELAY_MS);
-
     useEffect(() => {
         setSearchParams(
             (prev) => {
                 const params = new URLSearchParams(prev);
-                Object.entries(urlQuery).forEach(([key, value]) => {
+                Object.entries(flightsQuery).forEach(([key, value]) => {
                     params.set(key, String(value));
                 });
 
@@ -62,30 +63,42 @@ export function MapPage() {
             },
             { replace: true }
         );
-    }, [urlQuery, setSearchParams]);
+    }, [flightsQuery, setSearchParams]);
 
-    // const { data, isError } = useLiveFlights(flightsQuery);
-    const data = flightsMock;
-    const isError = false;
+    // flightsQuery уже дебаунснут в FlightMap, второй дебаунс только удвоил бы задержку
+    const { data, isError } = useLiveFlights(flightsQuery);
+    const { data: airportsData, isError: isAirportsError } = useAirports(
+        toAirportsMapQuery(flightsQuery)
+    );
 
     return (
         <main className={styles.map} aria-label="Карта полётов и аэропортов">
             <FlightMap
                 initialBounds={initialView.bounds}
                 theme={theme}
-                airports={airportsMock.items}
-                flights={data?.flights ?? []}
+                airports={airportsData?.items ?? EMPTY_AIRPORTS}
+                flights={data ?? EMPTY_FLIGHTS}
                 onBoundsChange={handleBoundsChange}
             />
 
-            {isError && (
+            {(isError || isAirportsError) && (
                 <div className={styles.error} role="status">
-                    <Alert
-                        theme="danger"
-                        view="filled"
-                        title="Не удалось загрузить борта"
-                        message="Показаны последние полученные данные. Обновление продолжится автоматически."
-                    />
+                    {isError && (
+                        <Alert
+                            theme="danger"
+                            view="filled"
+                            title="Не удалось загрузить борта"
+                            message="Показаны последние полученные данные. Обновление продолжится автоматически."
+                        />
+                    )}
+                    {isAirportsError && (
+                        <Alert
+                            theme="danger"
+                            view="filled"
+                            title="Не удалось загрузить аэропорты"
+                            message="Карта работает без них."
+                        />
+                    )}
                 </div>
             )}
         </main>

@@ -21,20 +21,24 @@ interface AirportDetailsProps {
     airport: Airport;
     children: ReactElement<MarkerElementProps>;
     details: AirportFlightsResponse | null;
+    isError: boolean;
     isLoading: boolean;
     open: boolean;
     tooltipContent: ReactNode;
     onOpenChange: (airportId: string, open: boolean) => void;
+    onRetry: () => void;
 }
 
 export function AirportDetails({
     airport,
     children,
     details,
+    isError,
     isLoading,
     open,
     tooltipContent,
     onOpenChange,
+    onRetry,
 }: AirportDetailsProps) {
     const isDesktop = useMediaQuery(MEDIA_QUERIES.desktop);
     useEffect(
@@ -48,8 +52,10 @@ export function AirportDetails({
         <AirportDetailsContent
             airport={airport}
             details={details}
+            isError={isError}
             isLoading={isLoading}
             onClose={isDesktop ? () => onOpenChange(airport.icao, false) : undefined}
+            onRetry={onRetry}
         />
     );
 

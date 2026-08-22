@@ -11,13 +11,17 @@ export function BusiestAirportsBadge({ airports }: BusiestAirportsBadgeProps) {
     return (
         <Alert
             theme="normal"
-            title="Самые загруженные аэропорты"
+            title="Самые загруженные аэропорты по количеству рейсов в сутки"
             layout="vertical"
+            className={styles.listAlert}
             message={
                 airports.length > 0 ? (
                     <DefinitionList className={styles.list} responsive>
                         {airports.map(({ airport, totalFlights }) => (
-                            <DefinitionList.Item key={airport.icao} name={airport.name}>
+                            <DefinitionList.Item
+                                key={airport.icao}
+                                name={airport.name ?? airport.iata ?? airport.icao}
+                            >
                                 <span className={styles.value}>
                                     {numberFormatter.format(totalFlights)}
                                 </span>
@@ -25,7 +29,7 @@ export function BusiestAirportsBadge({ airports }: BusiestAirportsBadgeProps) {
                         ))}
                     </DefinitionList>
                 ) : (
-                    'Нет данных за выбранный период'
+                    'Нет данных'
                 )
             }
         />

@@ -19,19 +19,13 @@
 
 .title {
     margin: 0;
-    padding: 16px 0;
+    margin-top: 16px;
 }
 
-.controls {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: var(--sky-color-bg-canvas);
-}
-
-.datePicker {
-    width: 100%;
-    max-width: 320px;
+.computedAt {
+    margin: 0;
+    margin-top: 16px;
+    color: var(--g-color-text-secondary);
 }
 
 .badges {

@@ -9,7 +9,7 @@ interface AirportDetailsCardProps {
 }
 
 export function AirportDetailsCard({ airport, details }: AirportDetailsCardProps) {
-    const airportMeta = [airport.city, airport.country, airport.iata ? airport.icao : null]
+    const airportMeta = [airport.city, airport.country, airport.iata ?? airport.icao]
         .filter(Boolean)
         .join(' · ');
 

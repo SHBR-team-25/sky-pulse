@@ -6,7 +6,7 @@ import {
     type ReactNode,
     type RefAttributes,
 } from 'react';
-import type { FlightDetailsResponse } from '@/features/getTargetFlight';
+import type { Flight } from '@/entities/flight';
 import { MEDIA_QUERIES } from '@/shared/config';
 import { useMediaQuery } from '@/shared/hooks';
 import { FlightDetailsContent } from './FlightDetailsContent';
@@ -18,7 +18,7 @@ type MarkerElementProps = HTMLAttributes<HTMLElement> & RefAttributes<HTMLElemen
 
 interface FlightDetailsProps {
     children: ReactElement<MarkerElementProps>;
-    details: FlightDetailsResponse | null;
+    flight: Flight | null;
     flightId: string;
     isLoading: boolean;
     open: boolean;
@@ -28,7 +28,7 @@ interface FlightDetailsProps {
 
 export function FlightDetails({
     children,
-    details,
+    flight,
     flightId,
     isLoading,
     open,
@@ -45,7 +45,7 @@ export function FlightDetails({
 
     const content = (
         <FlightDetailsContent
-            details={details}
+            flight={flight}
             isLoading={isLoading}
             onClose={isDesktop ? () => onOpenChange(flightId, false) : undefined}
         />

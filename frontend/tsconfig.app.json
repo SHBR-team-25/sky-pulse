@@ -6,7 +6,6 @@
         "module": "esnext",
         "types": ["vite/client", "@yandex/ymaps3-types"],
         "baseUrl": ".",
-        "ignoreDeprecations": "5.0",
         "paths": {
             "@/*": ["src/*"],
             "@app": ["src/app/index.ts"],
