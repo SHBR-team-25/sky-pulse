@@ -66,27 +66,27 @@ ssh $ssh_options "$TARGET_SSH_USER@$TARGET_HOST" "
         echo 'Ошибка: пользователю деплоя нужен sudo без пароля.' >&2
         exit 1
     fi
-    # if [ ! -f '$TARGET_DEPLOY_DIR/compose.prod.yml' ]; then
-    #     echo 'Ошибка: backend ещё не установил compose.prod.yml в $TARGET_DEPLOY_DIR.' >&2
-    #     exit 1
-    # fi
-    # if [ ! -f '$TARGET_DEPLOY_DIR/nginx/default.conf' ]; then
-    #     echo 'Ошибка: backend ещё не установил основной конфиг nginx.' >&2
-    #     exit 1
-    # fi
-    # if [ ! -f '$TARGET_DEPLOY_DIR/nginx/parts/api.conf' ]; then
-    #     echo 'Ошибка: backend ещё не установил API-конфиг nginx.' >&2
-    #     exit 1
-    # fi
-    # if ! sudo grep -Fq 'location /api/flights' '$TARGET_DEPLOY_DIR/nginx/parts/api.conf' || \
-    #    ! sudo grep -Fq 'svc_analytics:8081' '$TARGET_DEPLOY_DIR/nginx/parts/api.conf'; then
-    #     echo 'Ошибка: API-конфиг nginx устарел, сначала нужен deploy актуального backend.' >&2
-    #     exit 1
-    # fi
-    # if ! sudo docker compose -f '$TARGET_DEPLOY_DIR/compose.prod.yml' exec -T nginx nginx -t; then
-    #     echo 'Ошибка: контейнер nginx не запущен или его текущий конфиг некорректен.' >&2
-    #     exit 1
-    # fi
+    if [ ! -f '$TARGET_DEPLOY_DIR/compose.prod.yml' ]; then
+        echo 'Ошибка: backend ещё не установил compose.prod.yml в $TARGET_DEPLOY_DIR.' >&2
+        exit 1
+    fi
+    if [ ! -f '$TARGET_DEPLOY_DIR/nginx/default.conf' ]; then
+        echo 'Ошибка: backend ещё не установил основной конфиг nginx.' >&2
+        exit 1
+    fi
+    if [ ! -f '$TARGET_DEPLOY_DIR/nginx/parts/api.conf' ]; then
+        echo 'Ошибка: backend ещё не установил API-конфиг nginx.' >&2
+        exit 1
+    fi
+    if ! sudo grep -Fq 'location /api/flights' '$TARGET_DEPLOY_DIR/nginx/parts/api.conf' || \
+       ! sudo grep -Fq 'svc_analytics:8081' '$TARGET_DEPLOY_DIR/nginx/parts/api.conf'; then
+        echo 'Ошибка: API-конфиг nginx устарел, сначала нужен deploy актуального backend.' >&2
+        exit 1
+    fi
+    if ! sudo docker compose -f '$TARGET_DEPLOY_DIR/compose.prod.yml' exec -T nginx nginx -t; then
+        echo 'Ошибка: контейнер nginx не запущен или его текущий конфиг некорректен.' >&2
+        exit 1
+    fi
 "
 
 # Проверяем доступ к бакету до первой изменяющей операции.
