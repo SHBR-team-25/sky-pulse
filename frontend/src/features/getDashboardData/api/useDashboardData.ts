@@ -8,7 +8,6 @@ export const dashboardDataQueryKeys = {
 };
 
 export type DashboardDataWithAirports = DashboardData & {
-    /** `null`, если ручка не ответила: бейджи откатываются на агрегаты из `/stats/dashboard` */
     airportsTraffic: AirportsTraffic | null;
 };
 
@@ -16,11 +15,6 @@ export function dashboardDataQueryOptions() {
     return queryOptions({
         queryKey: dashboardDataQueryKeys.stats(),
         queryFn: async ({ signal }): Promise<DashboardDataWithAirports> => {
-            /**
-             * `/stats/airports` считает рейсы по `airport_events` и потому свежее агрегатов джобы,
-             * но по спеке штатно отвечает 503, когда источник недоступен. Дашборд из-за этого
-             * ронять нельзя, поэтому обязателен только `/stats/dashboard`.
-             */
             const [dashboard, airports] = await Promise.allSettled([
                 fetchJson<DashboardData>('/stats/dashboard', { signal }),
                 fetchJson<AirportsTraffic>('/stats/airports', { signal }),
@@ -35,6 +29,7 @@ export function dashboardDataQueryOptions() {
                 airportsTraffic: airports.status === 'fulfilled' ? airports.value : null,
             };
         },
+        refetchInterval: 120_000,
     });
 }
 

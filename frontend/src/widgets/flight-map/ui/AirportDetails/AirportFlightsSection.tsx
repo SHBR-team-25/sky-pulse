@@ -16,8 +16,6 @@ interface AirportFlightsSectionProps {
 export function AirportFlightsSection({ flights }: AirportFlightsSectionProps) {
     const [direction, setDirection] = useState<AirportFlightsDirection>('all');
 
-    // Ручка отдаёт лог за сутки одним куском, поэтому направление фильтруем на клиенте:
-    // так счётчики на табах считаются по одному массиву и переключение не идёт в сеть
     const flightsByDirection = useMemo<Record<AirportFlightsDirection, AirportFlight[]>>(() => {
         const allFlights = flights.toSorted((left, right) => right.observedAt - left.observedAt);
 

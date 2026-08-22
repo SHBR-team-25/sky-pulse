@@ -5,11 +5,9 @@ import { numberFormatter } from '@/shared/lib/formatters';
 
 interface AverageDataBadgeProps {
     totals: DashboardTotals;
-    /** Аэропорты с рейсами за сутки из `/stats/airports`; без него — счётчик справочника из `dashboard_totals` */
     trackedAirports?: number;
 }
 
-/** Средние бывают `null`: в окне пересчёта не оказалось ни одного борта с высотой или скоростью */
 function formatValue(value: number | null) {
     return value === null ? '—' : numberFormatter.format(value);
 }

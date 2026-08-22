@@ -10,7 +10,7 @@
     --g-popup-border-color: var(--sky-color-popup-border);
     --g-popup-border-radius: 13px;
     --g-popup-border-width: 1px;
-    --flight-details-content-height: 217px;
+    --flight-details-content-height: 207px;
 
     width: 300px;
     color: var(--sky-color-text-primary);
@@ -223,6 +223,16 @@
     background: var(--sky-color-surface-muted);
     border-top: 1px solid var(--sky-color-divider-strong);
     border-radius: 0 0 13px 13px;
+}
+
+/* В шторке на планшете и телефоне нижнее скругление не нужно. */
+.sheetContent .footer {
+    border-radius: 0;
+}
+
+/* На узких экранах второй показатель завершает строку без правой границы. */
+.sheetContent .metric:nth-child(2) {
+    border-right: 0;
 }
 
 .sheetMobile .sheetContentBottom {

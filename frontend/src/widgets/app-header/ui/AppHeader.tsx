@@ -15,21 +15,9 @@ export function AppHeader() {
     return (
         <header className={styles.header}>
             <div className={styles.brand} aria-label="SkyPulse">
-                {/* <span className={styles.logo} aria-hidden="true">
-                    <span className={styles.logoMark} />
-                </span> */}
+                <img className={styles.logo} src="/yt_logo.webp" alt="" width={26} height={26} />
                 <span className={styles.productName}>SkyPulse</span>
             </div>
-
-            {/* TODO: сделать, если будем делать поиск по самолетам, аэропортам  */}
-            {/* <TextInput
-                className={styles.search}
-                aria-label="Поиск"
-                placeholder={headerMock.searchPlaceholder}
-                size="l"
-                startContent={<Icon data={Magnifier} size={16} />}
-                endContent={<kbd className={styles.shortcut}>{headerMock.searchShortcut}</kbd>}
-            /> */}
 
             <nav className={styles.navigation} aria-label="Основная навигация">
                 <Button

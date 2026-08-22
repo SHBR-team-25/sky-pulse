@@ -9,6 +9,7 @@ export function AppFooter() {
 
     return (
         <footer className={styles.footer}>
+            <span>Сделали студенты летних школ Яндекса</span>
             <ul className={styles.technicalInfo} aria-label="Параметры карты">
                 <li key="interval">Задержка данных 5 с</li>
                 <li>{formattedLocation}</li>
