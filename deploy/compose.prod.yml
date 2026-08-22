@@ -1,18 +1,27 @@
 services:
-  # Заглушки отдают статичный текст на 8080.
   # наружу торчит только nginx, остальное видно лишь внутри compose.
   svc_positions:
-    image: hashicorp/http-echo
-    command:
-      - "-text=positions stub ok"
-      - "-listen=:8080"
+    build:
+      context: ../backend/positions-service
+    env_file: .env
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   svc_analytics:
-    image: hashicorp/http-echo
-    command:
-      - "-text=analytics stub ok"
-      - "-listen=:8080"
+    build:
+      context: ../backend/analytics-service
+    env_file: .env
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   nginx:
@@ -30,21 +39,3 @@ services:
       - svc_positions
       - svc_analytics
     restart: unless-stopped
-  # Реальный positions-service (backend/positions-service). Раскомментировать
-  # и удалить заглушку svc_positions выше, когда будете готовы переключаться.
-  # svc_positions:
-  #   build:
-  #     context: ../backend/positions-service
-  #   env_file: .env
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: yt
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 40s
-  #   restart: unless-stopped
-  #
-  # svc_analytics: сервиса пока нет в репозитории. Появится backend/analytics-service —
-  # добавить блок по аналогии с positions-service выше.

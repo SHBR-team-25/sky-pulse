@@ -14,9 +14,8 @@ class BoundingBox:
 class IngestConfig:
     opensky_client_id: str
     opensky_client_secret: str
-    bbox: BoundingBox
+    bbox: BoundingBox | None
     poll_interval_seconds: int
-    daily_request_budget: int
     token_url: str
     states_url: str
 
@@ -33,17 +32,24 @@ _DEFAULT_STATES_URL = "https://opensky-network.org/api/states/all"
 
 
 def load_ingest_config() -> IngestConfig:
+    scope = os.environ.get("OPENSKY_SCOPE", "bbox").strip().lower()
+    if scope not in {"bbox", "all"}:
+        raise ValueError("OPENSKY_SCOPE must be either 'bbox' or 'all'")
+
     return IngestConfig(
         opensky_client_id=os.environ["OPENSKY_CLIENT_ID"],
         opensky_client_secret=os.environ["OPENSKY_CLIENT_SECRET"],
-        bbox=BoundingBox(
-            lamin=float(os.environ.get("OPENSKY_BBOX_LAMIN", _DEFAULT_LAMIN)),
-            lomin=float(os.environ.get("OPENSKY_BBOX_LOMIN", _DEFAULT_LOMIN)),
-            lamax=float(os.environ.get("OPENSKY_BBOX_LAMAX", _DEFAULT_LAMAX)),
-            lomax=float(os.environ.get("OPENSKY_BBOX_LOMAX", _DEFAULT_LOMAX)),
+        bbox=(
+            None
+            if scope == "all"
+            else BoundingBox(
+                lamin=float(os.environ.get("OPENSKY_BBOX_LAMIN", _DEFAULT_LAMIN)),
+                lomin=float(os.environ.get("OPENSKY_BBOX_LOMIN", _DEFAULT_LOMIN)),
+                lamax=float(os.environ.get("OPENSKY_BBOX_LAMAX", _DEFAULT_LAMAX)),
+                lomax=float(os.environ.get("OPENSKY_BBOX_LOMAX", _DEFAULT_LOMAX)),
+            )
         ),
         poll_interval_seconds=int(os.environ.get("OPENSKY_POLL_INTERVAL_SECONDS", 10)),
-        daily_request_budget=int(os.environ.get("OPENSKY_DAILY_REQUEST_BUDGET", 4000)),
         token_url=os.environ.get("OPENSKY_TOKEN_URL", _DEFAULT_TOKEN_URL),
         states_url=os.environ.get("OPENSKY_STATES_URL", _DEFAULT_STATES_URL),
     )

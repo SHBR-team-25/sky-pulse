@@ -4,6 +4,7 @@ from bootstrap_service.csv_source import iter_csv_rows
 from bootstrap_service.schemas import REF_AIRPORTS_FIELDS, REF_AIRPORTS_SCHEMA
 from bootstrap_service.table_writer import ensure_table
 from common.config import load_yt_config
+from common.paths import table_path as resolve_table_path
 from common.yt_client import make_client
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ def _to_row(csv_row: dict[str, str]) -> dict[str, str | float | None]:
 def load(source_url: str = DEFAULT_SOURCE_URL, overwrite: bool = False) -> None:
     config = load_yt_config()
     client = make_client(config)
-    table_path = f"{config.base_path}/ref_airports"
+    table_path = resolve_table_path(config.base_path, "ref_airports")
 
     if not ensure_table(client, table_path, REF_AIRPORTS_SCHEMA, overwrite):
         logger.info("ref_airports already exists at %s, skipping", table_path)

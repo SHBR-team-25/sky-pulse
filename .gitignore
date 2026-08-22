@@ -7,6 +7,9 @@
 
 # Generated application output.
 /backend/dist/
+/backend/*/bin/
+/backend/*/build/
+/backend/*/.gradle/
 /backend/build/
 /frontend/dist/
 
@@ -27,6 +30,7 @@ pnpm-debug.log*
 __pycache__/
 *.pyc
 .mypy_cache/
+.pytest_cache/
 .ruff_cache/
 *.egg-info/
 

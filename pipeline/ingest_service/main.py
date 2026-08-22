@@ -2,12 +2,12 @@ import logging
 import time
 
 from common.config import load_yt_config
+from common.paths import table_path
 from common.yt_client import make_client
 from ingest_service.auth import TokenCache
 from ingest_service.config import load_ingest_config
-from ingest_service.opensky_client import fetch_states
-from ingest_service.parsing import to_positions_raw_rows
-from ingest_service.rate_limiter import DailyRequestBudget
+from ingest_service.opensky_client import RateLimitExceeded, fetch_states
+from ingest_service.parsing import summarize_state_categories, to_positions_raw_rows
 from ingest_service.writer import write_rows
 
 logger = logging.getLogger(__name__)
@@ -18,10 +18,10 @@ def run() -> None:
     ingest_config = load_ingest_config()
 
     client = make_client(yt_config)
-    table_path = f"{yt_config.base_path}/positions_raw"
+    positions_raw_path = table_path(yt_config.base_path, "positions_raw")
 
-    if not client.exists(table_path):
-        logger.error("Table %s does not exist, run bootstrap first", table_path)
+    if not client.exists(positions_raw_path):
+        logger.error("Table %s does not exist, run bootstrap first", positions_raw_path)
         return
 
     token_cache = TokenCache(
@@ -29,20 +29,34 @@ def run() -> None:
         ingest_config.opensky_client_secret,
         ingest_config.token_url,
     )
-    budget = DailyRequestBudget(ingest_config.daily_request_budget)
-
     while True:
-        if not budget.try_consume():
-            wait = budget.seconds_until_reset()
-            logger.info("daily request budget exhausted, sleeping %.0fs", wait)
-            time.sleep(wait)
-            continue
-
         try:
             response = fetch_states(ingest_config.bbox, token_cache, ingest_config.states_url)
-            rows = to_positions_raw_rows(response)
-            write_rows(client, table_path, rows)
-            logger.info("wrote %d rows to %s", len(rows), table_path)
+            source_row_count = len(response.payload.get("states") or [])
+            logger.info(
+                "OpenSky category distribution: %s",
+                summarize_state_categories(response.payload),
+            )
+            rows = to_positions_raw_rows(response.payload)
+            write_rows(client, positions_raw_path, rows)
+            logger.info(
+                "wrote %d of %d OpenSky rows to %s after aircraft filtering; "
+                "OpenSky credits remaining: %s",
+                len(rows),
+                source_row_count,
+                positions_raw_path,
+                response.credits_remaining if response.credits_remaining is not None else "unknown",
+            )
+        except RateLimitExceeded as error:
+            wait = (
+                error.retry_after_seconds
+                if error.retry_after_seconds is not None
+                else ingest_config.poll_interval_seconds
+            )
+            wait = max(1.0, wait)
+            logger.warning("OpenSky credits exhausted, sleeping %.0fs", wait)
+            time.sleep(wait)
+            continue
         except Exception:
             logger.exception("poll failed, will retry after interval")
 
