@@ -87,6 +87,8 @@ scp $ssh_options "deploy/nginx/parts/frontend.conf" "$TARGET_SSH_USER@$TARGET_HO
 ssh $ssh_options "$TARGET_SSH_USER@$TARGET_HOST" "
     set -eu
     sudo install -d -m 0755 '$TARGET_DEPLOY_DIR/static'
+    # На первом деплое каталога для frontend-конфига nginx ещё может не быть.
+    sudo install -d -m 0755 '$TARGET_DEPLOY_DIR/nginx/parts'
     sudo install -d -m 0755 '/var/backups/skypulse'
 
     # На первом деплое старых файлов может ещё не быть, поэтому бэкап необязателен.
