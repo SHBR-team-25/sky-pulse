@@ -97,7 +97,7 @@ Frontend-пайплайн не разворачивает backend и не изм
 сертификаты и запустить общий nginx:
 
 ```bash
-sudo mkdir -p /opt/skypulse
+sudo mkdir -p /opt/skypulseи
 sudo chown "$USER":"$USER" /opt/skypulse
 git clone <repo-url> /opt/skypulse
 cd /opt/skypulse/deploy
