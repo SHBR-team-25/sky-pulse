@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from '@gravity-ui/uikit';
 import { airportsMock } from '@/entities/airport';
-// eslint-disable-next-line
-import { useLiveFlights } from '@/features/getLiveFlights';
 import { FlightMap } from '@/widgets/flight-map';
 import { useAppTheme } from '@/shared/contexts/theme';
 import {

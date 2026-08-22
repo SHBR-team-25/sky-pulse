@@ -1,0 +1,56 @@
+server:
+  port: ${PORT:8081}
+  error:
+    # Контейнерные ошибки уходят в /error мимо ApiExceptionHandler, и без этого
+    # тело приходит без message — единственного поля, которое можно показать.
+    include-message: always
+
+spring:
+  application:
+    name: analytics-service
+  config:
+    import: "optional:file:.env[.properties]"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+skypulse:
+  yt:
+    proxy: ${YT_PROXY:localhost:80}
+    token: ${YT_TOKEN:}
+    connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
+    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
+    ref-airports-path: ${YT_REF_AIRPORTS_PATH://home/skypulse/ref_airports}
+    # Справочник OurAirports статический: перечитывать его чаще раза в сутки незачем.
+    ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
+    # Топы стран и авиакомпаний считаются по текущим позициям: своих таблиц у них нет.
+    positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/skypulse/positions_current}
+    # Агрегаты считает SPYT-джоба, сервис только читает готовые таблицы.
+    dashboard-totals-path: ${YT_DASHBOARD_TOTALS_PATH://home/skypulse/dashboard_totals}
+    dashboard-trend-path: ${YT_DASHBOARD_TREND_PATH://home/skypulse/dashboard_trend}
+    dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/skypulse/dashboard_top_airports}
+    dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/skypulse/dashboard_routes}
+    dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}
+    # Рейсы аэропортов считаются по размеченным событиям, а не по dashboard_*.
+    airport-events-path: ${YT_AIRPORT_EVENTS_PATH://home/skypulse/airport_events}
+    flights-segments-path: ${YT_FLIGHTS_SEGMENTS_PATH://home/skypulse/flights_segments}
+    ref-aircraft-path: ${YT_REF_AIRCRAFT_PATH://home/skypulse/ref_aircraft}
+    ref-aircraft-cache-ttl-seconds: ${YT_REF_AIRCRAFT_CACHE_TTL_SECONDS:86400}
+  stats:
+    top-limit: ${STATS_TOP_LIMIT:10}
+    # Точки тренда пишутся на каждый пересчёт, а он идёт неравномерно, поэтому
+    # ограничение задаётся числом точек, а не окном времени.
+    trend-limit: ${STATS_TREND_LIMIT:100}
+    # Сутки данных, а не сутки по часам сервиса: пайплайн встаёт, и по календарным
+    # суткам ответ был бы пустым при живых событиях вчерашнего батча.
+    airport-window-seconds: ${STATS_AIRPORT_WINDOW_SECONDS:86400}
+    # Борт, о котором давно не было позиции, аварийным считать нельзя.
+    max-position-age-seconds: ${STATS_MAX_POSITION_AGE_SECONDS:300}

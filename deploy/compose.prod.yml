@@ -27,6 +27,7 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/parts:/etc/nginx/conf.d/parts:ro
+      # В каталоге static хранится только index.html; остальные файлы лежат в Object Storage.
       - ./static:/usr/share/nginx/html:ro
       - ./certs:/etc/letsencrypt:ro
     depends_on:
