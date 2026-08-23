@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class YtPositionRepository implements PositionRepository {
+public class YtPositionRepository implements PositionSnapshotSource {
 
     private static final Logger LOG = LoggerFactory.getLogger(YtPositionRepository.class);
 
@@ -45,6 +45,13 @@ public class YtPositionRepository implements PositionRepository {
         long freshnessThreshold = Instant.now().getEpochSecond() - maxPositionAgeSeconds;
         String query = "* from [%s]%s"
                 .formatted(positionsCurrentPath, whereClause(area, freshnessThreshold));
+        return positions(ytQueryClient.selectRows(query));
+    }
+
+    @Override
+    public List<Position> positionsSince(long timePositionFrom) {
+        String query = "* from [%s]%s"
+                .formatted(positionsCurrentPath, whereClause(null, timePositionFrom));
         return positions(ytQueryClient.selectRows(query));
     }
 

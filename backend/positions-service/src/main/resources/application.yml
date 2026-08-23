@@ -29,7 +29,7 @@ skypulse:
     # Без таймаутов зависший прокси держит поток Tomcat вечно: несколько минут
     # поллинга карты — и свободных потоков не остаётся вообще.
     connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
-    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
+    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:10}
     positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/hackathon/team25/positions/positions_current}
     positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/hackathon/team25/positions/positions_history}
     pipeline-job-state-path: ${YT_PIPELINE_JOB_STATE_PATH://home/hackathon/team25/system/pipeline_job_state}
@@ -39,6 +39,7 @@ skypulse:
     ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
     # Борт, о котором давно не было позиции, скорее всего сел.
     max-position-age-seconds: ${YT_MAX_POSITION_AGE_SECONDS:300}
+    positions-refresh-seconds: ${YT_POSITIONS_REFRESH_SECONDS:5}
   pipeline:
     # Несколько пропущенных опросов подряд при интервале 15 с.
     stale-after-seconds: ${PIPELINE_STALE_AFTER_SECONDS:120}
