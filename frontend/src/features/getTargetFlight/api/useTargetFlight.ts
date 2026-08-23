@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { TargetFlight } from '../model/types';
 import type { Flight, TrackPoint } from '@/entities/flight';
 import { fetchJson } from '@shared/api';
@@ -28,7 +28,6 @@ export function useTargetFlight(icao24: string | undefined, options: UseTargetFl
                 signal,
                 AbortSignal.timeout(REQUEST_TIMEOUT_MS),
             ]);
-
             const [flight, track] = await Promise.all([
                 fetchJson<Flight>(`/flights/${id}`, { signal: requestSignal }),
                 fetchJson<TrackPoint[]>(`/flights/${id}/track`, { signal: requestSignal }).catch(
@@ -39,9 +38,10 @@ export function useTargetFlight(icao24: string | undefined, options: UseTargetFl
             return { flight, track };
         },
         enabled: Boolean(icao24) && (options.enabled ?? true),
+        placeholderData: keepPreviousData,
         refetchInterval: options.refetchInterval,
         refetchIntervalInBackground: false,
-        retry: false, // TODO: подумать надо ли ретрай
+        retry: false,
         staleTime: 0,
     });
 }

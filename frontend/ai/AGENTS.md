@@ -168,7 +168,7 @@
 │       │   index.ts                                 # публичный API фичи
 │       │
 │       ├───api
-│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} и /track параллельно, таймаут 5 с, без ретраев
+│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} и /track параллельно с keepPreviousData, таймаутом 5 с и без ретраев
 │       │
 │       └───model
 │               types.ts                             # тип TargetFlight: борт плюс точки трека
@@ -304,7 +304,7 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
-        │       useFlightDetails.ts                  # выбор борта на карте поверх useTargetFlight: позиция плюс трек
+        │       useFlightDetails.ts                  # разделяет открытый поповер и активный трек борта, возвращая renderedTrack
         │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
@@ -313,6 +313,7 @@
             │   FlightMap.module.css                 # стили контейнера карты рейсов
             │   FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
             │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
+            │   mapCustomization.ts                  # shared typed map-scheme customization for light and dark themes
             │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера
             │   MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
             │

@@ -31,7 +31,7 @@ interface FlightsClusterLayerProps {
 export const FlightsClusterLayer = memo(function FlightsClusterLayer({
     flights,
 }: FlightsClusterLayerProps) {
-    const { selectedFlight, handleDetailsOpenChange } = useFlightDetails();
+    const { selectedFlight, renderedTrack, handleDetailsOpenChange } = useFlightDetails();
 
     const flightsById = useMemo(
         () => new Map(flights.map((flight) => [flight.icao24, flight])),
@@ -52,14 +52,12 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
     const clusterMethod = useMemo(() => clusterByGrid({ gridSize: CLUSTER_GRID_SIZE }), []);
 
     const selectedPathCoordinates = useMemo<LngLat[] | null>(() => {
-        const track = selectedFlight?.track;
-
-        if (!track || track.length < 2) {
+        if (renderedTrack.length < 2) {
             return null;
         }
 
-        return track.map(({ lon, lat }) => [lon, lat]);
-    }, [selectedFlight?.track]);
+        return renderedTrack.map(({ lon, lat }) => [lon, lat]);
+    }, [renderedTrack]);
 
     /** Одиночный самолетик. */
     const renderFlight = useCallback(
