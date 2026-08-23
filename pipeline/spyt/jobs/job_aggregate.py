@@ -1,5 +1,6 @@
 import argparse
 import time
+import logging
 
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import (
@@ -14,12 +15,16 @@ from pyspark.sql.functions import (
     trim,
     when,
 )
-from pyspark.sql.functions import (
-    max as spark_max,
+from pyspark.sql.functions import max as spark_max
+from pyspark.sql.functions import min as spark_min  # ← добавлено!
+from pyspark.sql.functions import sum as spark_sum
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
-from pyspark.sql.functions import (
-    sum as spark_sum,
-)
+logger = logging.getLogger(__name__)
 
 
 def parse_arguments():
@@ -58,7 +63,7 @@ def validate_parameters(computed_at, top_limit, window_seconds, position_freshne
 def filter_time_window(dataframe, timestamp_column, end_ts, window_seconds):
     start_ts = end_ts - window_seconds
     return dataframe.filter(
-        col(timestamp_column).isNotNull() & col(timestamp_column).between(start_ts, end_ts)
+        col(timestamp_column).isNotNull() & (col(timestamp_column) > start_ts)
     )
 
 
@@ -84,7 +89,6 @@ def filter_valid_events(events):
 
 
 def filter_valid_dashboard_segments(segments):
-    """Keep only completed routes between two different known airports."""
     return segments.filter(
         col("flight_id").isNotNull()
         & col("departure_icao").isNotNull()
@@ -121,6 +125,13 @@ def build_totals(
         computed_at,
         position_freshness_seconds,
     )
+    
+    fresh_count = fresh_positions.count()
+    logger.info(f"Fresh positions count: {fresh_count}")
+    if fresh_count > 0:
+        max_ts = fresh_positions.agg(spark_max("time_position")).first()[0]
+        logger.info(f"Fresh positions max time_position: {max_ts}")
+    
     recent_events = filter_valid_events(
         filter_time_window(events, "event_ts", computed_at, window_seconds)
     )
@@ -278,9 +289,6 @@ def append(dataframe, path):
 def materialize_positions_snapshot(positions):
     snapshot = positions.cache()
     try:
-        # YTsaurus dynamic tables can change between Spark actions. Materialize the
-        # complete current-position relation before choosing computed_at so that a
-        # later streaming overwrite cannot turn its rows into "future" positions.
         snapshot.count()
         latest_position_ts = snapshot.agg(
             spark_max("time_position").alias("latest_position_ts")
@@ -294,22 +302,46 @@ def materialize_positions_snapshot(positions):
 def choose_computed_at(requested_computed_at, latest_position_ts, now_ts):
     if requested_computed_at is not None:
         return requested_computed_at
-    # A source timestamp can be slightly ahead of the driver's clock. Advancing
-    # computed_at to the newest row keeps every row of the frozen snapshot eligible.
     return max(now_ts, latest_position_ts or 0)
 
 
 def run(args, spark):
+    logger.info("=" * 60)
+    logger.info("Starting job_aggregate")
+    
     positions = spark.read.format("yt").option("path", args.positions_current).load()
     positions_snapshot = None
     totals = None
+    
     try:
+        total_positions = positions.count()
+        logger.info(f"positions_current total rows: {total_positions}")
+        
+        if total_positions > 0:
+            max_ts = positions.agg(spark_max("time_position")).first()[0]
+            logger.info(f"positions_current max time_position: {max_ts}")
+            # Убираем spark_min, оставляем только max
+        else:
+            logger.warning("positions_current is EMPTY!")
+        
         positions_snapshot, latest_position_ts = materialize_positions_snapshot(positions)
+        now_ts = int(time.time())
+        
+        logger.info(f"latest_position_ts: {latest_position_ts}")
+        logger.info(f"now_ts: {now_ts}")
+        
         computed_at = choose_computed_at(
             requested_computed_at=args.computed_at,
             latest_position_ts=latest_position_ts,
-            now_ts=int(time.time()),
+            now_ts=now_ts,
         )
+        logger.info(f"computed_at: {computed_at}")
+        logger.info(f"position_freshness_seconds: {args.position_freshness_seconds}")
+        
+        if computed_at - args.position_freshness_seconds > latest_position_ts:
+            logger.warning(f"WARNING: computed_at - freshness ({computed_at - args.position_freshness_seconds}) > latest_position_ts ({latest_position_ts})")
+            logger.warning("All data may be excluded from the window!")
+        
         validate_parameters(
             computed_at=computed_at,
             top_limit=args.top_limit,
@@ -328,6 +360,16 @@ def run(args, spark):
             window_seconds=args.window_seconds,
             position_freshness_seconds=args.position_freshness_seconds,
         ).cache()
+        
+        totals_count = totals.count()
+        logger.info(f"totals rows: {totals_count}")
+        if totals_count > 0:
+            totals.show(5, truncate=False)
+            active = totals.select("active_flights").first()[0]
+            logger.info(f"active_flights: {active}")
+        else:
+            logger.warning("totals is EMPTY!")
+        
         trend = build_trend(totals)
         top_airports = build_top_airports(
             events=events,
@@ -353,6 +395,13 @@ def run(args, spark):
         overwrite(top_airports, args.dashboard_top_airports)
         overwrite(routes, args.dashboard_routes)
         overwrite(manufacturers, args.dashboard_manufacturers)
+        
+        logger.info("job_aggregate completed successfully")
+        logger.info("=" * 60)
+        
+    except Exception as e:
+        logger.error(f"job_aggregate failed: {e}")
+        raise
     finally:
         if totals is not None:
             totals.unpersist()

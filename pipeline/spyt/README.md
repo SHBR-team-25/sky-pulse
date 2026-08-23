@@ -48,10 +48,13 @@ BlockManager. Dynamic allocation с такой конфигурацией вкл
 успешного запуска в `pipeline_job_state`; это курсор по `enriched_at`, поэтому поздно
 записанные позиции не теряются из-за более старого `time_position`. Разрыв между
 соседними наблюдениями больше `MAX_TRANSITION_GAP_SECONDS` разрывает непрерывный
-трек, а provisional-взлёт подтверждается только второй airborne-точкой. Радиус поиска
+трек, а provisional-взлёт подтверждается только второй airborne-точкой. Если первая
+точка уже airborne, аэропорт вылета может быть консервативно выведен по низкой точке
+в устойчивом наборе высоты и подтверждённому удалению от аэропорта. Радиус поиска
 аэропорта, таймаут рейса, максимальный разрыв между ground/airborne-точками и задержка настраиваются
 через `AIRPORT_RADIUS_KM`, `FLIGHT_TIMEOUT_SECONDS`, `MAX_TRANSITION_GAP_SECONDS`,
-`GROUND_GLITCH_MAX_SECONDS`, `ALLOWED_LATENESS_SECONDS` и `BBOX_EXIT_MARGIN_KM`.
+`GROUND_GLITCH_MAX_SECONDS`, `ALLOWED_LATENESS_SECONDS`, `BBOX_EXIT_MARGIN_KM` и
+`INFERRED_DEPARTURE_*`.
 Границы области берутся из тех же `OPENSKY_BBOX_*`, что и ingest service. При
 `OPENSKY_SCOPE=all` границы отключаются, поэтому потерянные наблюдения получают
 причину `observation_lost`, а не `bbox_exit`.

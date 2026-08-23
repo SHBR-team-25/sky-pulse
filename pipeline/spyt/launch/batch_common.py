@@ -29,6 +29,8 @@ def submit(
     executor_memory=None,
     executor_cores=None,
     shuffle_partitions=None,
+    driver_max_failures=None,
+    try_avoid_duplicating_jobs=False,
 ):
     command = [
         "spark-submit",
@@ -49,6 +51,15 @@ def submit(
         command.extend(["--conf", f"spark.driver.memoryOverhead={driver_memory_overhead}"])
     if shuffle_partitions is not None:
         command.extend(["--conf", f"spark.sql.shuffle.partitions={shuffle_partitions}"])
+    if driver_max_failures is not None:
+        command.extend(["--conf", f"spark.ytsaurus.driver.maxFailures={driver_max_failures}"])
+    if try_avoid_duplicating_jobs:
+        command.extend(
+            [
+                "--conf",
+                "spark.ytsaurus.driver.operation.parameters={try_avoid_duplicating_jobs=true;}",
+            ]
+        )
     command.extend(
         [
             # Executors placed on the same YTsaurus exec-node still have isolated

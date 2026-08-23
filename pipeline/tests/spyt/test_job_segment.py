@@ -18,6 +18,8 @@ validate_open_state = job_segment.validate_open_state
 validate_point = job_segment.validate_point
 validate_results = job_segment.validate_results
 delete_closed_open_states = job_segment.delete_closed_open_states
+exclude_existing_segments = job_segment.exclude_existing_segments
+acquire_segment_lock = job_segment.acquire_segment_lock
 
 
 ICAO24 = "abc123"
@@ -39,6 +41,7 @@ def point(
     lat=55.0,
     lon=37.0,
     baro_altitude=1_000.0,
+    vertical_rate=0.0,
 ):
     return {
         "icao24": ICAO24,
@@ -46,7 +49,7 @@ def point(
         "lat": lat,
         "lon": lon,
         "baro_altitude": baro_altitude,
-        "vertical_rate": 0.0,
+        "vertical_rate": vertical_rate,
         "on_ground": on_ground,
         "callsign": callsign,
     }
@@ -238,6 +241,75 @@ def test_first_airborne_observation_has_unknown_departure():
     assert closed == []
     assert state["departure_icao"] is None
     assert state["departure_confidence"] is None
+
+
+def test_ice82b_airborne_track_infers_bikf_departure_after_second_point():
+    airports = [
+        {
+            "ident": "BIKF",
+            "icao_code": "BIKF",
+            "latitude_deg": 63.985,
+            "longitude_deg": -22.6056,
+        }
+    ]
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=None,
+        points=[
+            point(
+                1787483623,
+                on_ground=False,
+                callsign="ICE82B",
+                lat=63.9598,
+                lon=-22.6051,
+                baro_altitude=335.0,
+                vertical_rate=11.38,
+            ),
+            point(
+                1787483628,
+                on_ground=False,
+                callsign="ICE82B",
+                lat=63.9560,
+                lon=-22.6050,
+                baro_altitude=396.0,
+                vertical_rate=11.70,
+            ),
+        ],
+        airports=airports,
+        until_ts=1787483628,
+        timeout_seconds=1800,
+        max_transition_gap_seconds=300,
+        ground_glitch_max_seconds=60,
+        airport_radius_km=15.0,
+    )
+
+    assert closed == []
+    assert state["departure_icao"] == "BIKF"
+    assert state["departure_confidence"] <= 0.9
+    assert state["departure_distance_km"] == pytest.approx(2.8, abs=0.1)
+
+
+def test_low_airborne_track_near_airport_without_outbound_climb_stays_unknown():
+    state, closed = process_aircraft_points(
+        state=None,
+        previous_point=None,
+        points=[
+            point(100, on_ground=False, lat=55.01, baro_altitude=300.0, vertical_rate=3.0),
+            point(110, on_ground=False, lat=55.009, baro_altitude=305.0, vertical_rate=0.5),
+        ],
+        airports=AIRPORTS,
+        until_ts=110,
+        timeout_seconds=50,
+        max_transition_gap_seconds=30,
+        ground_glitch_max_seconds=15,
+        airport_radius_km=15.0,
+    )
+
+    assert closed == []
+    assert state["point_count"] == 2
+    assert state["departure_icao"] is None
+    assert state["departure_confidence"] is None
+    assert state["departure_distance_km"] is None
 
 
 def test_single_airborne_candidate_is_discarded_on_timeout():
@@ -611,6 +683,95 @@ def test_no_delete_request_when_all_open_states_remain():
         {"aaa111"},
         {"aaa111": {"icao24": "aaa111"}},
     )
+
+
+def test_segment_lock_uses_waitable_exclusive_transaction():
+    class Transaction:
+        def __init__(self, calls, **kwargs):
+            calls.append(("transaction", kwargs))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+
+        def create(self, node_type, path, **kwargs):
+            self.calls.append(("create", node_type, path, kwargs))
+
+        def Transaction(self, **kwargs):
+            return Transaction(self.calls, **kwargs)
+
+        def lock(self, path, **kwargs):
+            self.calls.append(("lock", path, kwargs))
+
+    client = Client()
+    with acquire_segment_lock(client, "//home/team/pipeline_job_state", wait_for_ms=1234):
+        client.calls.append(("body",))
+
+    assert client.calls == [
+        (
+            "create",
+            "map_node",
+            "//home/team/job_segment_lock",
+            {"recursive": True, "ignore_existing": True},
+        ),
+        ("transaction", {"timeout": 60_000}),
+        (
+            "lock",
+            "//home/team/job_segment_lock",
+            {"mode": "exclusive", "waitable": True, "wait_for": 1234},
+        ),
+        ("body",),
+    ]
+
+
+def test_existing_completed_segment_is_not_overwritten(monkeypatch):
+    class Column:
+        def isin(self, values):
+            assert values == ["already-saved", "new-flight"]
+            return self
+
+    monkeypatch.setattr(job_segment, "col", lambda name: Column())
+
+    class Row(dict):
+        pass
+
+    class Frame:
+        def select(self, *args):
+            return self
+
+        def filter(self, *args):
+            return self
+
+        def collect(self):
+            return [Row(flight_id="already-saved")]
+
+    class Reader:
+        def format(self, *args):
+            return self
+
+        def option(self, *args):
+            return self
+
+        def load(self):
+            return Frame()
+
+    class Spark:
+        read = Reader()
+
+    segments = [
+        {"flight_id": "already-saved", "end_ts": 100},
+        {"flight_id": "new-flight", "end_ts": 200},
+    ]
+
+    assert exclude_existing_segments(Spark(), segments, "//flights_segments") == [
+        {"flight_id": "new-flight", "end_ts": 200}
+    ]
 
 
 def test_antipodal_distance_is_finite():

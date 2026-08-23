@@ -1,4 +1,5 @@
 import argparse
+from contextlib import contextmanager
 import hashlib
 import math
 import os
@@ -19,6 +20,10 @@ def parse_arguments():
     parser.add_argument("--job-state", required=True)
     parser.add_argument("--proxy", default=os.getenv("YT_PROXY"))
     parser.add_argument("--airport-radius-km", type=float, default=15.0)
+    parser.add_argument("--inferred-departure-radius-km", type=float, default=5.0)
+    parser.add_argument("--inferred-departure-max-altitude-m", type=float, default=1000.0)
+    parser.add_argument("--inferred-departure-min-climb-ms", type=float, default=2.0)
+    parser.add_argument("--inferred-departure-min-distance-growth-km", type=float, default=0.2)
     parser.add_argument("--timeout-seconds", type=int, default=1800)
     parser.add_argument("--max-transition-gap-seconds", type=int, default=300)
     parser.add_argument("--ground-glitch-max-seconds", type=int, default=60)
@@ -55,6 +60,26 @@ def create_yt_client(proxy):
     )
 
 
+def segment_lock_path(job_state_path):
+    parent = job_state_path.rsplit("/", 1)[0]
+    return f"{parent}/job_segment_lock"
+
+
+@contextmanager
+def acquire_segment_lock(client, job_state_path, wait_for_ms=4 * 60 * 60 * 1000):
+    """Serialize segment drivers with a crash-safe transactional Cypress lock."""
+    lock_path = segment_lock_path(job_state_path)
+    client.create("map_node", lock_path, recursive=True, ignore_existing=True)
+    with client.Transaction(timeout=60_000):
+        client.lock(
+            lock_path,
+            mode="exclusive",
+            waitable=True,
+            wait_for=wait_for_ms,
+        )
+        yield
+
+
 def validate_parameters(
     airport_radius_km,
     timeout_seconds,
@@ -63,6 +88,10 @@ def validate_parameters(
     allowed_lateness_seconds,
     bbox=None,
     bbox_exit_margin_km=25.0,
+    inferred_departure_radius_km=5.0,
+    inferred_departure_max_altitude_m=1000.0,
+    inferred_departure_min_climb_ms=2.0,
+    inferred_departure_min_distance_growth_km=0.2,
 ):
     if not math.isfinite(airport_radius_km) or airport_radius_km <= 0:
         raise ValueError("airport_radius_km must be a positive finite number")
@@ -88,6 +117,18 @@ def validate_parameters(
             raise ValueError("bbox longitude bounds are invalid")
     if not math.isfinite(bbox_exit_margin_km) or bbox_exit_margin_km < 0:
         raise ValueError("bbox_exit_margin_km must be non-negative and finite")
+    positive_finite = (
+        ("inferred_departure_radius_km", inferred_departure_radius_km),
+        ("inferred_departure_max_altitude_m", inferred_departure_max_altitude_m),
+        ("inferred_departure_min_climb_ms", inferred_departure_min_climb_ms),
+        (
+            "inferred_departure_min_distance_growth_km",
+            inferred_departure_min_distance_growth_km,
+        ),
+    )
+    for name, value in positive_finite:
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError(f"{name} must be a positive finite number")
 
 
 def flight_id(icao24, start_ts):
@@ -134,6 +175,50 @@ def nearest_airport(lat, lon, airports, radius_km):
         return None, None, None
     distance, code = min(candidates)
     return code, max(0.0, 1.0 - distance / radius_km), distance
+
+
+def inferred_departure(
+    state,
+    point,
+    airports,
+    radius_km,
+    max_altitude_m,
+    min_climb_ms,
+    min_distance_growth_km,
+):
+    """Infer takeoff only from two consecutive, climbing outbound observations."""
+    first_altitude = state["last_baro_altitude"]
+    first_climb = state["last_vertical_rate"]
+    second_altitude = point["baro_altitude"]
+    second_climb = point["vertical_rate"]
+    values = (first_altitude, first_climb, second_altitude, second_climb)
+    if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in values):
+        return None, None, None
+    if (
+        first_altitude > max_altitude_m
+        or first_climb < min_climb_ms
+        or second_altitude <= first_altitude
+        or second_climb < min_climb_ms
+    ):
+        return None, None, None
+
+    code, confidence, first_distance = nearest_airport(
+        state["last_lat"], state["last_lon"], airports, radius_km
+    )
+    if code is None:
+        return None, None, None
+    matching_airports = [
+        airport
+        for airport in airports
+        if (airport["icao_code"] or airport["ident"]) == code
+    ]
+    second_distance = min(
+        distance_km(point["lat"], point["lon"], airport["latitude_deg"], airport["longitude_deg"])
+        for airport in matching_airports
+    )
+    if second_distance - first_distance < min_distance_growth_km:
+        return None, None, None
+    return code, min(confidence, 0.9), first_distance
 
 
 def normalize_callsign(value):
@@ -390,6 +475,25 @@ def write_rows(spark, rows, target_path):
     )
 
 
+def exclude_existing_segments(spark, segments, target_path):
+    """Keep a completed flight immutable across retries and stale replays."""
+    if not segments:
+        return []
+    candidate_ids = sorted({segment["flight_id"] for segment in segments})
+    existing_ids = {
+        row["flight_id"]
+        for row in (
+            spark.read.format("yt")
+            .option("path", target_path)
+            .load()
+            .select("flight_id")
+            .filter(col("flight_id").isin(candidate_ids))
+            .collect()
+        )
+    }
+    return [segment for segment in segments if segment["flight_id"] not in existing_ids]
+
+
 def delete_closed_open_states(client, target_path, original_keys, states):
     keys_to_delete = sorted(set(original_keys) - set(states))
     if keys_to_delete:
@@ -412,6 +516,10 @@ def process_aircraft_points(
     airport_radius_km,
     bbox=(45.0, 5.0, 55.0, 25.0),
     bbox_exit_margin_km=25.0,
+    inferred_departure_radius_km=5.0,
+    inferred_departure_max_altitude_m=1000.0,
+    inferred_departure_min_climb_ms=2.0,
+    inferred_departure_min_distance_growth_km=0.2,
 ):
     closed = []
     if state:
@@ -493,6 +601,22 @@ def process_aircraft_points(
                 )
                 state = None
             else:
+                if state["point_count"] == 1 and state["departure_icao"] is None:
+                    departure = inferred_departure(
+                        state,
+                        point,
+                        airports,
+                        inferred_departure_radius_km,
+                        inferred_departure_max_altitude_m,
+                        inferred_departure_min_climb_ms,
+                        inferred_departure_min_distance_growth_km,
+                    )
+                    if departure[0] is not None:
+                        (
+                            state["departure_icao"],
+                            state["departure_confidence"],
+                            state["departure_distance_km"],
+                        ) = departure
                 update_open(state, point)
 
         if state is None and not point["on_ground"]:
@@ -543,7 +667,7 @@ def process_aircraft_points(
     return state, closed
 
 
-def run(args, spark):
+def run_locked(args, spark, client):
     validate_parameters(
         airport_radius_km=args.airport_radius_km,
         timeout_seconds=args.timeout_seconds,
@@ -556,6 +680,12 @@ def run(args, spark):
             else (args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax)
         ),
         bbox_exit_margin_km=args.bbox_exit_margin_km,
+        inferred_departure_radius_km=args.inferred_departure_radius_km,
+        inferred_departure_max_altitude_m=args.inferred_departure_max_altitude_m,
+        inferred_departure_min_climb_ms=args.inferred_departure_min_climb_ms,
+        inferred_departure_min_distance_growth_km=(
+            args.inferred_departure_min_distance_growth_km
+        ),
     )
     until_ts = (
         args.until_ts
@@ -564,8 +694,12 @@ def run(args, spark):
     )
 
     watermark = load_watermark(spark, args.job_state)
-    if until_ts < watermark:
-        raise ValueError(f"until_ts ({until_ts}) must not be less than watermark ({watermark})")
+    if watermark >= until_ts:
+        print(
+            f"job_segment batch through {until_ts} is already complete "
+            f"(current watermark: {watermark}); nothing to do"
+        )
+        return
 
     history = spark.read.format("yt").option("path", args.positions_history).load()
     # The cursor follows when streaming made a row visible, not its OpenSky event
@@ -637,6 +771,12 @@ def run(args, spark):
                 else (args.bbox_lamin, args.bbox_lomin, args.bbox_lamax, args.bbox_lomax)
             ),
             bbox_exit_margin_km=args.bbox_exit_margin_km,
+            inferred_departure_radius_km=args.inferred_departure_radius_km,
+            inferred_departure_max_altitude_m=args.inferred_departure_max_altitude_m,
+            inferred_departure_min_climb_ms=args.inferred_departure_min_climb_ms,
+            inferred_departure_min_distance_growth_km=(
+                args.inferred_departure_min_distance_growth_km
+            ),
         )
         closed.extend(newly_closed)
 
@@ -670,6 +810,8 @@ def run(args, spark):
 
     validate_results(states, closed)
     ensure_watermark_unchanged(spark, args.job_state, watermark)
+
+    closed = exclude_existing_segments(spark, closed, args.flights_segments)
 
     # Сохраняем закрытые рейсы в flights_segments
     write_rows(spark, closed, args.flights_segments)
@@ -709,7 +851,7 @@ def run(args, spark):
 
     if original_open_keys - set(states):
         delete_closed_open_states(
-            create_yt_client(args.proxy),
+            client,
             args.flights_open,
             original_open_keys,
             states,
@@ -732,6 +874,12 @@ def run(args, spark):
         .mode("append")
         .save()
     )
+
+
+def run(args, spark):
+    client = create_yt_client(args.proxy)
+    with acquire_segment_lock(client, args.job_state):
+        run_locked(args, spark, client)
 
 
 def main():

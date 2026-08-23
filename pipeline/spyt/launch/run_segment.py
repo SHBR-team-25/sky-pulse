@@ -27,6 +27,11 @@ def run_job(args):
         print(f"Uploading job file to yt://{job_path}")
         upload_job_file(proxy, token, job_path, LOCAL_JOB_PATH)
 
+    # A physical driver retry must process exactly the same logical batch.  If
+    # every driver derives this boundary from its own wall clock, retries can
+    # race while reading and advancing different watermark ranges.
+    until_ts = int(time.time()) - args.allowed_lateness_seconds
+
     arguments = [
         "--positions-history",
         PATHS["positions_history"],
@@ -44,6 +49,14 @@ def run_job(args):
         proxy,
         "--airport-radius-km",
         str(args.airport_radius_km),
+        "--inferred-departure-radius-km",
+        str(args.inferred_departure_radius_km),
+        "--inferred-departure-max-altitude-m",
+        str(args.inferred_departure_max_altitude_m),
+        "--inferred-departure-min-climb-ms",
+        str(args.inferred_departure_min_climb_ms),
+        "--inferred-departure-min-distance-growth-km",
+        str(args.inferred_departure_min_distance_growth_km),
         "--timeout-seconds",
         str(args.timeout_seconds),
         "--max-transition-gap-seconds",
@@ -52,6 +65,8 @@ def run_job(args):
         str(args.ground_glitch_max_seconds),
         "--allowed-lateness-seconds",
         str(args.allowed_lateness_seconds),
+        "--until-ts",
+        str(until_ts),
         "--observation-scope",
         args.observation_scope,
         "--bbox-lamin",
@@ -78,6 +93,8 @@ def run_job(args):
         executor_memory=args.executor_memory,
         executor_cores=args.executor_cores,
         shuffle_partitions=args.shuffle_partitions,
+        driver_max_failures=1,
+        try_avoid_duplicating_jobs=True,
     )
 
 
@@ -108,6 +125,26 @@ def main():
         "--timeout-seconds",
         type=int,
         default=SEGMENT_CONFIG["flight_timeout_seconds"],
+    )
+    parser.add_argument(
+        "--inferred-departure-radius-km",
+        type=float,
+        default=SEGMENT_CONFIG["inferred_departure_radius_km"],
+    )
+    parser.add_argument(
+        "--inferred-departure-max-altitude-m",
+        type=float,
+        default=SEGMENT_CONFIG["inferred_departure_max_altitude_m"],
+    )
+    parser.add_argument(
+        "--inferred-departure-min-climb-ms",
+        type=float,
+        default=SEGMENT_CONFIG["inferred_departure_min_climb_ms"],
+    )
+    parser.add_argument(
+        "--inferred-departure-min-distance-growth-km",
+        type=float,
+        default=SEGMENT_CONFIG["inferred_departure_min_distance_growth_km"],
     )
     parser.add_argument(
         "--max-transition-gap-seconds",

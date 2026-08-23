@@ -22,6 +22,16 @@ SEGMENT_CONFIG = {
     "opensky_scope": os.getenv("OPENSKY_SCOPE", "bbox").strip().lower(),
     "interval_seconds": int(os.getenv("SEGMENT_INTERVAL_SECONDS", 900)),
     "airport_radius_km": float(os.getenv("AIRPORT_RADIUS_KM", 15.0)),
+    "inferred_departure_radius_km": float(os.getenv("INFERRED_DEPARTURE_RADIUS_KM", 5.0)),
+    "inferred_departure_max_altitude_m": float(
+        os.getenv("INFERRED_DEPARTURE_MAX_ALTITUDE_M", 1000.0)
+    ),
+    "inferred_departure_min_climb_ms": float(
+        os.getenv("INFERRED_DEPARTURE_MIN_CLIMB_MS", 2.0)
+    ),
+    "inferred_departure_min_distance_growth_km": float(
+        os.getenv("INFERRED_DEPARTURE_MIN_DISTANCE_GROWTH_KM", 0.2)
+    ),
     "flight_timeout_seconds": int(os.getenv("FLIGHT_TIMEOUT_SECONDS", 1800)),
     "max_transition_gap_seconds": int(os.getenv("MAX_TRANSITION_GAP_SECONDS", 300)),
     "ground_glitch_max_seconds": int(os.getenv("GROUND_GLITCH_MAX_SECONDS", 60)),

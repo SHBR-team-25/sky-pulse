@@ -23,6 +23,8 @@ def test_batch_submit_uses_executor_block_manager_shuffle(monkeypatch):
         2,
         "yt:///lib/deps.zip",
         "/usr/bin/python3.11",
+        driver_max_failures=1,
+        try_avoid_duplicating_jobs=True,
     )
 
     command = submitted["command"]
@@ -30,3 +32,5 @@ def test_batch_submit_uses_executor_block_manager_shuffle(monkeypatch):
     assert "spark.ytsaurus.shuffle.enabled=false" in command
     assert "spark.shuffle.service.enabled=false" in command
     assert "spark.shuffle.readHostLocalDisk=false" in command
+    assert "spark.ytsaurus.driver.maxFailures=1" in command
+    assert "spark.ytsaurus.driver.operation.parameters={try_avoid_duplicating_jobs=true;}" in command
