@@ -29,7 +29,7 @@ skypulse:
     # Без таймаутов зависший прокси держит поток Tomcat вечно: несколько минут
     # поллинга карты — и свободных потоков не остаётся вообще.
     connect-timeout-seconds: ${YT_CONNECT_TIMEOUT_SECONDS:3}
-    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:20}
+    read-timeout-seconds: ${YT_READ_TIMEOUT_SECONDS:10}
     positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/hackathon/team25/positions/positions_current}
     positions-history-path: ${YT_POSITIONS_HISTORY_PATH://home/hackathon/team25/positions/positions_history}
     pipeline-job-state-path: ${YT_PIPELINE_JOB_STATE_PATH://home/hackathon/team25/system/pipeline_job_state}
