@@ -150,7 +150,7 @@
 │       │   index.ts                                 # публичный API фичи
 │       │
 │       ├───api
-│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} и /track параллельно, таймаут 5 с, без ретраев
+│       │       useTargetFlight.ts                   # хук GET /flights/{icao24} и /track параллельно с keepPreviousData, таймаутом 5 с и без ретраев
 │       │
 │       └───model
 │               types.ts                             # тип TargetFlight: борт плюс точки трека
@@ -275,7 +275,7 @@
         │
         ├───model
         │       flightIconRotation.ts                # поворот иконки самолёта по trueTrack с поправкой на наклон 45°
-        │       useFlightDetails.ts                  # выбор борта на карте поверх useTargetFlight: позиция плюс трек
+        │       useFlightDetails.ts                  # разделяет открытый поповер и активный трек борта, возвращая renderedTrack
         │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
