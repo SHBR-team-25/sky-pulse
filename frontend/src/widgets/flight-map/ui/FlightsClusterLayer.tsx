@@ -22,7 +22,7 @@ import styles from './FlightsClusterLayer.module.css';
 const CLUSTER_SOURCE = 'clustered-flights';
 
 /** Расстояние в пикселях, на котором маркеры начинают схлопываться. */
-const CLUSTER_GRID_SIZE = 64;
+const CLUSTER_GRID_SIZE = 128;
 
 const FLIGHT_PATH_STYLE: DrawingStyle = {
     zIndex: 100,
