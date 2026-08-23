@@ -3,6 +3,7 @@ import type { Flight, TrackPoint } from '@/entities/flight';
 import { useTargetFlight } from '@/features/getTargetFlight';
 
 const EMPTY_TRACK: TrackPoint[] = [];
+const FLIGHT_DETAILS_POLL_INTERVAL_MS = 5_000;
 
 interface SelectedFlight {
     flightId: string;
@@ -14,7 +15,9 @@ export function useFlightDetails() {
     const [activeFlightId, setActiveFlightId] = useState<string | null>(null); // id рейса чью траекторию показываем
     const [openFlightId, setOpenFlightId] = useState<string | null>(null); // id рейса чьи данные для поповера показываем
 
-    const { data, isPending, isPlaceholderData } = useTargetFlight(activeFlightId ?? undefined);
+    const { data, isPending, isPlaceholderData } = useTargetFlight(activeFlightId ?? undefined, {
+        refetchInterval: FLIGHT_DETAILS_POLL_INTERVAL_MS,
+    });
 
     const handleDetailsOpenChange = useCallback((flightId: string, open: boolean) => {
         if (open) {
