@@ -85,7 +85,6 @@
     place-items: center;
 }
 
-/* Маркеры на карте центрируются по координате через translate(-50%, -50%) - в потоке легенды этот сдвиг лишний. */
 .legend .legendIcon > * {
     transform: none;
 }

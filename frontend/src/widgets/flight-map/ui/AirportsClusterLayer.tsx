@@ -17,7 +17,7 @@ import { AirportClusterMarker, AirportMarker, type Airport } from '@/entities/ai
 const CLUSTER_SOURCE = 'clustered-airports';
 
 /** Расстояние в пикселях, на котором маркеры начинают схлопываться. */
-const CLUSTER_GRID_SIZE = 64;
+const CLUSTER_GRID_SIZE = 128;
 
 interface AirportsClusterLayerProps {
     airports: Airport[];

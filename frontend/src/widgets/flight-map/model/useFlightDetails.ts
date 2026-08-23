@@ -28,6 +28,16 @@ export function useFlightDetails() {
         });
     }, []);
 
+    const clearSelection = useCallback(() => {
+        setActiveFlightId(null);
+        setOpenFlightId(null);
+    }, []);
+
+    const renderedTrack = useMemo(
+        () => (activeFlightId ? (data?.track ?? EMPTY_TRACK) : EMPTY_TRACK),
+        [activeFlightId, data]
+    );
+
     const selectedFlight = useMemo<SelectedFlight | null>(
         () =>
             openFlightId
@@ -42,7 +52,8 @@ export function useFlightDetails() {
 
     return {
         selectedFlight,
-        renderedTrack: data?.track ?? EMPTY_TRACK,
+        renderedTrack,
         handleDetailsOpenChange,
+        clearSelection,
     };
 }

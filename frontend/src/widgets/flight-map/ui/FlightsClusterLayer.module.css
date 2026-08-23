@@ -1,0 +1,18 @@
+.hidePathButton.hidePathButton {
+    color: var(--sky-color-text-secondary);
+    background: var(--sky-color-surface-control);
+    border: 1px solid var(--sky-color-border-control);
+    border-radius: 9px;
+    box-shadow: 0 2px 8px var(--sky-color-shadow);
+    backdrop-filter: blur(8px);
+    transition:
+        color 0.15s ease,
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.hidePathButton.hidePathButton:hover {
+    color: var(--sky-color-text-primary);
+    background: var(--sky-color-surface-selected);
+    border-color: var(--sky-color-border-strong);
+}
