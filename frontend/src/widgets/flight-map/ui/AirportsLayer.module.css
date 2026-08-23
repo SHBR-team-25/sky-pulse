@@ -78,6 +78,21 @@
     content: '';
 }
 
+:global(.g-root_theme_light) .airportClusterMarker,
+:global(.g-root_theme_light-hc) .airportClusterMarker {
+    color: var(--sky-color-status-warning);
+    background: var(--sky-color-surface-header);
+    border-color: var(--sky-color-status-warning);
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow),
+        0 0 14px var(--sky-color-warning-glow-soft);
+}
+
+:global(.g-root_theme_light) .airportClusterMarker::after,
+:global(.g-root_theme_light-hc) .airportClusterMarker::after {
+    border-color: var(--sky-color-border-control);
+}
+
 @media (--touch-device) {
     .airportMarker {
         width: 28px;

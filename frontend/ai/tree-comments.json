@@ -1,5 +1,6 @@
 {
     "shared/hooks/useMediaQuery.ts": "responsive CSS media query hook",
+    "widgets/flight-map/ui/mapCustomization.ts": "shared typed map-scheme customization for light and dark themes",
     "main.tsx": "точка входа: монтирует App в DOM",
     "vite-env.d.ts": "типы Vite и переменных окружения (import.meta.env)",
 

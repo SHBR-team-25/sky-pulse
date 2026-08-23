@@ -26,6 +26,7 @@ import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
 import type { Flight } from '@/entities/flight';
 import { FlightsClusterLayer } from './FlightsClusterLayer';
+import { mapCustomizationByTheme } from './mapCustomization';
 
 interface FlightMapProps {
     // Читается только при инициализации
@@ -72,7 +73,7 @@ export function FlightMap({
                 zoomRange={MAP_ZOOM_RANGE}
                 zoomRounding="smooth"
             >
-                <YMapDefaultSchemeLayer />
+                <YMapDefaultSchemeLayer customization={mapCustomizationByTheme[theme]} />
                 <YMapDefaultFeaturesLayer />
                 <YMapListener onUpdate={handleMapUpdate} />
                 <AirportsClusterLayer airports={airports} />
