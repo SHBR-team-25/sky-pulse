@@ -17,7 +17,6 @@ class CachedDashboardRepositoryTest {
     private final AtomicInteger reads = new AtomicInteger();
     private final AtomicReference<DashboardSnapshot> ytAnswer = new AtomicReference<>();
 
-    /** null в ответе YT означает сбой источника: так ведёт себя чтение упавшей таблицы. */
     private final DashboardRepository yt = () -> {
         reads.incrementAndGet();
         DashboardSnapshot answer = ytAnswer.get();
@@ -37,7 +36,6 @@ class CachedDashboardRepositoryTest {
                 List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), 0);
     }
 
-    // Ради этого кэш и заводился: запрос клиента не должен ходить в YT вообще.
     @Test
     void servesSnapshotWithoutTouchingYt() {
         ytAnswer.set(snapshot(1787132036L));
@@ -73,7 +71,6 @@ class CachedDashboardRepositoryTest {
         assertThat(repository.latest().computedAt()).isEqualTo(1787132336L);
     }
 
-    // Пока джоба не отработала, отдавать нечего — только 503.
     @Test
     void failsUntilFirstSuccessfulRefresh() {
         assertThatThrownBy(repository::latest).isInstanceOf(DataSourceUnavailableException.class);

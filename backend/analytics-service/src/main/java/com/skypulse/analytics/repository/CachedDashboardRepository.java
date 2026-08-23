@@ -12,11 +12,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 
-/**
- * Витрины пересчитывает SPYT-джоба раз в несколько минут, поэтому запрос клиента отдаётся
- * из памяти, а в YT ходит только фоновое обновление: под нагрузкой чтение dashboard_* упиралось
- * в таймаут YT и превращалось в 503 (docs/load-testing.md).
- */
 @Repository
 @Primary
 public class CachedDashboardRepository implements DashboardRepository {
@@ -40,7 +35,6 @@ public class CachedDashboardRepository implements DashboardRepository {
         return cached;
     }
 
-    /** fixedDelay, а не fixedRate: медленное чтение не должно накладываться само на себя. */
     @Scheduled(fixedDelayString = "${skypulse.yt.dashboard-refresh-seconds}", timeUnit = TimeUnit.SECONDS)
     void refresh() {
         long startedAt = System.currentTimeMillis();
@@ -50,7 +44,6 @@ public class CachedDashboardRepository implements DashboardRepository {
             LOG.debug("Витрины дашборда обновлены за {} мс, поколение {}",
                     System.currentTimeMillis() - startedAt, snapshot.computedAt());
         } catch (DataSourceUnavailableException | DataSourceRejectedException e) {
-            // Устаревший снапшот честнее 503: джоба всё равно пересчитывает витрины раз в пять минут.
             LOG.warn("Витрины дашборда не прочитаны, остаётся прежний снапшот", e);
         }
     }
