@@ -6,6 +6,8 @@ import {
     YMapClusterer,
     YMapFeature,
     YMapFeatureDataSource,
+    YMapControl,
+    YMapControls,
     YMapLayer,
     YMapMarker,
 } from '@/shared/lib/ymaps3';
@@ -13,6 +15,9 @@ import {
 import { FlightDetails } from './FlightDetails';
 import { useFlightDetails } from '../model/useFlightDetails';
 import { FlightClusterMarker, FlightMarker, type Flight } from '@/entities/flight';
+import { Button, Icon } from '@gravity-ui/uikit';
+import { Xmark } from '@gravity-ui/icons';
+import styles from './FlightsClusterLayer.module.css';
 
 const CLUSTER_SOURCE = 'clustered-flights';
 
@@ -31,7 +36,8 @@ interface FlightsClusterLayerProps {
 export const FlightsClusterLayer = memo(function FlightsClusterLayer({
     flights,
 }: FlightsClusterLayerProps) {
-    const { selectedFlight, renderedTrack, handleDetailsOpenChange } = useFlightDetails();
+    const { selectedFlight, renderedTrack, handleDetailsOpenChange, clearSelection } =
+        useFlightDetails();
 
     const flightsById = useMemo(
         () => new Map(flights.map((flight) => [flight.icao24, flight])),
@@ -101,10 +107,27 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
     return (
         <>
             {selectedPathCoordinates && (
-                <YMapFeature
-                    geometry={{ type: 'LineString', coordinates: selectedPathCoordinates }}
-                    style={FLIGHT_PATH_STYLE}
-                />
+                <>
+                    <YMapControls position="top left">
+                        <YMapControl transparent>
+                            <Button
+                                view="outlined"
+                                onClick={clearSelection}
+                                className={styles.hidePathButton}
+                            >
+                                Скрыть путь самолёта
+                                <Button.Icon>
+                                    <Icon data={Xmark} size={16} />
+                                </Button.Icon>
+                            </Button>
+                        </YMapControl>
+                    </YMapControls>
+
+                    <YMapFeature
+                        geometry={{ type: 'LineString', coordinates: selectedPathCoordinates }}
+                        style={FLIGHT_PATH_STYLE}
+                    />
+                </>
             )}
 
             <YMapFeatureDataSource id={CLUSTER_SOURCE} />

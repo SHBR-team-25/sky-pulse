@@ -17,6 +17,7 @@ export const {
     YMapListener,
     YMapMarker,
     YMapControls,
+    YMapControl,
 } = reactify.module(ymaps3);
 
 export const { YMapClusterer } = reactify.module(ymaps3Clusterer);

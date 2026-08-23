@@ -14,7 +14,7 @@ export type DashboardDataWithAirports = DashboardData & {
 export function dashboardDataQueryOptions() {
     return queryOptions({
         queryKey: dashboardDataQueryKeys.stats(),
-        queryFn: async ({ signal }): Promise<DashboardDataWithAirports> => {
+        queryFn: async ({ client, queryKey, signal }): Promise<DashboardDataWithAirports> => {
             const [dashboard, airports] = await Promise.allSettled([
                 fetchJson<DashboardData>('/stats/dashboard', { signal }),
                 fetchJson<AirportsTraffic>('/stats/airports', { signal }),
@@ -24,12 +24,19 @@ export function dashboardDataQueryOptions() {
                 throw dashboard.reason;
             }
 
+            const previous = client.getQueryData<DashboardDataWithAirports>(queryKey);
+
             return {
                 ...dashboard.value,
-                airportsTraffic: airports.status === 'fulfilled' ? airports.value : null,
+                airportsTraffic:
+                    airports.status === 'fulfilled'
+                        ? airports.value
+                        : (previous?.airportsTraffic ?? null),
             };
         },
         refetchInterval: 120_000,
+        refetchIntervalInBackground: false,
+        refetchOnWindowFocus: true,
     });
 }
 

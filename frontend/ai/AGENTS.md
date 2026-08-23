@@ -150,7 +150,7 @@
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
 │   │   ├───api
-│   │   │       useDashboardData.ts                  # useSuspenseQuery и queryOptions GET /stats/dashboard — ручка без параметров
+│   │   │       useDashboardData.ts                  # useSuspenseQuery GET /stats/dashboard и /stats/airports, рефетч раз в 2 минуты
 │   │   │
 │   │   └───lib
 │   │           dashboardRange.ts                    # заготовка диапазона дат from/to в unix-секундах — ручка окно не принимает
@@ -304,7 +304,7 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
-        │       useFlightDetails.ts                  # разделяет открытый поповер и активный трек борта, возвращая renderedTrack
+        │       useFlightDetails.ts                  # разделяет открытый поповер и активный трек борта, даёт renderedTrack и clearSelection
         │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
@@ -312,7 +312,8 @@
             │   AirportsLayer.module.css             # стили содержимого подсказки аэропорта: код и название в две строки
             │   FlightMap.module.css                 # стили контейнера карты рейсов
             │   FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
-            │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
+            │   FlightsClusterLayer.module.css       # стили кнопки «Скрыть путь самолёта» над картой
+            │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8, трек борта и кнопка его скрытия
             │   mapCustomization.ts                  # shared typed map-scheme customization for light and dark themes
             │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера
             │   MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
