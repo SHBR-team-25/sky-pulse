@@ -39,6 +39,7 @@ skypulse:
     ref-airports-cache-ttl-seconds: ${YT_REF_AIRPORTS_CACHE_TTL_SECONDS:86400}
     # Борт, о котором давно не было позиции, скорее всего сел.
     max-position-age-seconds: ${YT_MAX_POSITION_AGE_SECONDS:300}
+    positions-refresh-seconds: ${YT_POSITIONS_REFRESH_SECONDS:5}
   pipeline:
     # Несколько пропущенных опросов подряд при интервале 15 с.
     stale-after-seconds: ${PIPELINE_STALE_AFTER_SECONDS:120}
