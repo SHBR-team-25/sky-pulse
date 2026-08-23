@@ -7,37 +7,42 @@ const EMPTY_TRACK: TrackPoint[] = [];
 interface SelectedFlight {
     flightId: string;
     flight: Flight | null;
-    track: TrackPoint[];
     isLoading: boolean;
 }
 
 export function useFlightDetails() {
-    const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
+    const [activeFlightId, setActiveFlightId] = useState<string | null>(null); // id рейса чью траекторию показываем
+    const [openFlightId, setOpenFlightId] = useState<string | null>(null); // id рейса чьи данные для поповера показываем
 
-    const { data, isPending } = useTargetFlight(selectedFlightId ?? undefined);
+    const { data, isPending, isPlaceholderData } = useTargetFlight(activeFlightId ?? undefined);
 
     const handleDetailsOpenChange = useCallback((flightId: string, open: boolean) => {
-        setSelectedFlightId((currentId) => {
-            if (open) {
-                return flightId;
-            }
+        if (open) {
+            setActiveFlightId(flightId);
+            setOpenFlightId(flightId);
+            return;
+        }
 
+        setOpenFlightId((currentId) => {
             return currentId === flightId ? null : currentId;
         });
     }, []);
 
     const selectedFlight = useMemo<SelectedFlight | null>(
         () =>
-            selectedFlightId
+            openFlightId
                 ? {
-                      flightId: selectedFlightId,
-                      flight: data?.flight ?? null,
-                      track: data?.track ?? EMPTY_TRACK,
-                      isLoading: isPending,
+                      flightId: openFlightId,
+                      flight: isPlaceholderData ? null : (data?.flight ?? null),
+                      isLoading: isPending || isPlaceholderData,
                   }
                 : null,
-        [selectedFlightId, data, isPending]
+        [openFlightId, data, isPending, isPlaceholderData]
     );
 
-    return { selectedFlight, handleDetailsOpenChange };
+    return {
+        selectedFlight,
+        renderedTrack: data?.track ?? EMPTY_TRACK,
+        handleDetailsOpenChange,
+    };
 }

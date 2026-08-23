@@ -1,5 +1,6 @@
 {
     "shared/hooks/useMediaQuery.ts": "responsive CSS media query hook",
+    "widgets/flight-map/ui/mapCustomization.ts": "shared typed map-scheme customization for light and dark themes",
     "main.tsx": "точка входа: монтирует App в DOM",
     "vite-env.d.ts": "типы Vite и переменных окружения (import.meta.env)",
 
@@ -83,7 +84,7 @@
     "features/getTargetFlight": "получение деталей выбранного рейса",
     "features/getTargetFlight/index.ts": "публичный API фичи",
     "features/getTargetFlight/api": "",
-    "features/getTargetFlight/api/useTargetFlight.ts": "хук GET /flights/{icao24} и /track параллельно, таймаут 5 с, без ретраев",
+    "features/getTargetFlight/api/useTargetFlight.ts": "хук GET /flights/{icao24} и /track параллельно с keepPreviousData, таймаутом 5 с и без ретраев",
     "features/getTargetFlight/model": "",
     "features/getTargetFlight/model/types.ts": "тип TargetFlight: борт плюс точки трека",
 
@@ -186,7 +187,7 @@
     "widgets/flight-map/index.ts": "публичный API виджета",
     "widgets/flight-map/model": "",
     "widgets/flight-map/model/flightIconRotation.ts": "поворот иконки самолёта по trueTrack с поправкой на наклон 45°",
-    "widgets/flight-map/model/useFlightDetails.ts": "выбор борта на карте поверх useTargetFlight: позиция плюс трек",
+    "widgets/flight-map/model/useFlightDetails.ts": "разделяет открытый поповер и активный трек борта, возвращая renderedTrack",
     "widgets/flight-map/model/useSelectedAirportFlights.ts": "выбранный кликом аэропорт и его лог рейсов через useAirportsFlights",
     "widgets/flight-map/ui": "",
     "widgets/flight-map/ui/AirportsClusterLayer.tsx": "кластеризация аэропортов по сетке 64 px до zoom 8",
