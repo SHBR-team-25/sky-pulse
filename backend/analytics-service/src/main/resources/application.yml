@@ -34,11 +34,11 @@ skypulse:
     # Топы стран и авиакомпаний считаются по текущим позициям: своих таблиц у них нет.
     positions-current-path: ${YT_POSITIONS_CURRENT_PATH://home/hackathon/team25/positions/positions_current}
     # Агрегаты считает SPYT-джоба, сервис только читает готовые таблицы.
-    dashboard-totals-path: ${YT_DASHBOARD_TOTALS_PATH://home/skypulse/dashboard_totals}
-    dashboard-trend-path: ${YT_DASHBOARD_TREND_PATH://home/skypulse/dashboard_trend}
-    dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/skypulse/dashboard_top_airports}
-    dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/skypulse/dashboard_routes}
-    dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}
+    dashboard-totals-path: ${YT_DASHBOARD_TOTALS_PATH://home/hackathon/team25/dashboard/dashboard_totals}
+    dashboard-trend-path: ${YT_DASHBOARD_TREND_PATH://home/hackathon/team25/dashboard/dashboard_trend}
+    dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/hackathon/team25/dashboard/dashboard_top_airports}
+    dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/hackathon/team25/dashboard/dashboard_routes}
+    dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/hackathon/team25/dashboard/dashboard_manufacturers}
     dashboard-refresh-seconds: ${YT_DASHBOARD_REFRESH_SECONDS:60}
     # Рейсы аэропортов считаются по размеченным событиям, а не по dashboard_*.
     airport-events-path: ${YT_AIRPORT_EVENTS_PATH://home/hackathon/team25/flights/airport_events}
