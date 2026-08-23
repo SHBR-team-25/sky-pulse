@@ -1,4 +1,4 @@
-@import '@/shared/config/breakpoints.css';
+@import '../../config/breakpoints.css';
 
 .clusterMarker {
     position: relative;
