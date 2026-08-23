@@ -1,4 +1,6 @@
 export { airportsMock } from './model/mock-data';
+export { AirportClusterMarker } from './ui/AirportClusterMarker/AirportClusterMarker';
+export { AirportMarker } from './ui/AirportMarker/AirportMarker';
 export { AirportTooltip } from './ui/AirportTooltip';
 export type {
     Airport,

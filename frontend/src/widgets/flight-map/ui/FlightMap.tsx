@@ -26,9 +26,9 @@ import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
 import type { Flight } from '@/entities/flight';
 import { FlightsClusterLayer } from './FlightsClusterLayer';
+import { MapLegend } from './MapLegend/MapLegend';
 
 interface FlightMapProps {
-    // Читается только при инициализации
     initialBounds: LngLatBounds;
     airports: Airport[];
     flights: Flight[];
@@ -53,7 +53,6 @@ export function FlightMap({
     const handleMapUpdate = useCallback<MapEventUpdateHandler>(
         ({ location }) => {
             setMapView({ center: location.center, zoom: location.zoom });
-            // Считаем сразу: location принадлежит карте и может переиспользоваться между кадрами
             notifyBoundsChange(toMapBoundsParams(location));
         },
         [setMapView, notifyBoundsChange]
@@ -82,6 +81,10 @@ export function FlightMap({
                     <YMapZoomControl />
                 </YMapControls>
             </YMap>
+
+            <div className={styles.legend}>
+                <MapLegend />
+            </div>
         </div>
     );
 }

@@ -65,8 +65,15 @@
 │   │   │       types.ts                             # типы аэропорта, лога рейсов и сортировки из OpenAPI
 │   │   │
 │   │   └───ui
-│   │           AirportTooltip.module.css            # стили всплывающей подсказки аэропорта
-│   │           AirportTooltip.tsx                   # подсказка аэропорта сверху с задержкой открытия 50 мс
+│   │       │   AirportTooltip.module.css            # стили всплывающей подсказки аэропорта
+│   │       │   AirportTooltip.tsx                   # подсказка аэропорта сверху с задержкой открытия 50 мс
+│   │       │
+│   │       ├───AirportClusterMarker
+│   │       │       AirportClusterMarker.tsx         # значок кластера аэропортов: MapClusterMarker в жёлтом варианте
+│   │       │
+│   │       └───AirportMarker
+│   │               AirportMarker.module.css         # стили круглой метки аэропорта: выбранное состояние, кольцо фокуса, тач-размер
+│   │               AirportMarker.tsx                # метка аэропорта с MapPin; прокидывает атрибуты и ref поповера на кнопку
 │   │
 │   ├───dashboardData                                # сущность «данные дашборда»
 │   │   │   index.ts                                 # публичный API сущности
@@ -103,8 +110,19 @@
 │   └───flight                                       # сущность «рейс»
 │       │   index.ts                                 # публичный API сущности
 │       │
-│       └───model
-│               types.ts                             # типы Flight и TrackPoint, выведенные из OpenAPI-схемы
+│       ├───lib
+│       │       flightIconRotation.ts                # поворот иконки самолёта по trueTrack с поправкой на наклон 45°
+│       │
+│       ├───model
+│       │       types.ts                             # типы Flight и TrackPoint, выведенные из OpenAPI-схемы
+│       │
+│       └───ui
+│           ├───FlightClusterMarker
+│           │       FlightClusterMarker.tsx          # значок кластера бортов: MapClusterMarker в синем варианте
+│           │
+│           └───FlightMarker
+│                   FlightMarker.module.css          # стили метки борта: подсветка открытого поповера через aria-expanded, тач-размер
+│                   FlightMarker.tsx                 # метка борта с PlaneFill, повёрнутая по курсу; decorative даёт значок без кнопки
 │
 ├───features                                         # слой фич: пользовательские сценарии получения данных
 │   ├───getAirports                                  # получение списка аэропортов
@@ -238,8 +256,12 @@
 │   │           index.ts                             # публичный API трекера страниц Метрики
 │   │           MetrikaPageTracker.tsx               # отправляет hit в Яндекс Метрику при смене маршрута кроме корневого редиректа
 │   │
-│   └───ui                                           # общие компоненты загрузки и ошибок
+│   └───ui                                           # общие компоненты загрузки, ошибок и значка кластера на карте
 │       │   index.ts                                 # публичный API shared/ui
+│       │
+│       ├───MapClusterMarker
+│       │       MapClusterMarker.module.css          # стили круглого значка кластера: варианты accent и warning, светлая тема, тач-размер
+│       │       MapClusterMarker.tsx                 # значок кластера с числом объектов; decorative убирает role=img и фокус
 │       │
 │       ├───PageLoader
 │       │       PageLoader.module.css                # стили контейнера лоадера страницы
@@ -282,17 +304,15 @@
         │   index.ts                                 # публичный API виджета
         │
         ├───model
-        │       flightIconRotation.ts                # поворот иконки самолёта по trueTrack с поправкой на наклон 45°
         │       useFlightDetails.ts                  # выбор борта на карте поверх useTargetFlight: позиция плюс трек
         │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
             │   AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 64 px до zoom 8
-            │   AirportsLayer.module.css             # стили маркеров, кластеров и подсказок аэропортов
+            │   AirportsLayer.module.css             # стили содержимого подсказки аэропорта: код и название в две строки
             │   FlightMap.module.css                 # стили контейнера карты рейсов
             │   FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
             │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8 и трек выбранного борта
-            │   FlightsLayer.module.css              # стили интерактивных маркеров рейсов и кластеров
             │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера
             │   MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс
             │
@@ -307,14 +327,18 @@
             │       AirportFlightsSection.tsx        # сортирует рейсы и фильтрует их вкладками по направлению
             │       index.ts                         # публичный API деталей аэропорта
             │
-            └───FlightDetails                        # адаптивные детали рейса в поповере или нижнем Sheet
-                    FlightDetails.module.css         # стили деталей рейса, поповера и Sheet
-                    FlightDetails.tsx                # переключает детали рейса между desktop-поповером и mobile-Sheet
-                    FlightDetailsCard.tsx            # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
-                    FlightDetailsContent.tsx         # контент деталей рейса: загрузка, отсутствие данных и карточка борта
-                    FlightDetailsPopover.tsx         # desktop-поповер деталей рейса с подсказкой маркера
-                    FlightDetailsSheet.tsx           # mobile-Sheet деталей рейса с адаптивными отступами
-                    index.ts                         # публичный API деталей рейса
+            ├───FlightDetails                        # адаптивные детали рейса в поповере или нижнем Sheet
+            │       FlightDetails.module.css         # стили деталей рейса, поповера и Sheet
+            │       FlightDetails.tsx                # переключает детали рейса между desktop-поповером и mobile-Sheet
+            │       FlightDetailsCard.tsx            # карточка борта: рейс, тип, страна, координаты, скорость, высота и курс
+            │       FlightDetailsContent.tsx         # контент деталей рейса: загрузка, отсутствие данных и карточка борта
+            │       FlightDetailsPopover.tsx         # desktop-поповер деталей рейса с подсказкой маркера
+            │       FlightDetailsSheet.tsx           # mobile-Sheet деталей рейса с адаптивными отступами
+            │       index.ts                         # публичный API деталей рейса
+            │
+            └───MapLegend                            # легенда карты в HelpMark
+                    MapLegend.module.css             # стили строк легенды и гашение центрирующего сдвига маркеров
+                    MapLegend.tsx                    # поповер-легенда: декоративные маркеры рейса, аэропорта и их кластеров с подписями
 ```
 
 <!-- TREE:END -->

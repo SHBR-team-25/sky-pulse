@@ -1,6 +1,4 @@
 import { memo, useCallback, useMemo } from 'react';
-import { MapPin } from '@gravity-ui/icons';
-import { Icon } from '@gravity-ui/uikit';
 import type { Feature } from '@yandex/ymaps3-types/packages/clusterer';
 import type { LngLat } from '@yandex/ymaps3-types';
 import {
@@ -14,7 +12,7 @@ import {
 import { AirportDetails } from './AirportDetails';
 import styles from './AirportsLayer.module.css';
 import { useSelectedAirportFlights } from '../model/useSelectedAirportFlights';
-import type { Airport } from '@/entities/airport';
+import { AirportClusterMarker, AirportMarker, type Airport } from '@/entities/airport';
 
 const CLUSTER_SOURCE = 'clustered-airports';
 
@@ -67,21 +65,7 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
                 return null;
             }
 
-            const code = airport.iata ?? airport.icao;
             const isSelected = selectedAirportIcao === airport.icao;
-            const marker = (
-                <button
-                    className={`${styles.airportMarker} ${isSelected ? styles.airportMarkerSelected : ''}`}
-                    type="button"
-                    aria-label={`Аэропорт ${airport.name}, ${code}`}
-                    aria-pressed={isSelected}
-                    onClick={() => handleDetailsOpenChange(airport.icao, true)}
-                >
-                    <span className={styles.airportMarkerIcon} aria-hidden="true">
-                        <Icon data={MapPin} size={12} />
-                    </span>
-                </button>
-            );
 
             return (
                 <YMapMarker coordinates={feature.geometry.coordinates} source={CLUSTER_SOURCE}>
@@ -93,14 +77,18 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
                         open={isSelected}
                         tooltipContent={
                             <span className={styles.airportTooltipContent}>
-                                <strong>{code}</strong>
+                                <strong>{airport.iata ?? airport.icao}</strong>
                                 <span>{airport.name}</span>
                             </span>
                         }
                         onOpenChange={handleDetailsOpenChange}
                         onRetry={handleRetry}
                     >
-                        {marker}
+                        <AirportMarker
+                            airport={airport}
+                            isSelected={isSelected}
+                            onClick={() => handleDetailsOpenChange(airport.icao, true)}
+                        />
                     </AirportDetails>
                 </YMapMarker>
             );
@@ -118,19 +106,9 @@ export const AirportsClusterLayer = memo(function AirportsClusterLayer({
 
     /** Схлопнутая группа аэропортов. */
     const renderCluster = useCallback((coordinates: LngLat, clusteredFeatures: Feature[]) => {
-        const count = clusteredFeatures.length;
-
         return (
             <YMapMarker coordinates={coordinates} source={CLUSTER_SOURCE}>
-                <div
-                    className={styles.airportClusterMarker}
-                    role="img"
-                    tabIndex={0}
-                    title={`Кластер: ${count} аэропортов`}
-                    aria-label={`Кластер из ${count} аэропортов`}
-                >
-                    {count}
-                </div>
+                <AirportClusterMarker count={clusteredFeatures.length} />
             </YMapMarker>
         );
     }, []);
