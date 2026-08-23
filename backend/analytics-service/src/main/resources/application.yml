@@ -39,6 +39,7 @@ skypulse:
     dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/hackathon/team25/dashboard/dashboard_top_airports}
     dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/hackathon/team25/dashboard/dashboard_routes}
     dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/hackathon/team25/dashboard/dashboard_manufacturers}
+    dashboard-refresh-seconds: ${YT_DASHBOARD_REFRESH_SECONDS:60}
     # Рейсы аэропортов считаются по размеченным событиям, а не по dashboard_*.
     airport-events-path: ${YT_AIRPORT_EVENTS_PATH://home/hackathon/team25/flights/airport_events}
     flights-segments-path: ${YT_FLIGHTS_SEGMENTS_PATH://home/hackathon/team25/flights/flights_segments}
