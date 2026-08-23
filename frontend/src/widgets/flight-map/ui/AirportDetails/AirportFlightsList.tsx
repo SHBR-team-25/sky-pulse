@@ -53,7 +53,6 @@ export function AirportFlightsList({ flights }: AirportFlightsListProps) {
 
                     return (
                         <div className={styles.flightRow}>
-                            {/* // FIXME: проверить как будет приходить с бека */}
                             <time dateTime={new Date(flight.observedAt * 1000).toISOString()}>
                                 {formatTime(flight.observedAt)}
                             </time>
@@ -63,7 +62,8 @@ export function AirportFlightsList({ flights }: AirportFlightsListProps) {
                             </span>
                             <span className={styles.route}>
                                 <strong>
-                                    {isDeparture ? '→' : '←'} {otherAirportCode}
+                                    {otherAirportCode === '-' ? '' : isDeparture ? '→' : '←'}{' '}
+                                    {otherAirportCode}
                                 </strong>
 
                                 <AirportTooltip content={otherAirportName}>

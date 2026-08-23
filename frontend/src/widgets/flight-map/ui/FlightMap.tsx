@@ -14,22 +14,26 @@ import {
     reactify,
 } from '@/shared/lib/ymaps3';
 import {
+    MAP_VIEW_SYNC_DELAY_MS,
     MAP_ZOOM_RANGE,
     toMapBoundsParams,
     useSetMapView,
     type MapBoundsParams,
 } from '@/shared/contexts/map-view';
-import { AirportsLayer } from './AirportsLayer';
-import { FlightsLayer } from './FlightsLayer';
+import { useDebouncedCallback } from '@/shared/lib/useDebouncedCallback';
+import { AirportsClusterLayer } from './AirportsClusterLayer';
 import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
-import type { LiveFlight } from '@/entities/flight';
+import type { Flight } from '@/entities/flight';
+import { FlightsClusterLayer } from './FlightsClusterLayer';
+import { MapLegend } from './MapLegend/MapLegend';
+import { mapCustomizationByTheme } from './mapCustomization';
 
 interface FlightMapProps {
     // Читается только при инициализации
     initialBounds: LngLatBounds;
     airports: Airport[];
-    flights: LiveFlight[];
+    flights: Flight[];
     theme?: 'light' | 'dark';
     onBoundsChange?: (params: MapBoundsParams) => void;
 }
@@ -43,12 +47,18 @@ export function FlightMap({
 }: FlightMapProps) {
     const setMapView = useSetMapView();
 
+    const notifyBoundsChange = useDebouncedCallback(
+        (params: MapBoundsParams) => onBoundsChange?.(params),
+        MAP_VIEW_SYNC_DELAY_MS
+    );
+
     const handleMapUpdate = useCallback<MapEventUpdateHandler>(
         ({ location }) => {
             setMapView({ center: location.center, zoom: location.zoom });
-            onBoundsChange?.(toMapBoundsParams(location));
+            // Считаем сразу: location принадлежит карте и может переиспользоваться между кадрами
+            notifyBoundsChange(toMapBoundsParams(location));
         },
-        [setMapView, onBoundsChange]
+        [setMapView, notifyBoundsChange]
     );
 
     const location = reactify.useDefault<YMapLocationRequest>(
@@ -64,16 +74,20 @@ export function FlightMap({
                 zoomRange={MAP_ZOOM_RANGE}
                 zoomRounding="smooth"
             >
-                <YMapDefaultSchemeLayer />
+                <YMapDefaultSchemeLayer customization={mapCustomizationByTheme[theme]} />
                 <YMapDefaultFeaturesLayer />
                 <YMapListener onUpdate={handleMapUpdate} />
-                <AirportsLayer airports={airports} />
-                <FlightsLayer flights={flights} />
+                <AirportsClusterLayer airports={airports} />
+                <FlightsClusterLayer flights={flights} />
 
                 <YMapControls position="right">
                     <YMapZoomControl />
                 </YMapControls>
             </YMap>
+
+            <div className={styles.legend}>
+                <MapLegend />
+            </div>
         </div>
     );
 }

@@ -1,7 +1,6 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import type { AirportsListResponse, AirportsQuery } from '../model/types';
 import { fetchJson } from '@shared/api';
-import { useDebouncedParams } from '@shared/lib/useDebouncedParams';
 
 export const airportsQueryKeys = {
     all: ['airports'] as const,
@@ -10,6 +9,7 @@ export const airportsQueryKeys = {
 
 export function airportsQueryOptions(params: AirportsQuery = {}) {
     return queryOptions({
+        // FIXME: сделать другой ключ
         queryKey: airportsQueryKeys.list(params),
         queryFn: ({ signal }) => fetchJson<AirportsListResponse>('/airports', { params, signal }),
     });
@@ -17,14 +17,12 @@ export function airportsQueryOptions(params: AirportsQuery = {}) {
 
 interface UseAirportsOptions {
     enabled?: boolean;
-    debounceMs?: number;
 }
 
 export function useAirports(params: AirportsQuery = {}, options: UseAirportsOptions = {}) {
-    const debouncedParams = useDebouncedParams(params, options.debounceMs);
-
+    // Дебаунс делает вызывающая сторона (FlightMap), второй дебаунс удвоил бы задержку
     return useQuery({
-        ...airportsQueryOptions(debouncedParams),
+        ...airportsQueryOptions(params),
         enabled: options.enabled ?? true,
         placeholderData: keepPreviousData,
     });

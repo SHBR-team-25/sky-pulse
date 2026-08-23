@@ -1,3 +1,7 @@
-import type { components } from '@shared/api';
+import type { Flight, TrackPoint } from '@/entities/flight';
 
-export type FlightDetailsResponse = components['schemas']['FlightDetailsResponse'];
+/** Всё, что нужно карточке борта: позиция плюс трек для линии на карте. */
+export interface TargetFlight {
+    flight: Flight;
+    track: TrackPoint[];
+}

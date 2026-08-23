@@ -1,8 +1,19 @@
 import { dateTime, type DateTime } from '@gravity-ui/date-utils';
-import type { DashboardQuery } from '../model/types';
 
 export const DASHBOARD_RANGE_FROM_PARAM = 'from';
 export const DASHBOARD_RANGE_TO_PARAM = 'to';
+
+/**
+ * Заготовка выбора периода. `GET /stats/dashboard` окно агрегации не принимает — в YT лежит ровно
+ * один снапшот, и его актуальность описывает `computedAt`. Хелперы оставлены до появления ручки,
+ * которая период всё-таки примет.
+ */
+export interface DashboardRangeQuery {
+    /** unix ts, начало окна агрегации */
+    from: number;
+    /** unix ts, конец окна агрегации */
+    to: number;
+}
 
 export interface DashboardRange {
     start: DateTime;
@@ -29,7 +40,7 @@ export function parseDashboardRange(searchParams: URLSearchParams): DashboardRan
     };
 }
 
-export function toDashboardQuery(range: DashboardRange): Required<DashboardQuery> {
+export function toDashboardQuery(range: DashboardRange): DashboardRangeQuery {
     return {
         from: range.start.startOf('day').unix(),
         to: range.end.endOf('day').unix(),

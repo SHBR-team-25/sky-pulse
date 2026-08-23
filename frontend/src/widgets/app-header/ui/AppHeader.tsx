@@ -1,9 +1,10 @@
-// import { Magnifier } from '@gravity-ui/icons';
 import { Moon, Sun } from '@gravity-ui/icons';
 import { Button, Icon, Switch } from '@gravity-ui/uikit';
 import { NavLink } from 'react-router';
 import { useUtcTime } from '@/shared/hooks';
 import { useAppTheme } from '@/shared/contexts/theme';
+import logoPng from '../assets/yt_logo.png';
+import logoWebp from '../assets/yt_logo.webp';
 import styles from './AppHeader.module.css';
 
 export function AppHeader() {
@@ -14,22 +15,13 @@ export function AppHeader() {
 
     return (
         <header className={styles.header}>
-            <div className={styles.brand} aria-label="SkyPulse">
-                {/* <span className={styles.logo} aria-hidden="true">
-                    <span className={styles.logoMark} />
-                </span> */}
+            <div className={styles.brand}>
+                <picture className={styles.logoPicture}>
+                    <source srcSet={logoWebp} type="image/webp" />
+                    <img className={styles.logo} src={logoPng} alt="" width={26} height={26} />
+                </picture>
                 <span className={styles.productName}>SkyPulse</span>
             </div>
-
-            {/* TODO: сделать, если будем делать поиск по самолетам, аэропортам  */}
-            {/* <TextInput
-                className={styles.search}
-                aria-label="Поиск"
-                placeholder={headerMock.searchPlaceholder}
-                size="l"
-                startContent={<Icon data={Magnifier} size={16} />}
-                endContent={<kbd className={styles.shortcut}>{headerMock.searchShortcut}</kbd>}
-            /> */}
 
             <nav className={styles.navigation} aria-label="Основная навигация">
                 <Button

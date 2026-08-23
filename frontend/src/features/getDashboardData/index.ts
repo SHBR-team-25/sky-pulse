@@ -10,5 +10,4 @@ export {
     parseDashboardRange,
     toDashboardQuery,
 } from './lib/dashboardRange';
-export type { DashboardRange } from './lib/dashboardRange';
-export type { DashboardQuery } from './model/types';
+export type { DashboardRange, DashboardRangeQuery } from './lib/dashboardRange';

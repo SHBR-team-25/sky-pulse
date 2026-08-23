@@ -126,16 +126,22 @@ public class YtDashboardRepository implements DashboardRepository {
     }
 
     private List<TrafficPoint> trafficTrend() {
-        // Свежие точки нужны сверху, а клиенту тренд отдаётся по возрастанию времени.
-        String query = "computed_at, active_aircraft from [%s] order by computed_at desc limit %d"
-                .formatted(trendPath, trendLimit);
         return YtRow.mapSkippingBroken(
-                        ytQueryClient.selectRows(query), YtDashboardRepository::toTrendPoint, LOG).stream()
+                        ytQueryClient.selectRows(trendQuery(trendPath, trendLimit)),
+                        YtDashboardRepository::toTrendPoint, LOG).stream()
                 .sorted(Comparator.comparingLong(TrafficPoint::timestamp))
                 .toList();
     }
 
-    /** Смешать поколения агрегатов нельзя: числа перестанут сходиться между собой. */
+
+    static String trendQuery(String trendPath, int trendLimit) {
+        return """
+                computed_at, active_aircraft from [%s] where active_aircraft > 0 \
+                order by computed_at desc limit %d"""
+                .formatted(trendPath, trendLimit);
+    }
+
+
     static List<JsonNode> latestGeneration(List<JsonNode> rows) {
         long newest = rows.stream()
                 .mapToLong(row -> row.path("computed_at").asLong(Long.MIN_VALUE))

@@ -13,7 +13,7 @@ export const MAP_LON_MAX_PARAM = 'lonMax';
 export const MAP_LAT_MAX_PARAM = 'latMax';
 export const MAP_VIEW_ZOOM_PARAM = 'zoom';
 
-export const MAP_VIEW_SYNC_DELAY_MS = 300;
+export const MAP_VIEW_SYNC_DELAY_MS = 200;
 
 const BOUNDS_PRECISION = 100;
 const EPSILON = 2;

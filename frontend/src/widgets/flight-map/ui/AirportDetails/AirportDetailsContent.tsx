@@ -8,15 +8,19 @@ import styles from './AirportDetails.module.css';
 interface AirportDetailsContentProps {
     airport: Airport;
     details: AirportFlightsResponse | null;
+    isError: boolean;
     isLoading: boolean;
     onClose?: () => void;
+    onRetry: () => void;
 }
 
 export function AirportDetailsContent({
     airport,
     details,
+    isError,
     isLoading,
     onClose,
+    onRetry,
 }: AirportDetailsContentProps) {
     let content;
 
@@ -25,6 +29,15 @@ export function AirportDetailsContent({
             <div className={styles.message} role="status" aria-live="polite">
                 <Spin size="l" />
                 <span>Загружаем рейсы аэропорта</span>
+            </div>
+        );
+    } else if (isError) {
+        content = (
+            <div className={styles.message} role="alert">
+                <span>Не удалось загрузить рейсы аэропорта</span>
+                <Button view="normal" size="s" onClick={onRetry}>
+                    Повторить
+                </Button>
             </div>
         );
     } else if (details) {

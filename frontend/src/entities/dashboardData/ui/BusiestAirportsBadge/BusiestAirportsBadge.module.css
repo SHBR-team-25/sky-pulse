@@ -6,3 +6,7 @@
     font-variant-numeric: tabular-nums;
     color: var(--sky-color-text-primary);
 }
+
+.listAlert {
+    --g-alert-message-title-indent: 16px;
+}

@@ -10,7 +10,7 @@
     --g-popup-border-color: var(--sky-color-popup-border);
     --g-popup-border-radius: 13px;
     --g-popup-border-width: 1px;
-    --flight-details-content-height: 217px;
+    --flight-details-content-height: 207px;
 
     width: 300px;
     color: var(--sky-color-text-primary);
@@ -153,89 +153,26 @@
     border-radius: 50%;
 }
 
-.route {
+.origin {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 12px;
+    gap: 4px;
     padding: 13px 15px 11px;
 }
 
-.airport {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    width: 78px;
-    min-width: 0;
-    gap: 3px;
-}
-
-.destination {
-    text-align: right;
-}
-
-.destination .airportCode {
-    justify-self: end;
-}
-
-.airportCode {
-    display: inline-block;
-    color: var(--sky-color-text-primary);
-    font:
-        400 18px/1 'Roboto Mono',
-        monospace;
-    outline: none;
-    width: min-content;
-}
-
-.airportCode:focus-visible {
-    border-radius: 3px;
-    box-shadow: 0 0 0 2px var(--sky-color-border-strong);
-}
-
-.airportMeta {
-    display: block;
+.originCountry {
     overflow: hidden;
-    color: var(--sky-color-text-faint);
-    font-size: 10px;
+    color: var(--sky-color-text-primary);
+    font-size: 13px;
+    line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.routeProgress {
-    position: relative;
-    height: 14px;
-}
-
-.routeTrack,
-.routeTrackComplete {
-    position: absolute;
-    top: 6px;
-    left: 0;
-    height: 2px;
-    border-radius: 1px;
-}
-
-.routeTrack {
-    right: 0;
-    background: var(--sky-color-border-strong);
-}
-
-.routeTrackComplete {
-    width: 58%;
-    background: var(--sky-color-accent-primary);
-}
-
-.routePlane {
-    position: absolute;
-    top: 1px;
-    left: 58%;
-    width: 12px;
-    height: 12px;
-    margin-left: -6px;
-    background: var(--sky-color-accent-primary);
-    clip-path: polygon(50% 0%, 100% 100%, 50% 78%, 0% 100%);
-    transform: rotate(90deg);
+.coordinates {
+    color: var(--sky-color-text-faint);
+    font:
+        400 11px/1 'Roboto Mono',
+        monospace;
 }
 
 .metrics {
@@ -288,6 +225,16 @@
     border-radius: 0 0 13px 13px;
 }
 
+/* В шторке на планшете и телефоне нижнее скругление не нужно. */
+.sheetContent .footer {
+    border-radius: 0;
+}
+
+/* На узких экранах второй показатель завершает строку без правой границы. */
+.sheetContent .metric:nth-child(2) {
+    border-right: 0;
+}
+
 .sheetMobile .sheetContentBottom {
     max-height: calc(100dvh - 24px);
 }
@@ -309,13 +256,9 @@
     margin-top: 1px;
 }
 
-.sheetMobile .route {
+.sheetMobile .origin {
     gap: 8px;
     padding-inline: 14px;
-}
-
-.sheetMobile .airport {
-    width: min(23vw, 78px);
 }
 
 .sheetMobile .metric {
@@ -342,11 +285,4 @@
 .sheetCompactMobile .metric:nth-child(3) {
     grid-column: 1 / -1;
     border-top: 1px solid var(--sky-color-divider-strong);
-}
-
-.eta {
-    color: var(--sky-color-text-default);
-    font:
-        400 11px/1 'Roboto Mono',
-        monospace;
 }

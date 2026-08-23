@@ -1,0 +1,297 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="pipeline-architecture" name="Архитектура pipeline">
+    <mxGraphModel dx="1030" dy="568" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;" value="SkyPulse: архитектура обработки данных" vertex="1">
+          <mxGeometry height="40" width="740" x="430" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="external" parent="1" style="swimlane;html=1;rounded=1;startSize=32;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="Внешние источники" vertex="1">
+          <mxGeometry height="330" width="240" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="opensky" parent="external" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="OpenSky REST API&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;OAuth2, states/all, bbox или all&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="190" x="25" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="aircraft_csv" parent="external" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1.5;fontColor=#333333;" value="&lt;b&gt;aircraftDatabase.csv&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;OpenSky Metadata&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="25" y="145" as="geometry" />
+        </mxCell>
+        <mxCell id="airports_csv" parent="external" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=1.5;fontColor=#333333;" value="&lt;b&gt;airports.csv&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;OurAirports&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="190" x="25" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="services" parent="1" style="swimlane;html=1;rounded=1;startSize=32;fillColor=#fafafa;strokeColor=#b3b3b3;strokeWidth=1.5;fontStyle=1;fontSize=15;" value="Сервисы" vertex="1">
+          <mxGeometry height="330" width="330" x="340" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ingest" parent="services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" value="Ingest service (не Spark)&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;опрос API; фильтр некорректных позиций&lt;br&gt;и категорий 8–20; retry-after&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="260" x="40" y="42.5" as="geometry" />
+        </mxCell>
+        <mxCell id="bootstrap" parent="services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" value="Bootstrap service&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;схемы, создание/монтаж таблиц,&lt;br&gt;vital consumer, справочники, TTL&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="260" x="40" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="yt" parent="1" style="swimlane;html=1;rounded=1;startSize=32;fillColor=#fafafa;strokeColor=#b3b3b3;strokeWidth=1.5;fontStyle=1;fontSize=15;" value="YTSaurus" vertex="1">
+          <mxGeometry height="650" width="350" x="740" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="refs" parent="yt" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;" value="&lt;b&gt;reference/&lt;/b&gt;&lt;br&gt;ref_aircraft, ref_airports&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;static tables&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="250" x="50" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="raw" parent="yt" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=1.5;" value="&lt;b&gt;raw/&lt;/b&gt;&lt;br&gt;positions_raw&lt;br&gt;positions_raw_consumer&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;dynamic queue + vital consumer&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="250" x="50" y="42.5" as="geometry" />
+        </mxCell>
+        <mxCell id="positions" parent="yt" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;" value="&lt;b&gt;positions/&lt;/b&gt;&lt;br&gt;positions_current&lt;br&gt;positions_history&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;dynamic sorted; history TTL 10 ч&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="250" x="50" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="flights" parent="yt" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;" value="&lt;b&gt;flights/&lt;/b&gt;&lt;br&gt;flights_open, flights_segments&lt;br&gt;airport_events&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;TTL segments/events: 48 ч&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="250" x="50" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="jobstate" parent="yt" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;" value="&lt;b&gt;system/&lt;/b&gt;&lt;br&gt;pipeline_job_state&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;watermark segment job&lt;br&gt;optimistic check, без lock&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="250" x="50" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="dashboard" parent="yt" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;" value="&lt;b&gt;dashboard/&lt;/b&gt;&lt;br&gt;totals, trend, top_airports&lt;br&gt;routes, manufacturers&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;готовые витрины; trend TTL 48 ч&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="250" x="50" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers" parent="1" style="swimlane;html=1;rounded=1;startSize=32;fillColor=#fafafa;strokeColor=#b3b3b3;strokeWidth=1.5;fontStyle=1;fontSize=15;" value="Потребители" vertex="1">
+          <mxGeometry height="230" width="540" x="40" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-71" edge="1" parent="consumers" source="backend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="frontend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-72" connectable="0" parent="agQIRb2Er1K9LbigyPOB-71" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="REST / JSON" vertex="1">
+          <mxGeometry relative="1" x="-0.2246" y="2" as="geometry">
+            <mxPoint x="-12" y="-17" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="backend" parent="consumers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Backend API&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;позиции, треки,&lt;br&gt;pipeline status; аналитика&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="200" x="310" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="frontend" parent="consumers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Frontend&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;карта и dashboard&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="180" x="20" y="77.5" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-2" edge="1" parent="1" source="opensky" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="ingest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-3" connectable="0" parent="agQIRb2Er1K9LbigyPOB-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTPS snapshots" vertex="1">
+          <mxGeometry relative="1" x="-0.0535" y="-1" as="geometry">
+            <mxPoint y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-4" edge="1" parent="1" source="ingest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="raw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-5" connectable="0" parent="agQIRb2Er1K9LbigyPOB-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="insert_rows" vertex="1">
+          <mxGeometry relative="1" x="-0.0781" y="1" as="geometry">
+            <mxPoint y="-11" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-19" parent="1" style="swimlane;html=1;rounded=1;startSize=32;fillColor=#fafafa;strokeColor=#b3b3b3;strokeWidth=1.5;fontStyle=1;fontSize=15;" value="SPYT jobs" vertex="1">
+          <mxGeometry height="540" width="470" x="1220" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="streaming" parent="agQIRb2Er1K9LbigyPOB-19" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="SPYT Structured Streaming&lt;br&gt;&lt;b&gt;streaming_job.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;left join, классификация, history/current&lt;br&gt;4 × 2-core executors по умолчанию&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="360" x="50" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="segment" parent="agQIRb2Er1K9LbigyPOB-19" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="SPYT batch job&lt;br&gt;&lt;b&gt;job_segment.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;state machine рейса; event time; timeout;&lt;br&gt;подавление ground-глитчей; поиск аэропорта&lt;br&gt;каждые 15 мин по умолчанию&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="360" x="60" y="242.5" as="geometry" />
+        </mxCell>
+        <mxCell id="aggregate" parent="agQIRb2Er1K9LbigyPOB-19" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="SPYT batch job&lt;br&gt;&lt;b&gt;job_aggregate.py&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;live snapshot + окно 24 часа;&lt;br&gt;totals, trend, top airports, routes, manufacturers&lt;br&gt;каждые 5 мин по умолчанию&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="360" x="60" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-28" edge="1" parent="1" source="bootstrap" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="yt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-33" connectable="0" parent="agQIRb2Er1K9LbigyPOB-28" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="create, mount, register, apply TTL" vertex="1">
+          <mxGeometry relative="1" x="0.0029" y="-2" as="geometry">
+            <mxPoint x="12" y="-23" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-34" edge="1" parent="1" source="aircraft_csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="bootstrap">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="270" y="270" />
+              <mxPoint x="270" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-35" edge="1" parent="1" source="airports_csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="bootstrap">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="270" y="350" />
+              <mxPoint x="270" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-37" connectable="0" parent="agQIRb2Er1K9LbigyPOB-35" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="download and load" vertex="1">
+          <mxGeometry relative="1" x="0.4" y="1" as="geometry">
+            <mxPoint x="15" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-39" edge="1" parent="1" source="raw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="streaming">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-40" connectable="0" parent="agQIRb2Er1K9LbigyPOB-39" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="queue microbatches" vertex="1">
+          <mxGeometry relative="1" x="-0.0964" as="geometry">
+            <mxPoint x="-55" y="-23" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-41" edge="1" parent="1" source="refs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="streaming">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-44" connectable="0" parent="agQIRb2Er1K9LbigyPOB-41" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="left join по icao24" vertex="1">
+          <mxGeometry relative="1" x="-0.6074" y="-4" as="geometry">
+            <mxPoint x="3" y="-14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-45" edge="1" parent="1" source="streaming" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="positions">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1190.07" y="250.07" />
+              <mxPoint x="1190.07" y="370.07" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-46" connectable="0" parent="agQIRb2Er1K9LbigyPOB-45" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="append history / upsert current" vertex="1">
+          <mxGeometry relative="1" x="0.5425" as="geometry">
+            <mxPoint x="-1" y="-15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-50" edge="1" parent="1" source="positions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.006;entryY=0.591;entryDx=0;entryDy=0;entryPerimeter=0;" target="segment">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="385.69" />
+              <mxPoint x="1100" y="385.69" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-51" connectable="0" parent="agQIRb2Er1K9LbigyPOB-50" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="new history rows" vertex="1">
+          <mxGeometry relative="1" x="-0.2863" y="-4" as="geometry">
+            <mxPoint x="-35" y="10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-52" edge="1" parent="1" source="refs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="segment">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260.07" y="310.07" />
+              <mxPoint x="1260.07" y="355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-53" connectable="0" parent="agQIRb2Er1K9LbigyPOB-52" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="airport lookup" vertex="1">
+          <mxGeometry relative="1" x="-0.3781" y="-1" as="geometry">
+            <mxPoint x="1" y="-11" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-54" edge="1" parent="1" source="segment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="flights">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1200" y="400" />
+              <mxPoint x="1200" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-55" connectable="0" parent="agQIRb2Er1K9LbigyPOB-54" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="read/write state; segments; events" vertex="1">
+          <mxGeometry relative="1" x="0.4031" as="geometry">
+            <mxPoint y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-56" edge="1" parent="1" source="segment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="jobstate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1230" y="410" />
+              <mxPoint x="1230" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-57" connectable="0" parent="agQIRb2Er1K9LbigyPOB-56" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="read / check / update watermark" vertex="1">
+          <mxGeometry relative="1" x="0.5417" y="-2" as="geometry">
+            <mxPoint x="9" y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-58" edge="1" parent="1" source="positions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="aggregate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="370" />
+              <mxPoint x="760" y="790" />
+              <mxPoint x="1460" y="790" />
+            </Array>
+            <mxPoint x="1420" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-59" connectable="0" parent="agQIRb2Er1K9LbigyPOB-58" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="fresh current snapshot" vertex="1">
+          <mxGeometry relative="1" x="0.1827" y="-2" as="geometry">
+            <mxPoint y="8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-60" edge="1" parent="1" source="flights" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="aggregate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="470" />
+              <mxPoint x="760" y="770" />
+              <mxPoint x="1460" y="770" />
+            </Array>
+            <mxPoint x="1430" y="660" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-61" connectable="0" parent="agQIRb2Er1K9LbigyPOB-60" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="segments + events, 24 h window" vertex="1">
+          <mxGeometry relative="1" x="0.2146" y="2" as="geometry">
+            <mxPoint x="-52" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-63" edge="1" parent="1" source="refs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="aggregate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="280" />
+              <mxPoint x="760" y="810" />
+              <mxPoint x="1460" y="810" />
+            </Array>
+            <mxPoint x="1500" y="670" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-64" connectable="0" parent="agQIRb2Er1K9LbigyPOB-63" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="manufacturer lookup" vertex="1">
+          <mxGeometry relative="1" x="0.2754" y="-3" as="geometry">
+            <mxPoint x="-34" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-65" edge="1" parent="1" source="aggregate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="dashboard">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260" y="555" />
+              <mxPoint x="1260" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-66" connectable="0" parent="agQIRb2Er1K9LbigyPOB-65" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="overwrite marts / append trend" vertex="1">
+          <mxGeometry relative="1" x="0.4411" y="-3" as="geometry">
+            <mxPoint x="-1" y="-7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-67" edge="1" parent="1" source="positions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="backend">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="350" />
+              <mxPoint x="770" y="625" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-68" edge="1" parent="1" source="jobstate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="backend">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="550" />
+              <mxPoint x="770" y="625" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-69" edge="1" parent="1" source="dashboard" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="backend">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="670" />
+              <mxPoint x="770" y="625.05" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="agQIRb2Er1K9LbigyPOB-70" connectable="0" parent="agQIRb2Er1K9LbigyPOB-69" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="YTsaurus reads" vertex="1">
+          <mxGeometry relative="1" x="0.1954" y="-2" as="geometry">
+            <mxPoint x="-4" y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

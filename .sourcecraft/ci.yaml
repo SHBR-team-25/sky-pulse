@@ -32,8 +32,9 @@ env:
   S3_ENDPOINT_URL: "https://storage.yandexcloud.net"
   AWS_DEFAULT_REGION: "ru-central1"
   VITE_ASSET_BASE_URL: "https://storage.yandexcloud.net/team25-frontend-static/"
+  VITE_API_BASE_URL: "/api"
   TARGET_HOST: "skypulse.duckdns.org"
-  TARGET_DEPLOY_DIR: "/opt/skypulse/deploy"
+  TARGET_DEPLOY_DIR: "/home/ubuntu/team-25-project-servis-ispolzuyushchii-ytsaurus-komanda-2/deploy"
   PUBLIC_APP_URL: "https://skypulse.duckdns.org/"
 
 workflows:

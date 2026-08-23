@@ -1,12 +1,7 @@
 import type { components } from '@shared/api';
 
-export type LiveFlight = components['schemas']['LiveFlightsResponse']['flights'][number];
+/** Борт из `GET /flights/live` и `GET /flights/{icao24}` */
+export type Flight = components['schemas']['Flight'];
 
-/** 'solo' — один борт, 'multie' — кластер*/
-export type LiveFlightType = LiveFlight['type'];
-
-export type FlightTrackPoint = components['schemas']['FlightDetailsResponse']['path'][number];
-
-export type AircraftPosition = components['schemas']['AircraftPosition'];
-
-export type FlightPhase = components['schemas']['FlightPhase'];
+/** Точка трека из `GET /flights/{icao24}/track` */
+export type TrackPoint = components['schemas']['TrackPoint'];

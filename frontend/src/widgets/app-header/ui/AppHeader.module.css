@@ -21,21 +21,17 @@
     gap: 10px;
 }
 
-.logo {
+.logoPicture {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    background: var(--sky-color-accent-primary);
-    border-radius: 7px;
+    flex: none;
 }
 
-.logoMark {
-    width: 11px;
-    height: 11px;
-    background: var(--sky-color-bg-canvas);
-    clip-path: polygon(50% 0%, 100% 100%, 50% 78%, 0% 100%);
+.logo {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    object-fit: cover;
+    border-radius: 7px;
 }
 
 .productName {

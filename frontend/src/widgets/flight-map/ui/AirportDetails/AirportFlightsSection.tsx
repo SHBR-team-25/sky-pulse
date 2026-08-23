@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { AirportFlight, AirportFlightsDirection } from '@/entities/airport';
 import { AirportFlightsList } from './AirportFlightsList';
 import styles from './AirportDetails.module.css';
@@ -16,22 +16,15 @@ interface AirportFlightsSectionProps {
 export function AirportFlightsSection({ flights }: AirportFlightsSectionProps) {
     const [direction, setDirection] = useState<AirportFlightsDirection>('all');
 
-    // TODO:  возможно переместить отсюда сортировку в другое место где будет вызываться запрс на бек
-    // нужно чтобы фильтрация происходила 1 раз и не делала при перключении табов
-    const [allFlights] = useState(() =>
-        flights.toSorted((left, right) => right.observedAt - left.observedAt)
-    );
-    const [departureFlights] = useState(() =>
-        allFlights.filter((flight) => flight.direction === 'departure')
-    );
-    const [arrivalFlights] = useState(() =>
-        allFlights.filter((flight) => flight.direction === 'arrival')
-    );
-    const flightsByDirection: Record<AirportFlightsDirection, AirportFlight[]> = {
-        all: allFlights,
-        departure: departureFlights,
-        arrival: arrivalFlights,
-    };
+    const flightsByDirection = useMemo<Record<AirportFlightsDirection, AirportFlight[]>>(() => {
+        const allFlights = flights.toSorted((left, right) => right.observedAt - left.observedAt);
+
+        return {
+            all: allFlights,
+            departure: allFlights.filter((flight) => flight.direction === 'departure'),
+            arrival: allFlights.filter((flight) => flight.direction === 'arrival'),
+        };
+    }, [flights]);
 
     return (
         <>

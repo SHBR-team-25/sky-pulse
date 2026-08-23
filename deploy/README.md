@@ -5,9 +5,7 @@
 
 ## Состав
 
-- `compose.prod.yml` — `svc_positions`, `svc_analytics` (сейчас заглушки на
-  `hashicorp/http-echo`, закомментирован блок для реального
-  `positions-service`), `nginx`.
+- `compose.prod.yml` — реальные `svc_positions`, `svc_analytics` и общий `nginx`.
 - `nginx/default.conf` — точка входа, `include` всех файлов из `parts/`.
 - `nginx/parts/api.conf` — проксирование на бэкенд. Зона ответственности бэкенда.
 - `nginx/parts/frontend.conf` — раздача статики. Зона ответственности фронтенда.
@@ -34,13 +32,11 @@ docker compose -f compose.prod.yml up -d --build
 Проверка:
 
 ```bash
-curl http://localhost/api/positions/
-curl http://localhost/api/analytics/
+curl http://localhost/api/flights/live
+curl http://localhost/api/airports
+curl http://localhost/api/stats/dashboard
 curl http://localhost/
 ```
-
-Когда `positions-service` будет готов раскомментировать его блок в
-`compose.prod.yml`, удалить заглушку `svc_positions`, пересобрать (`up -d --build`).
 
 ## Сертификат (certbot, standalone)
 
@@ -67,9 +63,14 @@ sudo docker compose -f compose.prod.yml start nginx
 Пайплайн описан в `.sourcecraft/ci.yaml`:
 
 - в pull request запускаются `npm ci`, линтер и production-сборка;
-- после merge в `main` ассеты сначала синхронизируются с Object Storage;
+- после merge в `main` сначала проверяется готовность общей конфигурации на VM;
+- затем ассеты синхронизируются с Object Storage, а старые хэшированные JS/CSS сохраняются для отката;
 - затем `index.html` и frontend-конфигурация nginx копируются на VM;
-- nginx продолжает проксировать API и отдаёт только HTML frontend.
+- nginx продолжает проксировать API и отдаёт только HTML frontend;
+- в конце публичный `index.html` сравнивается с файлом текущего релиза.
+
+Frontend использует относительный API-адрес `/api`. Значение задаётся публичной
+переменной `VITE_API_BASE_URL` в `.sourcecraft/ci.yaml` и не является секретом.
 
 Для подключения к текущей VM `TARGET_HOST` равен `skypulse.duckdns.org`.
 Если репозиторий на VM лежит не в `/opt/skypulse`, измените
@@ -90,15 +91,24 @@ sudo docker compose -f compose.prod.yml start nginx
 
 ### Однократная настройка VM
 
-Пайплайн ожидает репозиторий в `/opt/skypulse`:
+Frontend-пайплайн не разворачивает backend и не изменяет `compose.prod.yml` или
+`nginx/parts/api.conf`. Перед первым frontend-деплоем backend должен положить
+полный репозиторий в `/opt/skypulse`, заполнить `deploy/.env`, подготовить
+сертификаты и запустить общий nginx:
 
 ```bash
-sudo mkdir -p /opt/skypulse
+sudo mkdir -p /opt/skypulseи
 sudo chown "$USER":"$USER" /opt/skypulse
 git clone <repo-url> /opt/skypulse
 cd /opt/skypulse/deploy
 docker compose -f compose.prod.yml up -d --build
 ```
+
+До изменения Object Storage frontend-пайплайн проверяет наличие
+`compose.prod.yml`, `nginx/default.conf`, актуальных API-маршрутов и выполняет
+`nginx -t` внутри уже запущенного контейнера. После загрузки ассетов отдельно
+проверяются публичное чтение и CORS. Если подготовка backend не закончена,
+деплой остановится без изменения S3.
 
 Пользователю из `DEPLOY_SSH_USER` нужен беспарольный `sudo` для `install`, `cp`,
 `mv` и `docker compose`. Пайплайн сохраняет прошлую страницу как

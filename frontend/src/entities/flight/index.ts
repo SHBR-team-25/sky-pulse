@@ -1,8 +1,3 @@
-export { flightDetailsMock, flightsMock } from './model/mock-data';
-export type {
-    AircraftPosition,
-    FlightPhase,
-    FlightTrackPoint,
-    LiveFlight,
-    LiveFlightType,
-} from './model/types';
+export { FlightClusterMarker } from './ui/FlightClusterMarker/FlightClusterMarker';
+export { FlightMarker } from './ui/FlightMarker/FlightMarker';
+export type { Flight, TrackPoint } from './model/types';

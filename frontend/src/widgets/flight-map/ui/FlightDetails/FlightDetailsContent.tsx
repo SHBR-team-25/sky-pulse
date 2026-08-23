@@ -1,16 +1,16 @@
 import { Xmark } from '@gravity-ui/icons';
 import { Button, Icon, Spin } from '@gravity-ui/uikit';
-import type { FlightDetailsResponse } from '@/features/getTargetFlight';
+import type { Flight } from '@/entities/flight';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetails.module.css';
 
 interface FlightDetailsContentProps {
-    details: FlightDetailsResponse | null;
+    flight: Flight | null;
     isLoading: boolean;
     onClose?: () => void;
 }
 
-export function FlightDetailsContent({ details, isLoading, onClose }: FlightDetailsContentProps) {
+export function FlightDetailsContent({ flight, isLoading, onClose }: FlightDetailsContentProps) {
     let content;
 
     if (isLoading) {
@@ -20,8 +20,8 @@ export function FlightDetailsContent({ details, isLoading, onClose }: FlightDeta
                 <span>Загружаем данные о рейсе</span>
             </div>
         );
-    } else if (details) {
-        content = <FlightDetailsCard details={details} />;
+    } else if (flight) {
+        content = <FlightDetailsCard flight={flight} />;
     } else {
         content = (
             <div className={styles.message} role="alert">

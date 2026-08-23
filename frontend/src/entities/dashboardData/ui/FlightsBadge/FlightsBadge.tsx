@@ -8,16 +8,17 @@ interface FlightsBadgeProps {
 }
 
 const PHASE_LABELS: Record<keyof DashboardFlightsByPhase, string> = {
-    on_ground: 'На земле',
+    onGround: 'На земле',
+    airborne: 'В воздухе',
     climbing: 'Взлетают',
-    cruising: 'Крейсируют',
     descending: 'Садятся',
 };
 
 const PHASE_ORDER = Object.keys(PHASE_LABELS) as (keyof DashboardFlightsByPhase)[];
 
 export function FlightsBadge({ flightsByPhase, activeFlights }: FlightsBadgeProps) {
-    const countFlights = PHASE_ORDER.reduce((sum, phase) => sum + flightsByPhase[phase], 0);
+    // Складывать все четыре фазы нельзя: `airborne` уже включает `climbing` и `descending`
+    const countFlights = flightsByPhase.onGround + flightsByPhase.airborne;
 
     return (
         <div className={styles.flightsBadge}>

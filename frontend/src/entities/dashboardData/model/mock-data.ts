@@ -10,8 +10,7 @@ const MIN_TREND_POINTS = 8;
 const HOUR = 3_600;
 
 export const dashboardMock = {
-    from: MOCK_FROM,
-    to: MOCK_TO,
+    computedAt: MOCK_TO,
     totals: {
         activeFlights: 8_432,
         trackedAirports: 1_247,
@@ -19,57 +18,74 @@ export const dashboardMock = {
         averageSpeedKmh: 812.7,
     },
     flightsByPhase: {
-        on_ground: 1_936,
+        onGround: 1_936,
+        airborne: 8_432,
         climbing: 1_412,
         descending: 1_275,
-        cruising: 5_745,
     },
     topBusiestAirports: [
         {
             airport: { icao: 'UUEE', iata: 'SVO', name: 'Sheremetyevo International Airport' },
+            departures: 371,
+            arrivals: 371,
             totalFlights: 742,
         },
         {
             airport: { icao: 'UUDD', iata: 'DME', name: 'Domodedovo International Airport' },
+            departures: 307,
+            arrivals: 308,
             totalFlights: 615,
         },
         {
             airport: { icao: 'UUWW', iata: 'VKO', name: 'Vnukovo International Airport' },
+            departures: 254,
+            arrivals: 254,
             totalFlights: 508,
         },
         {
             airport: { icao: 'ULLI', iata: 'LED', name: 'Pulkovo Airport' },
+            departures: 235,
+            arrivals: 236,
             totalFlights: 471,
         },
         {
             airport: { icao: 'USSS', iata: 'SVX', name: 'Koltsovo International Airport' },
+            departures: 168,
+            arrivals: 168,
             totalFlights: 336,
         },
     ],
+    busiestRoutes: [],
+    aircraftByManufacturer: [],
+    topCountries: [],
+    topAirlines: [],
     trafficTrend: buildTrafficTrend(MOCK_FROM, MOCK_TO),
     emergencyCount: 3,
 } satisfies DashboardData;
 
 /** Пустой ответ: период без данных. Полезно для проверки нулевых состояний UI */
 export const emptyDashboardMock = {
-    from: MOCK_FROM,
-    to: MOCK_TO,
+    computedAt: MOCK_TO,
     totals: {
         activeFlights: 0,
         trackedAirports: 0,
-        averageAltitudeM: 0,
-        averageSpeedKmh: 0,
+        averageAltitudeM: null,
+        averageSpeedKmh: null,
     },
-    flightsByPhase: { on_ground: 0, climbing: 0, descending: 0, cruising: 0 },
+    flightsByPhase: { onGround: 0, airborne: 0, climbing: 0, descending: 0 },
     topBusiestAirports: [],
+    busiestRoutes: [],
+    aircraftByManufacturer: [],
+    topCountries: [],
+    topAirlines: [],
     trafficTrend: [],
     emergencyCount: 0,
 } satisfies DashboardData;
 
 /**
- * Мок дашборда под произвольный период (from/to — unix ts, как в query /stats/dashboard).
- * Детерминирован: одинаковый диапазон всегда даёт одинаковые числа, поэтому значения
- * не «прыгают» на ре-рендерах.
+ * Мок дашборда под произвольный период (from/to — unix ts). Ручка периода не принимает, окно нужно
+ * только чтобы построить тренд. Детерминирован: одинаковый диапазон всегда даёт одинаковые числа,
+ * поэтому значения не «прыгают» на ре-рендерах.
  */
 export function makeDashboardMock(from: number, to: number): DashboardData {
     const [start, end] = from <= to ? [from, to] : [to, from];
@@ -79,8 +95,7 @@ export function makeDashboardMock(from: number, to: number): DashboardData {
     const phaseTotal = Math.round(activeFlights * 1.23);
 
     return {
-        from: start,
-        to: end,
+        computedAt: end,
         totals: {
             activeFlights,
             trackedAirports: 1_180 + Math.round(pseudoRandom(start) * 120),
@@ -88,19 +103,29 @@ export function makeDashboardMock(from: number, to: number): DashboardData {
             averageSpeedKmh: round(760 + pseudoRandom(start + 2) * 120, 1),
         },
         flightsByPhase: {
-            on_ground: phaseTotal - activeFlights,
+            onGround: phaseTotal - activeFlights,
+            airborne: activeFlights,
             climbing: Math.round(activeFlights * 0.17),
             descending: Math.round(activeFlights * 0.15),
-            cruising:
-                activeFlights - Math.round(activeFlights * 0.17) - Math.round(activeFlights * 0.15),
         },
-        topBusiestAirports: dashboardMock.topBusiestAirports.map((item, index) => ({
-            airport: item.airport,
-            totalFlights: Math.max(
+        topBusiestAirports: dashboardMock.topBusiestAirports.map((item, index) => {
+            const totalFlights = Math.max(
                 1,
                 Math.round(item.totalFlights * (0.7 + pseudoRandom(start + index) * 0.6))
-            ),
-        })),
+            );
+            const departures = Math.round(totalFlights / 2);
+
+            return {
+                airport: item.airport,
+                departures,
+                arrivals: totalFlights - departures,
+                totalFlights,
+            };
+        }),
+        busiestRoutes: [],
+        aircraftByManufacturer: [],
+        topCountries: [],
+        topAirlines: [],
         trafficTrend,
         emergencyCount: Math.round(pseudoRandom(start + 3) * 5),
     };
