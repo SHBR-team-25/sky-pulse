@@ -39,6 +39,9 @@ skypulse:
     dashboard-top-airports-path: ${YT_DASHBOARD_TOP_AIRPORTS_PATH://home/skypulse/dashboard_top_airports}
     dashboard-routes-path: ${YT_DASHBOARD_ROUTES_PATH://home/skypulse/dashboard_routes}
     dashboard-manufacturers-path: ${YT_DASHBOARD_MANUFACTURERS_PATH://home/skypulse/dashboard_manufacturers}
+    # Витрины читаются фоном по расписанию, а не на запрос клиента: чаще, чем считает
+    # джоба (AGGREGATE_INTERVAL_SECONDS=300), чтобы снапшот не отставал на целый пересчёт.
+    dashboard-refresh-seconds: ${YT_DASHBOARD_REFRESH_SECONDS:60}
     # Рейсы аэропортов считаются по размеченным событиям, а не по dashboard_*.
     airport-events-path: ${YT_AIRPORT_EVENTS_PATH://home/skypulse/airport_events}
     flights-segments-path: ${YT_FLIGHTS_SEGMENTS_PATH://home/skypulse/flights_segments}
