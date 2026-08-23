@@ -1,4 +1,4 @@
-@import '@/shared/config/breakpoints.css';
+@import '../../../../shared/config/breakpoints.css';
 
 .graph {
     width: 100%;
