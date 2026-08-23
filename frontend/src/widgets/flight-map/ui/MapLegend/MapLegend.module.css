@@ -1,0 +1,91 @@
+.legendWrapper.legendWrapper {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    color: var(--sky-color-text-secondary);
+    background: var(--sky-color-surface-control);
+    border: 1px solid var(--sky-color-border-control);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px var(--sky-color-shadow);
+    backdrop-filter: blur(8px);
+    transition:
+        color 0.15s ease,
+        background 0.15s ease,
+        border-color 0.15s ease;
+    place-items: center;
+}
+
+.legendWrapper.legendWrapper svg {
+    position: static;
+    width: 20px;
+    height: 20px;
+}
+
+.legendWrapper.legendWrapper::after {
+    display: none;
+}
+
+.legendWrapper.legendWrapper:hover {
+    color: var(--sky-color-text-primary);
+    background: var(--sky-color-surface-selected);
+    border-color: var(--sky-color-border-strong);
+}
+
+.legendPopover {
+    --g-popup-background-color: var(--sky-color-surface-popup);
+    --g-popup-border-color: var(--sky-color-popup-border);
+    --g-popup-border-radius: 13px;
+    --g-popup-border-width: 1px;
+
+    color: var(--sky-color-text-primary);
+    box-shadow:
+        0 26px 60px -18px var(--sky-color-shadow-strong),
+        0 0 0 1px var(--sky-color-popup-outline);
+    backdrop-filter: blur(22px);
+}
+
+.legend {
+    display: grid;
+    gap: 12px;
+    max-width: 260px;
+}
+
+.legendSection {
+    display: grid;
+    gap: 6px;
+}
+
+.legendTitle {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.legendList {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.legendRow {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+}
+
+.legendIcon {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+}
+
+/* Маркеры на карте центрируются по координате через translate(-50%, -50%) - в потоке легенды этот сдвиг лишний. */
+.legend .legendIcon > * {
+    transform: none;
+}

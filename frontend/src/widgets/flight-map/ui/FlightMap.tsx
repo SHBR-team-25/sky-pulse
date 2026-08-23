@@ -26,6 +26,7 @@ import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
 import type { Flight } from '@/entities/flight';
 import { FlightsClusterLayer } from './FlightsClusterLayer';
+import { MapLegend } from './MapLegend/MapLegend';
 import { mapCustomizationByTheme } from './mapCustomization';
 
 interface FlightMapProps {
@@ -83,6 +84,10 @@ export function FlightMap({
                     <YMapZoomControl />
                 </YMapControls>
             </YMap>
+
+            <div className={styles.legend}>
+                <MapLegend />
+            </div>
         </div>
     );
 }

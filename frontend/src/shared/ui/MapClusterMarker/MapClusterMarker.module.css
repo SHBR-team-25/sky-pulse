@@ -1,0 +1,78 @@
+@import '@/shared/config/breakpoints.css';
+
+.clusterMarker {
+    position: relative;
+    display: grid;
+    width: 29px;
+    height: 29px;
+    color: var(--sky-color-bg-canvas-deep);
+    font-size: 12px;
+    font-weight: 800;
+    border: 2.5px solid var(--sky-color-focus-ring);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    place-items: center;
+}
+
+.clusterMarker::after {
+    position: absolute;
+    inset: -9px;
+    border-radius: 50%;
+    content: '';
+}
+
+.variantAccent {
+    background: var(--sky-color-accent-primary);
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow-strong),
+        0 0 0 6px rgba(68, 192, 255, 0.18);
+}
+
+.variantAccent::after {
+    border: 1px solid rgba(141, 220, 255, 0.35);
+}
+
+.variantWarning {
+    background: var(--sky-color-status-warning);
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow-strong),
+        0 0 0 6px var(--sky-color-warning-glow-soft);
+}
+
+.variantWarning::after {
+    border: 1px solid var(--sky-color-warning-glow);
+}
+
+@media (--touch-device) {
+    .clusterMarker {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+:global(.g-root_theme_light) .variantAccent,
+:global(.g-root_theme_light-hc) .variantAccent {
+    color: var(--sky-color-accent-secondary);
+    background: var(--sky-color-surface-header);
+    border-color: var(--sky-color-accent-primary);
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow),
+        0 0 14px var(--sky-color-accent-glow-soft);
+}
+
+:global(.g-root_theme_light) .variantWarning,
+:global(.g-root_theme_light-hc) .variantWarning {
+    color: var(--sky-color-status-warning);
+    background: var(--sky-color-surface-header);
+    border-color: var(--sky-color-status-warning);
+    box-shadow:
+        0 7px 22px var(--sky-color-shadow),
+        0 0 14px var(--sky-color-warning-glow-soft);
+}
+
+:global(.g-root_theme_light) .variantAccent::after,
+:global(.g-root_theme_light-hc) .variantAccent::after,
+:global(.g-root_theme_light) .variantWarning::after,
+:global(.g-root_theme_light-hc) .variantWarning::after {
+    border-color: var(--sky-color-border-control);
+}

@@ -1,6 +1,4 @@
 import { memo, useCallback, useMemo } from 'react';
-import { PlaneFill } from '@gravity-ui/icons';
-import { Icon } from '@gravity-ui/uikit';
 import type { Feature } from '@yandex/ymaps3-types/packages/clusterer';
 import type { DrawingStyle, LngLat } from '@yandex/ymaps3-types';
 import {
@@ -13,10 +11,8 @@ import {
 } from '@/shared/lib/ymaps3';
 
 import { FlightDetails } from './FlightDetails';
-import styles from './FlightsLayer.module.css';
-import { getFlightIconRotation } from '../model/flightIconRotation';
 import { useFlightDetails } from '../model/useFlightDetails';
-import type { Flight } from '@/entities/flight';
+import { FlightClusterMarker, FlightMarker, type Flight } from '@/entities/flight';
 
 const CLUSTER_SOURCE = 'clustered-flights';
 
@@ -69,23 +65,6 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
             const flightId = feature.id;
             const flight = flightsById.get(flightId);
             const isSelected = selectedFlight?.flightId === flightId;
-            const marker = (
-                <button
-                    className={styles.flightMarker}
-                    type="button"
-                    aria-label={`Рейс ${flight?.callsign ?? flightId}`}
-                    aria-pressed={isSelected}
-                    onClick={() => handleDetailsOpenChange(flightId, true)}
-                >
-                    <span
-                        className={styles.flightMarkerIcon}
-                        style={{ transform: getFlightIconRotation(flight?.trueTrack) }}
-                        aria-hidden="true"
-                    >
-                        <Icon data={PlaneFill} size={14} />
-                    </span>
-                </button>
-            );
 
             return (
                 <YMapMarker coordinates={feature.geometry.coordinates} source={CLUSTER_SOURCE}>
@@ -97,7 +76,12 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
                         tooltipContent={flight?.callsign ?? flightId}
                         onOpenChange={handleDetailsOpenChange}
                     >
-                        {marker}
+                        <FlightMarker
+                            flight={flight}
+                            flightId={flightId}
+                            isSelected={isSelected}
+                            onClick={() => handleDetailsOpenChange(flightId, true)}
+                        />
                     </FlightDetails>
                 </YMapMarker>
             );
@@ -107,19 +91,9 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
 
     /** Схлопнутая группа бортов. */
     const renderCluster = useCallback((coordinates: LngLat, clusteredFeatures: Feature[]) => {
-        const count = clusteredFeatures.length;
-
         return (
             <YMapMarker coordinates={coordinates} source={CLUSTER_SOURCE}>
-                <div
-                    className={styles.clusterMarker}
-                    role="img"
-                    tabIndex={0}
-                    title={`Кластер: ${count} самолётов`}
-                    aria-label={`Кластер из ${count} самолётов`}
-                >
-                    {count}
-                </div>
+                <FlightClusterMarker count={clusteredFeatures.length} />
             </YMapMarker>
         );
     }, []);

@@ -46,55 +46,9 @@
     place-items: center;
 }
 
-.clusterMarker {
-    position: relative;
-    display: grid;
-    width: 29px;
-    height: 29px;
-    color: var(--sky-color-bg-canvas-deep);
-    font-size: 12px;
-    font-weight: 800;
-    background: var(--sky-color-accent-primary);
-    border: 2.5px solid var(--sky-color-focus-ring);
-    border-radius: 50%;
-    box-shadow:
-        0 7px 22px var(--sky-color-shadow-strong),
-        0 0 0 6px rgba(68, 192, 255, 0.18);
-    transform: translate(-50%, -50%);
-    place-items: center;
-}
-
-.clusterMarker::after {
-    position: absolute;
-    inset: -9px;
-    border: 1px solid rgba(141, 220, 255, 0.35);
-    border-radius: 50%;
-    content: '';
-}
-
 @media (--touch-device) {
     .flightMarker {
         width: 30px;
         height: 30px;
     }
-
-    .clusterMarker {
-        width: 34px;
-        height: 34px;
-    }
-}
-
-:global(.g-root_theme_light) .clusterMarker,
-:global(.g-root_theme_light-hc) .clusterMarker {
-    color: var(--sky-color-accent-secondary);
-    background: var(--sky-color-surface-header);
-    border-color: var(--sky-color-accent-primary);
-    box-shadow:
-        0 7px 22px var(--sky-color-shadow),
-        0 0 14px var(--sky-color-accent-glow-soft);
-}
-
-:global(.g-root_theme_light) .clusterMarker::after,
-:global(.g-root_theme_light-hc) .clusterMarker::after {
-    border-color: var(--sky-color-border-control);
 }
