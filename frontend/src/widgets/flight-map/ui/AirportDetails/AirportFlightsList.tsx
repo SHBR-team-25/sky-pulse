@@ -62,7 +62,7 @@ export function AirportFlightsList({ flights }: AirportFlightsListProps) {
                             </span>
                             <span className={styles.route}>
                                 <strong>
-                                    {otherAirportCode === '-' ? '' : isDeparture ? '→' : '←'}{' '}
+                                    {otherAirportCode === '—' ? '' : isDeparture ? '→' : '←'}{' '}
                                     {otherAirportCode}
                                 </strong>
 
