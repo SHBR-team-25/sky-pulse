@@ -6,11 +6,10 @@ import styles from './TrafficTrendGraph.module.css';
 
 interface TrafficTrendGraphProps {
     data: DashboardTrafficTrendPoint[];
-    isSingleDay: boolean;
 }
 
-export function TrafficTrendGraph({ isSingleDay, data }: TrafficTrendGraphProps) {
-    const chartData = useMemo(() => formatTrafficTrendData(data, isSingleDay), [data, isSingleDay]);
+export function TrafficTrendGraph({ data }: TrafficTrendGraphProps) {
+    const chartData = useMemo(() => formatTrafficTrendData(data), [data]);
 
     if (!data.length) {
         return <p className={styles.placeholder}>Нет данных</p>;
