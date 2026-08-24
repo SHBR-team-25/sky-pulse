@@ -13,6 +13,7 @@ import {
 } from '@/shared/lib/ymaps3';
 
 import { FlightDetails } from './FlightDetails';
+import { CLUSTER_MAX_ZOOM, type ClusterClickHandler } from '../lib/clusterZoom';
 import { useFlightDetails } from '../model/useFlightDetails';
 import { FlightClusterMarker, FlightMarker, type Flight } from '@/entities/flight';
 import { Button, Icon } from '@gravity-ui/uikit';
@@ -31,10 +32,12 @@ const FLIGHT_PATH_STYLE: DrawingStyle = {
 
 interface FlightsClusterLayerProps {
     flights: Flight[];
+    onClusterClick: ClusterClickHandler;
 }
 
 export const FlightsClusterLayer = memo(function FlightsClusterLayer({
     flights,
+    onClusterClick,
 }: FlightsClusterLayerProps) {
     const { selectedFlight, renderedTrack, handleDetailsOpenChange, clearSelection } =
         useFlightDetails();
@@ -95,14 +98,19 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
         [flightsById, selectedFlight, handleDetailsOpenChange]
     );
 
-    /** Схлопнутая группа бортов. */
-    const renderCluster = useCallback((coordinates: LngLat, clusteredFeatures: Feature[]) => {
-        return (
-            <YMapMarker coordinates={coordinates} source={CLUSTER_SOURCE}>
-                <FlightClusterMarker count={clusteredFeatures.length} />
-            </YMapMarker>
-        );
-    }, []);
+    const renderCluster = useCallback(
+        (coordinates: LngLat, clusteredFeatures: Feature[]) => {
+            return (
+                <YMapMarker coordinates={coordinates} source={CLUSTER_SOURCE}>
+                    <FlightClusterMarker
+                        count={clusteredFeatures.length}
+                        onClick={() => onClusterClick(coordinates)}
+                    />
+                </YMapMarker>
+            );
+        },
+        [onClusterClick]
+    );
 
     return (
         <>
@@ -139,7 +147,7 @@ export const FlightsClusterLayer = memo(function FlightsClusterLayer({
                     features={features}
                     marker={renderFlight}
                     cluster={renderCluster}
-                    maxZoom={8}
+                    maxZoom={CLUSTER_MAX_ZOOM}
                 />
             )}
         </>

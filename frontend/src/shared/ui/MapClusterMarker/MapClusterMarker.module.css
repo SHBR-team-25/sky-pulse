@@ -5,13 +5,22 @@
     display: grid;
     width: 29px;
     height: 29px;
+    padding: 0;
     color: var(--sky-color-bg-canvas-deep);
+    font-family: inherit;
     font-size: 12px;
     font-weight: 800;
     border: 2.5px solid var(--sky-color-focus-ring);
     border-radius: 50%;
     transform: translate(-50%, -50%);
+    cursor: pointer;
+    appearance: none;
     place-items: center;
+}
+
+.clusterMarker:focus-visible {
+    outline: 2px solid var(--sky-color-focus-ring);
+    outline-offset: 4px;
 }
 
 .clusterMarker::after {
