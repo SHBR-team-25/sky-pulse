@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type {
     LngLatBounds,
     MapEventUpdateHandler,
+    YMap as YMapInstance,
     YMapLocationRequest,
 } from '@yandex/ymaps3-types';
 import {
@@ -22,6 +23,11 @@ import {
 } from '@/shared/contexts/map-view';
 import { useDebouncedCallback } from '@/shared/lib/useDebouncedCallback';
 import { AirportsClusterLayer } from './AirportsClusterLayer';
+import {
+    CLUSTER_ZOOM_DURATION_MS,
+    getClusterZoom,
+    type ClusterClickHandler,
+} from '../lib/clusterZoom';
 import styles from './FlightMap.module.css';
 import type { Airport } from '@/entities/airport';
 import type { Flight } from '@/entities/flight';
@@ -46,6 +52,7 @@ export function FlightMap({
     onBoundsChange,
 }: FlightMapProps) {
     const setMapView = useSetMapView();
+    const mapRef = useRef<YMapInstance | undefined>(undefined);
 
     const notifyBoundsChange = useDebouncedCallback(
         (params: MapBoundsParams) => onBoundsChange?.(params),
@@ -55,11 +62,25 @@ export function FlightMap({
     const handleMapUpdate = useCallback<MapEventUpdateHandler>(
         ({ location }) => {
             setMapView({ center: location.center, zoom: location.zoom });
-            // Считаем сразу: location принадлежит карте и может переиспользоваться между кадрами
             notifyBoundsChange(toMapBoundsParams(location));
         },
         [setMapView, notifyBoundsChange]
     );
+
+    const handleClusterClick = useCallback<ClusterClickHandler>((coordinates) => {
+        const map = mapRef.current;
+
+        if (!map) {
+            return;
+        }
+
+        map.setLocation({
+            center: coordinates,
+            zoom: getClusterZoom(map.zoom),
+            duration: CLUSTER_ZOOM_DURATION_MS,
+            easing: 'ease-in-out',
+        });
+    }, []);
 
     const location = reactify.useDefault<YMapLocationRequest>(
         { bounds: initialBounds, duration: 0 },
@@ -69,6 +90,7 @@ export function FlightMap({
     return (
         <div className={styles.map}>
             <YMap
+                ref={mapRef}
                 theme={theme}
                 location={location}
                 zoomRange={MAP_ZOOM_RANGE}
@@ -77,8 +99,8 @@ export function FlightMap({
                 <YMapDefaultSchemeLayer customization={mapCustomizationByTheme[theme]} />
                 <YMapDefaultFeaturesLayer />
                 <YMapListener onUpdate={handleMapUpdate} />
-                <AirportsClusterLayer airports={airports} />
-                <FlightsClusterLayer flights={flights} />
+                <AirportsClusterLayer airports={airports} onClusterClick={handleClusterClick} />
+                <FlightsClusterLayer flights={flights} onClusterClick={handleClusterClick} />
 
                 <YMapControls position="right">
                     <YMapZoomControl />

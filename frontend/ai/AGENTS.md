@@ -255,7 +255,7 @@
 │       │
 │       ├───MapClusterMarker
 │       │       MapClusterMarker.module.css          # стили круглого значка кластера: варианты accent и warning, светлая тема, тач-размер
-│       │       MapClusterMarker.tsx                 # значок кластера с числом объектов; decorative убирает role=img и фокус
+│       │       MapClusterMarker.tsx                 # кнопка-значок кластера с числом объектов; decorative даёт некликабельный div без фокуса
 │       │
 │       ├───PageLoader
 │       │       PageLoader.module.css                # стили контейнера лоадера страницы
@@ -297,17 +297,20 @@
     └───flight-map                                   # карта аэропортов и рейсов с маркерами, кластерами и деталями
         │   index.ts                                 # публичный API виджета
         │
+        ├───lib
+        │       clusterZoom.ts                       # параметры кластеризации: предельный zoom 8 и шаг приближения по клику на кластер
+        │
         ├───model
         │       useFlightDetails.ts                  # разделяет открытый поповер и активный трек борта, даёт renderedTrack и clearSelection
         │       useSelectedAirportFlights.ts         # выбранный кликом аэропорт и его лог рейсов через useAirportsFlights
         │
         └───ui
-            │   AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 64 px до zoom 8
+            │   AirportsClusterLayer.tsx             # кластеризация аэропортов по сетке 128 px до zoom 8, клик по кластеру приближает карту
             │   AirportsLayer.module.css             # стили содержимого подсказки аэропорта: код и название в две строки
             │   FlightMap.module.css                 # стили контейнера карты рейсов
             │   FlightMap.tsx                        # карта по initialBounds, zoom 3–15, кластеры аэропортов и бортов, отдаёт вид и bbox
             │   FlightsClusterLayer.module.css       # стили кнопки «Скрыть путь самолёта» над картой
-            │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 64 px до zoom 8, трек борта и кнопка его скрытия
+            │   FlightsClusterLayer.tsx              # кластеризация бортов по сетке 128 px до zoom 8, клик по кластеру приближает карту, трек борта и кнопка его скрытия
             │   mapCustomization.ts                  # shared typed map-scheme customization for light and dark themes
             │   MarkerTooltip.module.css             # стили всплывающей подсказки маркера
             │   MarkerTooltip.tsx                    # отключаемая подсказка маркера сверху с задержкой 50 мс

@@ -5,6 +5,7 @@ interface MapClusterMarkerProps {
     label: string;
     variant: 'accent' | 'warning';
     decorative?: boolean;
+    onClick?: () => void;
 }
 
 const VARIANT_CLASS = {
@@ -12,7 +13,13 @@ const VARIANT_CLASS = {
     warning: styles.variantWarning,
 } as const;
 
-export function MapClusterMarker({ count, label, variant, decorative }: MapClusterMarkerProps) {
+export function MapClusterMarker({
+    count,
+    label,
+    variant,
+    decorative,
+    onClick,
+}: MapClusterMarkerProps) {
     const className = `${styles.clusterMarker} ${VARIANT_CLASS[variant]}`;
 
     if (decorative) {
@@ -24,8 +31,14 @@ export function MapClusterMarker({ count, label, variant, decorative }: MapClust
     }
 
     return (
-        <div className={className} role="img" tabIndex={0} title={label} aria-label={label}>
+        <button
+            type="button"
+            className={className}
+            title={label}
+            aria-label={label}
+            onClick={onClick}
+        >
             {count}
-        </div>
+        </button>
     );
 }
