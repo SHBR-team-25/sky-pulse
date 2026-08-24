@@ -61,7 +61,6 @@
 │   │   │   index.ts                                 # публичный API сущности
 │   │   │
 │   │   ├───model
-│   │   │       mock-data.ts                         # мок списка из пяти московских аэропортов
 │   │   │       types.ts                             # типы аэропорта, лога рейсов и сортировки из OpenAPI
 │   │   │
 │   │   └───ui
@@ -80,11 +79,9 @@
 │   │   │
 │   │   ├───lib
 │   │   │       formatTrafficTrendData.ts            # тренд трафика в ChartData: линия по времени в мс и активным рейсам
-│   │   │       isSingleDayTrend.ts                  # укладывается ли тренд в одни сутки — выбор формата оси времени
 │   │   │       toBusiestAirports.ts                 # выдача /stats/airports к форме dashboard_top_airports, топ-10 по сумме рейсов
 │   │   │
 │   │   ├───model
-│   │   │       mock-data.ts                         # моки дашборда: полный, пустой и генератор по диапазону дат
 │   │   │       types.ts                             # типы сводки, фаз, топа аэропортов и тренда, выведенные из схем DashboardResponse
 │   │   │
 │   │   └───ui
@@ -149,11 +146,8 @@
 │   ├───getDashboardData                             # получение сводной статистики для дашборда
 │   │   │   index.ts                                 # публичный API фичи
 │   │   │
-│   │   ├───api
-│   │   │       useDashboardData.ts                  # useSuspenseQuery GET /stats/dashboard и /stats/airports, рефетч раз в 2 минуты
-│   │   │
-│   │   └───lib
-│   │           dashboardRange.ts                    # заготовка диапазона дат from/to в unix-секундах — ручка окно не принимает
+│   │   └───api
+│   │           useDashboardData.ts                  # useSuspenseQuery GET /stats/dashboard и /stats/airports, рефетч раз в 2 минуты
 │   │
 │   ├───getLiveFlights                               # получение бортов в воздухе в реальном времени
 │   │   │   index.ts                                 # публичный API фичи

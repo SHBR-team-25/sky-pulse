@@ -47,10 +47,6 @@ export function AppHeader() {
             </nav>
 
             <div className={styles.status}>
-                {/* <div className={styles.liveStatus}>
-                    <span className={styles.liveDot} aria-hidden="true" />
-                    <span>{headerMock.liveLabel}</span>
-                </div> */}
                 <Switch
                     className={styles.themeToggle}
                     size="l"

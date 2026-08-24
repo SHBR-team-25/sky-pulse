@@ -3,7 +3,6 @@ import {
     BusiestAirportsBadge,
     EmergencyBadge,
     FlightsBadge,
-    isSingleDayTrend,
     toBusiestAirports,
     TrafficTrendGraph,
 } from '@/entities/dashboardData';
@@ -14,11 +13,6 @@ import { formatDateTime } from '@/shared/lib/formatters';
 
 export function Dashboard() {
     const { data: dashboardData } = useDashboardData();
-
-    const isSingleDay = useMemo(
-        () => isSingleDayTrend(dashboardData.trafficTrend),
-        [dashboardData.trafficTrend]
-    );
 
     const busiestAirports = useMemo(
         () =>
@@ -54,10 +48,7 @@ export function Dashboard() {
                 <h2 className={styles.title}>Динамика количества полетов</h2>
                 <EmergencyBadge count={dashboardData.emergencyCount} />
                 <div className={styles.chart} aria-label="График">
-                    <TrafficTrendGraph
-                        isSingleDay={isSingleDay}
-                        data={dashboardData.trafficTrend}
-                    />
+                    <TrafficTrendGraph data={dashboardData.trafficTrend} />
                 </div>
             </div>
         </div>
