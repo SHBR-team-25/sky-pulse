@@ -7,7 +7,6 @@
         "types": ["vite/client", "@yandex/ymaps3-types"],
         "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"],
             "@app": ["src/app/index.ts"],
             "@app/*": ["src/app/*"],
             "@pages/*": ["src/pages/*"],

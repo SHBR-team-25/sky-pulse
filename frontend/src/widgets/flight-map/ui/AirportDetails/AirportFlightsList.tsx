@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { List } from '@gravity-ui/uikit';
-import { AirportTooltip, type AirportFlight } from '@/entities/airport';
-import { formatFlightNumber, formatTime } from '@/shared/lib/formatters';
+import { AirportTooltip, type AirportFlight } from '@entities/airport';
+import { formatFlightNumber, formatTime } from '@shared/lib/formatters';
 import styles from './AirportDetails.module.css';
 
 const FLIGHTS_PAGE_SIZE = 10;

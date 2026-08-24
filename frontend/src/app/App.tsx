@@ -1,10 +1,10 @@
 import { RouterProvider } from 'react-router/dom';
-import { AppThemeProvider } from '@/shared/contexts/theme';
+import { AppThemeProvider } from '@shared/contexts/theme';
 import styles from './App.module.css';
 import { QueryProvider } from './providers';
 import { router } from './router/routes';
 import './styles/index.css';
-import { RootErrorFallback } from '@/shared/ui';
+import { RootErrorFallback } from '@shared/ui';
 import { ErrorBoundary } from 'react-error-boundary';
 
 export function App() {

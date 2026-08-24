@@ -5,11 +5,11 @@ import {
     FlightsBadge,
     toBusiestAirports,
     TrafficTrendGraph,
-} from '@/entities/dashboardData';
+} from '@entities/dashboardData';
 import styles from './Dashboard.module.css';
-import { useDashboardData } from '@/features/getDashboardData';
+import { useDashboardData } from '@features/getDashboardData';
 import { useMemo } from 'react';
-import { formatDateTime } from '@/shared/lib/formatters';
+import { formatDateTime } from '@shared/lib/formatters';
 
 export function Dashboard() {
     const { data: dashboardData } = useDashboardData();

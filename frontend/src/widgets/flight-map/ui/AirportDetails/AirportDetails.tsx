@@ -6,10 +6,10 @@ import {
     type ReactNode,
     type RefAttributes,
 } from 'react';
-import type { Airport } from '@/entities/airport';
-import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
-import { MEDIA_QUERIES } from '@/shared/config';
-import { useMediaQuery } from '@/shared/hooks';
+import type { Airport } from '@entities/airport';
+import type { AirportFlightsResponse } from '@features/getAirportsFlights';
+import { MEDIA_QUERIES } from '@shared/config';
+import { useMediaQuery } from '@shared/hooks';
 import { AirportDetailsContent } from './AirportDetailsContent';
 import { AirportDetailsSheet } from './AirportDetailsSheet';
 import { AirportDetailsPopover } from './AirportDetailsPopover';

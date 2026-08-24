@@ -19,7 +19,6 @@ export function MetrikaPageTracker() {
     const lastTrackedPath = useRef<string | null>(null);
 
     useEffect(() => {
-        // The root route immediately redirects to /map and is not a real page view.
         if (pathname === '/' || pathname === lastTrackedPath.current) {
             return;
         }

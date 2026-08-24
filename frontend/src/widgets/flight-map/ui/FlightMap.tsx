@@ -13,15 +13,15 @@ import {
     YMapListener,
     YMapZoomControl,
     reactify,
-} from '@/shared/lib/ymaps3';
+} from '@shared/lib/ymaps3';
 import {
     MAP_VIEW_SYNC_DELAY_MS,
     MAP_ZOOM_RANGE,
     toMapBoundsParams,
     useSetMapView,
     type MapBoundsParams,
-} from '@/shared/contexts/map-view';
-import { useDebouncedCallback } from '@/shared/lib/useDebouncedCallback';
+} from '@shared/contexts/map-view';
+import { useDebouncedCallback } from '@shared/lib/useDebouncedCallback';
 import { AirportsClusterLayer } from './AirportsClusterLayer';
 import {
     CLUSTER_ZOOM_DURATION_MS,
@@ -29,8 +29,8 @@ import {
     type ClusterClickHandler,
 } from '../lib/clusterZoom';
 import styles from './FlightMap.module.css';
-import type { Airport } from '@/entities/airport';
-import type { Flight } from '@/entities/flight';
+import type { Airport } from '@entities/airport';
+import type { Flight } from '@entities/flight';
 import { FlightsClusterLayer } from './FlightsClusterLayer';
 import { MapLegend } from './MapLegend/MapLegend';
 import { mapCustomizationByTheme } from './mapCustomization';

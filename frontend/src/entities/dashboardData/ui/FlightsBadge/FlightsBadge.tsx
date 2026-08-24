@@ -17,7 +17,6 @@ const PHASE_LABELS: Record<keyof DashboardFlightsByPhase, string> = {
 const PHASE_ORDER = Object.keys(PHASE_LABELS) as (keyof DashboardFlightsByPhase)[];
 
 export function FlightsBadge({ flightsByPhase, activeFlights }: FlightsBadgeProps) {
-    // Складывать все четыре фазы нельзя: `airborne` уже включает `climbing` и `descending`
     const countFlights = flightsByPhase.onGround + flightsByPhase.airborne;
 
     return (

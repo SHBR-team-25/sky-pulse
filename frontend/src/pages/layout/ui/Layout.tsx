@@ -1,8 +1,8 @@
-import { AppFooter } from '@/widgets/app-footer';
-import { AppHeader } from '@/widgets/app-header';
-import { PageLoader } from '@/shared/ui';
-import { MapViewProvider } from '@/shared/contexts/map-view';
-import { MetrikaPageTracker } from '@/shared/lib/metrika';
+import { AppFooter } from '@widgets/app-footer';
+import { AppHeader } from '@widgets/app-header';
+import { PageLoader } from '@shared/ui';
+import { MapViewProvider } from '@shared/contexts/map-view';
+import { MetrikaPageTracker } from '@shared/lib/metrika';
 import { Suspense } from 'react';
 import { Outlet } from 'react-router';
 

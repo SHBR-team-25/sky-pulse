@@ -15,8 +15,6 @@ export function formatTrafficTrendData(data: DashboardTrafficTrendPoint[]): Char
                 },
             ],
         },
-        // Ось всегда часовая: `/stats/dashboard` отдаёт последние STATS_TREND_LIMIT точек
-        // с шагом AGGREGATE_INTERVAL_SECONDS, то есть ~8 часов при текущих настройках.
         xAxis: {
             type: 'datetime',
             labels: {

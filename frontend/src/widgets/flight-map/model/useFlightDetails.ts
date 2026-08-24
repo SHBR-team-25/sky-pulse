@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import type { Flight, TrackPoint } from '@/entities/flight';
-import { useTargetFlight } from '@/features/getTargetFlight';
+import type { Flight, TrackPoint } from '@entities/flight';
+import { useTargetFlight } from '@features/getTargetFlight';
 
 const EMPTY_TRACK: TrackPoint[] = [];
 const FLIGHT_DETAILS_POLL_INTERVAL_MS = 5_000;

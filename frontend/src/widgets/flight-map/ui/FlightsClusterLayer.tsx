@@ -10,12 +10,12 @@ import {
     YMapControls,
     YMapLayer,
     YMapMarker,
-} from '@/shared/lib/ymaps3';
+} from '@shared/lib/ymaps3';
 
 import { FlightDetails } from './FlightDetails';
 import { CLUSTER_MAX_ZOOM, type ClusterClickHandler } from '../lib/clusterZoom';
 import { useFlightDetails } from '../model/useFlightDetails';
-import { FlightClusterMarker, FlightMarker, type Flight } from '@/entities/flight';
+import { FlightClusterMarker, FlightMarker, type Flight } from '@entities/flight';
 import { Button, Icon } from '@gravity-ui/uikit';
 import { Xmark } from '@gravity-ui/icons';
 import styles from './FlightsClusterLayer.module.css';

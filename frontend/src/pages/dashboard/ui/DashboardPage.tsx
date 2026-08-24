@@ -1,4 +1,4 @@
-import { Dashboard } from '@/widgets/dashboard';
+import { Dashboard } from '@widgets/dashboard';
 import styles from './DashboardPage.module.css';
 
 export function DashboardPage() {

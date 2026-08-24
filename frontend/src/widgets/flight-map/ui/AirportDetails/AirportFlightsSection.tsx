@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AirportFlight, AirportFlightsDirection } from '@/entities/airport';
+import type { AirportFlight, AirportFlightsDirection } from '@entities/airport';
 import { AirportFlightsList } from './AirportFlightsList';
 import styles from './AirportDetails.module.css';
 

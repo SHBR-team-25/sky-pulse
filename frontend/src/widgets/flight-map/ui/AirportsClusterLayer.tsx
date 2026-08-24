@@ -7,13 +7,13 @@ import {
     YMapFeatureDataSource,
     YMapLayer,
     YMapMarker,
-} from '@/shared/lib/ymaps3';
+} from '@shared/lib/ymaps3';
 
 import { AirportDetails } from './AirportDetails';
 import { CLUSTER_MAX_ZOOM, type ClusterClickHandler } from '../lib/clusterZoom';
 import styles from './AirportsLayer.module.css';
 import { useSelectedAirportFlights } from '../model/useSelectedAirportFlights';
-import { AirportClusterMarker, AirportMarker, type Airport } from '@/entities/airport';
+import { AirportClusterMarker, AirportMarker, type Airport } from '@entities/airport';
 
 const CLUSTER_SOURCE = 'clustered-airports';
 

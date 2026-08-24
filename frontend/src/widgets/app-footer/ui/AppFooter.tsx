@@ -1,5 +1,5 @@
-import { useMapView } from '@/shared/contexts/map-view';
-import { formatMapView } from '@/shared/lib/formatters';
+import { useMapView } from '@shared/contexts/map-view';
+import { formatMapView } from '@shared/lib/formatters';
 import styles from './AppFooter.module.css';
 
 export function AppFooter() {

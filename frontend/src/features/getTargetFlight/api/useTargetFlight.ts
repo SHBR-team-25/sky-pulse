@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { TargetFlight } from '../model/types';
-import type { Flight, TrackPoint } from '@/entities/flight';
+import type { Flight, TrackPoint } from '@entities/flight';
 import { fetchJson } from '@shared/api';
 
 const REQUEST_TIMEOUT_MS = 5_000;

@@ -1,16 +1,16 @@
 import { createBrowserRouter, Navigate } from 'react-router';
-import { Layout } from '@/pages/layout';
-import { dashboardDataQueryOptions } from '@/features/getDashboardData';
-import { airportsQueryOptions, toAirportsMapQuery } from '@/features/getAirports';
-import { liveFlightsQueryOptions } from '@/features/getLiveFlights';
+import { Layout } from '@pages/layout';
+import { dashboardDataQueryOptions } from '@features/getDashboardData';
+import { airportsQueryOptions, toAirportsMapQuery } from '@features/getAirports';
+import { liveFlightsQueryOptions } from '@features/getLiveFlights';
 import { queryClient } from '@shared/api';
 import {
     parseMapBoundsView,
     resolveMapSearchParams,
     toMapBoundsParams,
-} from '@/shared/contexts/map-view';
+} from '@shared/contexts/map-view';
 import { PageLoader, RouterErrorFallback } from '@shared/ui';
-import { NotFoundPage } from '@/pages/notFound';
+import { NotFoundPage } from '@pages/notFound';
 
 export const router = createBrowserRouter([
     {
@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
             {
                 path: 'dashboard',
                 lazy: {
-                    Component: async () => (await import('@/pages/dashboard')).DashboardPage,
+                    Component: async () => (await import('@pages/dashboard')).DashboardPage,
                 },
                 ErrorBoundary: RouterErrorFallback,
                 loader: () => {

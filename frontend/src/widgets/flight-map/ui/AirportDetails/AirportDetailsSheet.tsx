@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Sheet } from '@gravity-ui/uikit';
-import { MEDIA_QUERIES } from '@/shared/config';
-import { useMediaQuery } from '@/shared/hooks';
+import { MEDIA_QUERIES } from '@shared/config';
+import { useMediaQuery } from '@shared/hooks';
 import styles from './AirportDetails.module.css';
 
 interface AirportDetailsSheetProps {
