@@ -5,7 +5,6 @@ export { FlightsBadge } from './ui/FlightsBadge/FlightsBadge';
 export { TrafficTrendGraph } from './ui/TrafficTrendGraph/TrafficTrendGraph';
 export { isSingleDayTrend } from './lib/isSingleDayTrend';
 export { TOP_BUSIEST_AIRPORTS_LIMIT, toBusiestAirports } from './lib/toBusiestAirports';
-export { dashboardMock, emptyDashboardMock, makeDashboardMock } from './model/mock-data';
 export type {
     AirportsTraffic,
     AirportTraffic,

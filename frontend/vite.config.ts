@@ -1,10 +1,38 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 const POSITIONS_SERVICE = 'http://localhost:8080';
 const ANALYTICS_SERVICE = 'http://localhost:8081';
+
+const KEPT_DAYJS_LOCALES = ['en', 'ru'];
+const DATE_UTILS_LOCALES = '@gravity-ui/date-utils/build/settings/locales.js';
+
+function trimDayjsLocales(): Plugin {
+    const loaders = KEPT_DAYJS_LOCALES.map(
+        (locale) => `    ${locale}: () => import('dayjs/locale/${locale}.js'),`
+    ).join('\n');
+
+    return {
+        name: 'skypulse:trim-dayjs-locales',
+        apply: 'build',
+        load(id) {
+            if (!id.replaceAll('\\', '/').endsWith(DATE_UTILS_LOCALES)) {
+                return null;
+            }
+
+            return [
+                '"use strict";',
+                'Object.defineProperty(exports, "__esModule", { value: true });',
+                'exports.localeLoaders = void 0;',
+                'exports.localeLoaders = {',
+                loaders,
+                '};',
+            ].join('\n');
+        },
+    };
+}
 
 export default defineConfig(({ mode }) => {
     // В production CI подставляет адрес бакета, локально ассеты остаются на Vite-сервере.
@@ -46,6 +74,7 @@ export default defineConfig(({ mode }) => {
         plugins: [
             react(),
             tsconfigPaths({ projects: ['./tsconfig.app.json'] }),
+            trimDayjsLocales(),
             mode === 'analyze' &&
                 visualizer({
                     filename: 'dist/stats.html',
