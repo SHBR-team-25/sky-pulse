@@ -1,4 +1,4 @@
-import { MapClusterMarker } from '@/shared/ui';
+import { MapClusterMarker } from '@shared/ui';
 
 interface FlightClusterMarkerProps {
     count: number;

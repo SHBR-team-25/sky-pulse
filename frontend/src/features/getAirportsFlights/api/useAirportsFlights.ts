@@ -35,10 +35,7 @@ export function useAirportsFlights(
             );
         },
         enabled: Boolean(icao) && (options.enabled ?? true),
-        // Данные попапа привязаны к конкретному аэропорту: keepPreviousData показал бы
-        // рейсы предыдущего как готовые
         retry: false,
-        // Ошибку рисует сам попап, глобальный throwOnError уронил бы ErrorBoundary всей карты
         throwOnError: false,
     });
 }

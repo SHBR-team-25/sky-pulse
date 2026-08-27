@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatUtcTime } from '@/shared/lib/formatters';
+import { formatUtcTime } from '@shared/lib/formatters';
 
 /** Возвращает текущее время UTC и обновляет его каждую минуту. */
 export function useUtcTime() {

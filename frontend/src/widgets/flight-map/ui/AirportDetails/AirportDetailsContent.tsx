@@ -1,7 +1,7 @@
 import { Xmark } from '@gravity-ui/icons';
 import { Button, Icon, Spin } from '@gravity-ui/uikit';
-import type { Airport } from '@/entities/airport';
-import type { AirportFlightsResponse } from '@/features/getAirportsFlights';
+import type { Airport } from '@entities/airport';
+import type { AirportFlightsResponse } from '@features/getAirportsFlights';
 import { AirportDetailsCard } from './AirportDetailsCard';
 import styles from './AirportDetails.module.css';
 

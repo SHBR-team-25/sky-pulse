@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useAirportsFlights } from '@/features/getAirportsFlights';
+import { useAirportsFlights } from '@features/getAirportsFlights';
 
 export function useSelectedAirportFlights() {
     const [selectedAirportIcao, setSelectedAirportIcao] = useState<string | null>(null);

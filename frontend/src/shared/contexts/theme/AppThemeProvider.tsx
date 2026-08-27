@@ -16,7 +16,7 @@ function getInitialTheme(): AppTheme {
         throw new Error('Didnt manage to get theme from local storage');
     }
 
-    return 'dark'; // по дефолту темная тема, если не сохранена другая
+    return 'dark';
 }
 
 interface AppThemeProviderProps {

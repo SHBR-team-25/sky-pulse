@@ -1,8 +1,8 @@
 import { Moon, Sun } from '@gravity-ui/icons';
 import { Button, Icon, Switch } from '@gravity-ui/uikit';
 import { NavLink } from 'react-router';
-import { useUtcTime } from '@/shared/hooks';
-import { useAppTheme } from '@/shared/contexts/theme';
+import { useUtcTime } from '@shared/hooks';
+import { useAppTheme } from '@shared/contexts/theme';
 import logoPng from '../assets/yt_logo.png';
 import logoWebp from '../assets/yt_logo.webp';
 import styles from './AppHeader.module.css';

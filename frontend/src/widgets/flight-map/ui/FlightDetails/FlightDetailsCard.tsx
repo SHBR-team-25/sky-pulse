@@ -4,9 +4,9 @@ import {
     formatSpeedKmh,
     formatTime,
     numberFormatter,
-} from '@/shared/lib/formatters';
+} from '@shared/lib/formatters';
 import styles from './FlightDetails.module.css';
-import type { Flight } from '@/entities/flight';
+import type { Flight } from '@entities/flight';
 
 interface FlightDetailsCardProps {
     flight: Flight;

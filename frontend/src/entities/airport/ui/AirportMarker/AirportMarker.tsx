@@ -47,7 +47,6 @@ export function AirportMarker({
     return (
         <button
             {...rest}
-            // Корневой элемент маркера - кнопка, но снаружи он типизирован как HTMLElement.
             ref={ref as Ref<HTMLButtonElement>}
             className={`${styles.airportMarker} ${isSelected ? styles.airportMarkerSelected : ''} ${className ?? ''}`}
             type="button"

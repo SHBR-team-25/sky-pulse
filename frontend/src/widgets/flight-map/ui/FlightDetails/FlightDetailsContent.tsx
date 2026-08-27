@@ -1,6 +1,6 @@
 import { Xmark } from '@gravity-ui/icons';
 import { Button, Icon, Spin } from '@gravity-ui/uikit';
-import type { Flight } from '@/entities/flight';
+import type { Flight } from '@entities/flight';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import styles from './FlightDetails.module.css';
 

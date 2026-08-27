@@ -31,7 +31,6 @@ interface UseLiveFlightsOptions {
 }
 
 export function useLiveFlights(params: LiveFlightsQuery = {}, options: UseLiveFlightsOptions = {}) {
-    // Дебаунс делает вызывающая сторона (FlightMap), второй дебаунс удвоил бы задержку
     return useQuery({
         ...liveFlightsQueryOptions(params),
         enabled: options.enabled ?? true,

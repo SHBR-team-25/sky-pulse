@@ -1,4 +1,4 @@
-import type { MapRectParams } from '@/shared/contexts/map-view';
+import type { MapRectParams } from '@shared/contexts/map-view';
 import type { AirportsQuery } from '../model/types';
 
 /**

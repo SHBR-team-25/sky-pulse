@@ -1,6 +1,6 @@
 import { HelpMark } from '@gravity-ui/uikit';
-import { AirportClusterMarker, AirportMarker } from '@/entities/airport';
-import { FlightClusterMarker, FlightMarker } from '@/entities/flight';
+import { AirportClusterMarker, AirportMarker } from '@entities/airport';
+import { FlightClusterMarker, FlightMarker } from '@entities/flight';
 import styles from './MapLegend.module.css';
 
 const LEGEND_FLIGHTS_IN_CLUSTER = 12;

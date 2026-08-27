@@ -9,7 +9,6 @@ export const airportsQueryKeys = {
 
 export function airportsQueryOptions(params: AirportsQuery = {}) {
     return queryOptions({
-        // FIXME: сделать другой ключ
         queryKey: airportsQueryKeys.list(params),
         queryFn: ({ signal }) => fetchJson<AirportsListResponse>('/airports', { params, signal }),
     });

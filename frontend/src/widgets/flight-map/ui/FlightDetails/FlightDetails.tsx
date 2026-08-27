@@ -6,9 +6,9 @@ import {
     type ReactNode,
     type RefAttributes,
 } from 'react';
-import type { Flight } from '@/entities/flight';
-import { MEDIA_QUERIES } from '@/shared/config';
-import { useMediaQuery } from '@/shared/hooks';
+import type { Flight } from '@entities/flight';
+import { MEDIA_QUERIES } from '@shared/config';
+import { useMediaQuery } from '@shared/hooks';
 import { FlightDetailsContent } from './FlightDetailsContent';
 import { FlightDetailsSheet } from './FlightDetailsSheet';
 import { FlightDetailsPopover } from './FlightDetailsPopover';

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from '@gravity-ui/uikit';
-import { toAirportsMapQuery, useAirports } from '@/features/getAirports';
-import { useLiveFlights } from '@/features/getLiveFlights';
-import { FlightMap } from '@/widgets/flight-map';
-import { useAppTheme } from '@/shared/contexts/theme';
+import { toAirportsMapQuery, useAirports } from '@features/getAirports';
+import { useLiveFlights } from '@features/getLiveFlights';
+import { FlightMap } from '@widgets/flight-map';
+import { useAppTheme } from '@shared/contexts/theme';
 import {
     isSameMapBoundsParams,
     parseMapBoundsView,
@@ -11,11 +11,11 @@ import {
     toMapBoundsParams,
     writeStoredMapSearch,
     type MapBoundsParams,
-} from '@/shared/contexts/map-view';
+} from '@shared/contexts/map-view';
 import styles from './MapPage.module.css';
 import { useLocation, useSearchParams } from 'react-router';
-import type { Airport } from '@/entities/airport';
-import type { Flight } from '@/entities/flight';
+import type { Airport } from '@entities/airport';
+import type { Flight } from '@entities/flight';
 
 /** Стабильные ссылки: иначе memo на слоях карты не сработает, пока данные не пришли. */
 const EMPTY_FLIGHTS: Flight[] = [];
